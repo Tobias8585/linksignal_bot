@@ -89,7 +89,10 @@ def analyze(df, symbol):
         return None
 
 def check_all_symbols():
-    symbols = ['LINKUSDT', 'ENAUSDT', 'MOVEUSDT', 'ONDOUSDT', 'XRPUSDT', 'ETHUSDT']
+    symbols = [
+        'LINKUSDT', 'ENAUSDT', 'MOVEUSDT', 'ONDOUSDT', 'XRPUSDT', 'ETHUSDT',
+        'SOLUSDT', 'LTCUSDT', 'ADAUSDT', 'BTCUSDT', 'SUIUSDT', 'HBARUSDT', 'ALGOUSDT', 'XLMUSDT'
+    ]
     for symbol in symbols:
         df = get_klines(symbol)
         if df is not None:
@@ -107,3 +110,4 @@ if __name__ == "__main__":
     send_telegram("✅ Bot wurde gestartet und ist bereit.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
