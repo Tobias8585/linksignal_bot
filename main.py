@@ -4,8 +4,9 @@ import threading
 from flask import Flask
 import pandas as pd
 from ta.momentum import RSIIndicator
-
+from ta.trend import MACD, EMAIndicator
 import os
+
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
@@ -13,14 +14,13 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "LINK Bot läuft."
+    return "Multi-Coin Bot läuft."
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {'chat_id': CHAT_ID, 'text': message}
     try:
-        response = requests.post(url, json=payload)
-        print("Telegram:", response.status_code, response.text)
+        requests.post(url, json=payload)
     except Exception as e:
         print("Telegram-Fehler:", e)
 
@@ -33,27 +33,41 @@ def get_klines(symbol='LINKUSDT', interval='5m', limit=100):
         'taker_buy_base', 'taker_buy_quote', 'ignore'
     ])
     df['close'] = df['close'].astype(float)
+    df['open'] = df['open'].astype(float)
     return df
 
-def check_signal():
-    df = get_klines()
-    rsi = RSIIndicator(close=df['close'], window=14).rsi()
-    last_rsi = rsi.iloc[-1]
-    print("Aktueller RSI:", last_rsi)
+def analyze(df, symbol):
+    rsi = RSIIndicator(close=df['close'], window=14).rsi().iloc[-1]
+    macd_diff = MACD(close=df['close']).macd_diff().iloc[-1]
+    ema = EMAIndicator(close=df['close'], window=20).ema_indicator().iloc[-1]
+    price = df['close'].iloc[-1]
 
-    if last_rsi < 30:
-        send_telegram("RSI unter 30 – möglicher LONG-Einstieg bei LINKUSDT!")
-    elif last_rsi > 70:
-        send_telegram("RSI über 70 – möglicher SHORT-Einstieg bei LINKUSDT!")
-    else:
-        print("Kein Signal erkannt.")
+    message = None
+
+    if rsi < 30 and macd_diff > 0 and price > ema:
+        message = f"{symbol}: LONG-SIGNAL (RSI={rsi:.2f}, MACD>0, Preis > EMA20)"
+    elif rsi > 70 and macd_diff < 0 and price < ema:
+        message = f"{symbol}: SHORT-SIGNAL (RSI={rsi:.2f}, MACD<0, Preis < EMA20)"
+
+    return message
+
+def check_all_symbols():
+    symbols = ['LINKUSDT', 'ENAUSDT', 'MOVEUSDT', 'ONDOUSDT', 'XRPUSDT', 'ETHUSDT']
+    for symbol in symbols:
+        try:
+            df = get_klines(symbol=symbol)
+            signal = analyze(df, symbol)
+            if signal:
+                send_telegram(signal)
+                print(signal)
+            else:
+                print(f"{symbol}: Kein Signal.")
+        except Exception as e:
+            print(f"Fehler bei {symbol}: {e}")
 
 def run_bot():
     while True:
-        try:
-            check_signal()
-        except Exception as e:
-            print("Fehler:", e)
+        check_all_symbols()
         time.sleep(300)
 
 if __name__ == "__main__":

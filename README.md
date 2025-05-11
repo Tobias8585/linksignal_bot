@@ -1,17 +1,10 @@
-# Linksignal Bot
+# Multicoin Signal Bot (RSI + MACD + EMA)
 
-Dieser Bot prüft alle 5 Minuten den RSI von LINKUSDT über Binance API und sendet ein Telegram-Signal, wenn RSI < 30 (LONG) oder > 70 (SHORT) ist.
+Analysiert alle 5 Minuten mehrere Coins:
+- LINK, ENA, MOVE, ONDO, XRP, ETH
 
-## Telegram Setup
-- Erstelle einen Bot über @BotFather
-- Starte den Chat mit deinem Bot und hole deine `chat_id` über eine Anfrage oder Bot-Log
-- Füge `TELEGRAM_TOKEN` und `CHAT_ID` als Environment-Variablen bei Render hinzu
+### Signalbedingungen:
+- RSI < 30, MACD-Diff > 0, Preis > EMA20 → LONG
+- RSI > 70, MACD-Diff < 0, Preis < EMA20 → SHORT
 
-## Deployment
-1. Code auf GitHub hochladen
-2. Bei render.com neuen Web Service anlegen
-3. Python Version: 3.11
-4. `main.py` ist Entry Point
-5. Environment Variables:
-   - `TELEGRAM_TOKEN`
-   - `CHAT_ID`
+Telegram-Nachricht wird bei Signal automatisch gesendet.
