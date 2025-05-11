@@ -11,7 +11,9 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 app = Flask(__name__)
-
+test_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+test_payload = {'chat_id': CHAT_ID, 'text': 'Testnachricht vom Bot (Verbindung funktioniert!)'}
+requests.post(test_url, json=test_payload)
 @app.route('/')
 def home():
     return "Multi-Coin Bot läuft."
