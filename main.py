@@ -71,6 +71,6 @@ def run_bot():
         time.sleep(300)
 
 if __name__ == "__main__":
-    threading.Thread(target=app.run, kwargs={'host': '0.0.0.0', 'port': 8080}).start()
-    send_telegram("Bot wurde gestartet und ist bereit.")
-    run_bot()
+   threading.Thread(target=run_bot).start()
+app.run(host='0.0.0.0', port=8080)
+
