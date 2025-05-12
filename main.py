@@ -15,7 +15,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Multi-Coin Bot läuft."
+    return "Optimierter Trading-Bot läuft."
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -46,24 +46,29 @@ def analyze(df, symbol):
         return None
 
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
-    macd = MACD(df['close'])
-    macd_line = macd.macd().iloc[-1]
+    macd_line = MACD(df['close']).macd().iloc[-1]
     ema = EMAIndicator(df['close'], window=20).ema_indicator().iloc[-1]
     price = df['close'].iloc[-1]
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].iloc[-6:-1].mean()
 
     signal = "NEUTRAL"
-    if rsi < 35 and macd_line > 0 and price > ema:
+    reason = ""
+
+    if rsi < 35 and price >= ema * 0.995:
         signal = "LONG"
-    elif rsi > 70 and macd_line < 0 and price < ema:
+        reason = "RSI < 35, Preis nahe EMA"
+    elif rsi > 70 and price <= ema * 1.005:
         signal = "SHORT"
+        reason = "RSI > 70, Preis nahe EMA"
     elif volume > 1.5 * avg_volume:
         signal = "BREAKOUT"
+        reason = f"Volumenanstieg ({volume:.0f} > Ø{avg_volume:.0f})"
 
     icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⚡" if signal == "BREAKOUT" else "➖"
     message = (
         f"{icon} {symbol} Signal: {signal}\n"
+        f"Grund: {reason}\n"
         f"RSI: {rsi:.2f}, MACD: {macd_line:.4f}, EMA: {ema:.2f}, Preis: {price}, Volumen: {volume:.0f}\n"
         f"Zeit: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
     )
@@ -76,7 +81,9 @@ def check_all_symbols():
         'XLMUSDT', 'PEPEUSDT', 'SXTUSDT', 'SOLVUSDT', 'INITUSDT', 'ZEREBROUSDT',
         'BNBUSDT', 'TRXUSDT', 'AVAXUSDT', 'SHIBUSDT', 'HYPEUSDT', 'TAOUSDT', 'AAVEUSDT',
         'APTUSDT', 'KASUSDT', 'VETUSDT', 'POLUSDT', 'FILUSDT', 'JUPUSDT', 'MKRUSDT',
-        'DEXEUSDT', 'GALAUSDT', 'SOLAYERUSDT'
+        'DEXEUSDT', 'GALAUSDT', 'SOLAYERUSDT', 'DOGEUSDT', 'OPUSDT', 'ARBUSDT',
+        'SEIUSDT', 'WIFUSDT', 'PYTHUSDT', 'TIAUSDT', 'RNDRUSDT', 'STXUSDT', 'NEARUSDT',
+        'INJUSDT', 'RUNEUSDT', 'TURBOUSDT', 'JOEUSDT', 'IDUSDT', 'LDOUSDT'
     ]
     for symbol in symbols:
         try:
@@ -96,7 +103,7 @@ def run_bot():
         time.sleep(300)
 
 if __name__ == "__main__":
-    send_telegram("Bot wurde gestartet und ist bereit.")
+    send_telegram("Bot wurde gestartet (optimierte Logik).")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
 
