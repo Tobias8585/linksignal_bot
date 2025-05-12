@@ -5,8 +5,8 @@ from flask import Flask
 import pandas as pd
 from ta.momentum import RSIIndicator
 from ta.trend import MACD, EMAIndicator
-import os
 from datetime import datetime
+import os
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
@@ -15,28 +15,32 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Multi-Coin Bot läuft."
+    return "Multi-Coin Signal-Bot läuft."
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {'chat_id': CHAT_ID, 'text': message}
     try:
-        response = requests.post(url, json=payload)
-        print("Nachricht gesendet:", response.text)
+        requests.post(url, json=payload)
     except Exception as e:
-        print("Telegram-Fehler:", e)
+        print("Fehler beim Senden der Nachricht:", e)
 
-def get_klines(symbol, interval='5m', limit=100):
-    url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
-    data = requests.get(url).json()
-    df = pd.DataFrame(data, columns=[
-        'timestamp', 'open', 'high', 'low', 'close', 'volume',
-        'close_time', 'quote_asset_volume', 'number_of_trades',
-        'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
-    ])
-    df['close'] = pd.to_numeric(df['close'])
-    df['volume'] = pd.to_numeric(df['volume'])
-    return df
+def get_klines(symbol):
+    url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=5m&limit=100"
+    try:
+        response = requests.get(url)
+        data = response.json()
+        df = pd.DataFrame(data, columns=[
+            'timestamp', 'open', 'high', 'low', 'close', 'volume',
+            'close_time', 'quote_asset_volume', 'number_of_trades',
+            'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
+        ])
+        df['close'] = pd.to_numeric(df['close'])
+        df['volume'] = pd.to_numeric(df['volume'])
+        return df
+    except Exception as e:
+        print(f"Fehler beim Abrufen der Daten für {symbol}: {e}")
+        return None
 
 def analyze(df, symbol):
     rsi = RSIIndicator(df['close']).rsi().iloc[-1]
@@ -60,20 +64,25 @@ def analyze(df, symbol):
     return message if signal != "NEUTRAL" else None
 
 def check_all_symbols():
-    symbols = ['LINKUSDT', 'ENAUSDT', 'MOVEUSDT', 'ONDOUSDT', 'XRPUSDT', 'ETHUSDT',
-               'SOLUSDT', 'LTCUSDT', 'ADAUSDT', 'BTCUSDT', 'SUIUSDT', 'HBARUSDT', 'ALGOUSDT', 'XLMUSDT',
-               'PEPEUSDT', 'SXTUSDT', 'SOLVUSDT', 'INITUSDT', 'ZEREBROUSDT']
+    symbols = [
+        'LINKUSDT', 'ENAUSDT', 'MOVEUSDT', 'ONDOUSDT', 'XRPUSDT', 'ETHUSDT',
+        'SOLUSDT', 'LTCUSDT', 'ADAUSDT', 'BTCUSDT', 'SUIUSDT', 'HBARUSDT', 'ALGOUSDT',
+        'PEPEUSDT', 'SXTUSDT', 'SOLVUSDT', 'INITUSDT', 'ZEREBROUSDT',
+        'BNBUSDT', 'TRXUSDT', 'AVAXUSDT', 'SHIBUSDT', 'HYPEUSDT', 'TAOUSDT', 'AAVEUSDT',
+        'APTUSDT', 'KASUSDT', 'VETUSDT', 'POLUSDT', 'FILUSDT', 'JUPUSDT', 'MKRUSDT',
+        'DEXEUSDT', 'GALAUSDT', 'SOLAYERUSDT'
+    ]
     for symbol in symbols:
-        try:
-            df = get_klines(symbol)
+        df = get_klines(symbol)
+        if df is not None:
             signal_msg = analyze(df, symbol)
             if signal_msg:
                 send_telegram(signal_msg)
                 print(signal_msg)
             else:
-                print(f"➖ {symbol}: Kein Signal.")
-        except Exception as e:
-            print(f"Fehler bei {symbol}: {e}")
+                print(f"{symbol}: Kein Signal.")
+        else:
+            print(f"{symbol}: Datenabruf fehlgeschlagen.")
 
 def run_bot():
     while True:
@@ -81,7 +90,8 @@ def run_bot():
         time.sleep(300)
 
 if __name__ == "__main__":
-    send_telegram("Bot wurde gestartet und läuft.")
+    send_telegram("Bot wurde gestartet und ist bereit.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
 
