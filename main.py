@@ -90,7 +90,7 @@ def run_bot():
         check_all_symbols()
         time.sleep(300)
         
-        @app.route('/')
+  @app.route('/')
 def home():
     return "Bot läuft und empfängt Anfragen."
 
