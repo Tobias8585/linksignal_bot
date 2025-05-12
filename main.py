@@ -40,6 +40,8 @@ def get_klines(symbol, interval="1h", limit=100):
         return None
 
 def analyze(df, symbol):
+    if df.empty:
+    return None
     rsi = RSIIndicator(close=df['close']).rsi().iloc[-1]
     macd_line = MACD(close=df['close']).macd_diff().iloc[-1]
     ema = EMAIndicator(close=df['close'], window=20).ema_indicator().iloc[-1]
