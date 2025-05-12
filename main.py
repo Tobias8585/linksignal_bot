@@ -1,127 +1,116 @@
 import requests
 import time
 import threading
-import os
+import pandas as pd
 from flask import Flask
 from datetime import datetime
-import pandas as pd
 from ta.momentum import RSIIndicator
-from ta.trend import MACD, EMAIndicator
+from ta.trend import EMAIndicator, MACD
 from ta.volatility import AverageTrueRange
+import os
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
-
 app = Flask(__name__)
 
-@app.route('/')
+@app.route("/")
 def home():
-    return "Advanced Trading-Signal-Bot läuft."
+    return "Trading Signal Bot läuft."
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {'chat_id': CHAT_ID, 'text': message}
+    payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"}
     try:
         requests.post(url, json=payload)
     except Exception as e:
-        print("Telegram Fehler:", e)
+        print("Fehler bei Telegram:", e)
 
-def get_klines(symbol):
-    url = f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1h&limit=100"
+def get_klines(symbol, interval="1h", limit=100):
+    url = f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}"
     try:
         data = requests.get(url).json()
         df = pd.DataFrame(data, columns=[
-            'timestamp', 'open', 'high', 'low', 'close', 'volume',
-            'close_time', 'quote_asset_volume', 'number_of_trades',
-            'taker_buy_base_volume', 'taker_buy_quote_volume', 'ignore'
+            "timestamp", "open", "high", "low", "close", "volume",
+            "close_time", "quote_asset_volume", "number_of_trades",
+            "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", "ignore"
         ])
-        df['close'] = pd.to_numeric(df['close'])
-        df['high'] = pd.to_numeric(df['high'])
-        df['low'] = pd.to_numeric(df['low'])
-        df['volume'] = pd.to_numeric(df['volume'])
+        df["close"] = df["close"].astype(float)
+        df["high"] = df["high"].astype(float)
+        df["low"] = df["low"].astype(float)
+        df["volume"] = df["volume"].astype(float)
         return df
-    except:
+    except Exception as e:
+        print(f"Fehler bei {symbol}:", e)
         return None
 
 def analyze(df, symbol):
-    if df is None or df.empty:
-        return None
-
-    price = df['close'].iloc[-1]
-    rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
-    macd_line = MACD(df['close']).macd().iloc[-1]
-    ema = EMAIndicator(df['close'], window=20).ema_indicator().iloc[-1]
-    atr = AverageTrueRange(df['high'], df['low'], df['close'], window=14).average_true_range().iloc[-1]
-    volume = df['volume'].iloc[-1]
-    avg_volume = df['volume'].iloc[-6:-1].mean()
+    rsi = RSIIndicator(df["close"]).rsi().iloc[-1]
+    macd_diff = MACD(df["close"]).macd_diff().iloc[-1]
+    ema = EMAIndicator(df["close"]).ema_indicator().iloc[-1]
+    price = df["close"].iloc[-1]
+    volume = df["volume"].iloc[-1]
+    avg_volume = df["volume"].rolling(window=20).mean().iloc[-1]
+    atr = AverageTrueRange(df["high"], df["low"], df["close"]).average_true_range().iloc[-1]
 
     signal = "NEUTRAL"
     reason = ""
-    quality = "★"
-
-    if rsi < 35 and price >= ema * 0.995:
+    breakout = False
+    if rsi < 35 and macd_diff > 0 and price > ema:
         signal = "LONG"
-        reason = "RSI < 35, Preis nahe EMA"
-        quality = "★★" if macd_line > 0 else "★"
-        if volume > 1.5 * avg_volume:
-            quality = "★★★"
-    elif rsi > 70 and price <= ema * 1.005:
+        reason = "RSI < 35, MACD > 0, Preis > EMA"
+    elif rsi > 70 and macd_diff < 0 and price < ema:
         signal = "SHORT"
-        reason = "RSI > 70, Preis nahe EMA"
-        quality = "★★" if macd_line < 0 else "★"
-        if volume > 1.5 * avg_volume:
-            quality = "★★★"
-    elif volume > 1.5 * avg_volume:
-        signal = "BREAKOUT"
-        reason = f"Volumenanstieg ({volume:.0f} > Ø{avg_volume:.0f})"
-        quality = "★★"
+        reason = "RSI > 70, MACD < 0, Preis < EMA"
 
-    if signal == "NEUTRAL":
-        return None
+    if signal != "NEUTRAL":
+        breakout = price > df["high"].iloc[-20:-1].max() if signal == "LONG" else price < df["low"].iloc[-20:-1].min()
+        quality = "★★★" if breakout and volume > 1.5 * avg_volume else "★★" if volume > avg_volume else "★"
+        icon = "✅" if signal == "LONG" else "❌"
 
-    tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
-    tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
-    sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
+        tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
+        tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
+        sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
 
-    icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⚡"
-    msg = (
-        f"{icon} *{symbol}* Signal: *{signal}*  
+        message = (
+            f"{icon} *{symbol}* Signal: *{signal}*
 "
-        f"Grund: {reason}  
+            f"_Grund:_ {reason} {'+ Breakout' if breakout else ''}
 "
-        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}  
+            f"📊 RSI: {rsi:.2f} | MACD: {macd_diff:.4f} | EMA: {ema:.2f}
 "
-        f"💰 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}  
+            f"💰 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}
 "
-        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}  
+            f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}
 "
-        f"⭐ Signalqualität: {quality}  
+            f"⭐️ Signalqualität: {quality}
 "
-        f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
-    )
-    return msg
+            f"🕓 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+        )
+        return message
+    return None
 
 def check_all_symbols():
     symbols = [
-        'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT', 'SOLUSDT', 'DOGEUSDT', 'AVAXUSDT', 'DOTUSDT', 'TRXUSDT',
-        'MATICUSDT', 'LTCUSDT', 'SHIBUSDT', 'LINKUSDT', 'ATOMUSDT', 'UNIUSDT', 'ALGOUSDT', 'HBARUSDT', 'VETUSDT', 'ICPUSDT',
-        'FILUSDT', 'EGLDUSDT', 'NEARUSDT', 'SANDUSDT', 'THETAUSDT', 'MANAUSDT', 'XTZUSDT', 'RUNEUSDT', 'AAVEUSDT', 'GALAUSDT',
-        'ENSUSDT', 'CHZUSDT', 'XLMUSDT', 'XMRUSDT', 'EOSUSDT', 'ARBUSDT', 'OPUSDT', 'TWTUSDT', 'LDOUSDT', 'CRVUSDT',
-        'DYDXUSDT', 'ZILUSDT', 'CFXUSDT', 'MASKUSDT', '1INCHUSDT', 'SNXUSDT', 'KAVAUSDT', 'GMXUSDT', 'INJUSDT', 'RENUSDT',
-        'IDUSDT', 'JOEUSDT', 'TURBOUSDT', 'STXUSDT', 'TIAUSDT', 'PYTHUSDT', 'SEIUSDT', 'WIFUSDT', 'PEPEUSDT', 'FETUSDT',
-        'AGIXUSDT', 'KASUSDT', 'ZRXUSDT', 'RNDRUSDT', 'SXPUSDT', 'HOOKUSDT', 'JASMYUSDT', 'FLUXUSDT', 'ACHUSDT', 'DODOUSDT',
-        'APTUSDT', 'SUIUSDT', 'COTIUSDT', 'HFTUSDT', 'DENTUSDT', 'STMXUSDT', 'WOOUSDT', 'GTCUSDT', 'HIGHUSDT', 'LITUSDT',
-        'TVKUSDT', 'PORTOUSDT', 'FORTHUSDT', 'MOVRUSDT', 'BANDUSDT', 'FLOKIUSDT', 'UMAUSDT', 'OCEANUSDT', 'YGGUSDT', 'LOOMUSDT',
-        'DEXEUSDT', 'XEMUSDT', 'SKLUSDT', 'MTLUSDT', 'CELRUSDT', 'BADGERUSDT', 'TRUUSDT', 'NKNUSDT', 'PHBUSDT', 'ALICEUSDT'
+        "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "SOLUSDT", "ADAUSDT", "DOGEUSDT", "AVAXUSDT", "TRXUSDT", "DOTUSDT",
+        "MATICUSDT", "SHIBUSDT", "LTCUSDT", "LINKUSDT", "BCHUSDT", "ATOMUSDT", "XLMUSDT", "HBARUSDT", "INJUSDT", "APTUSDT",
+        "PEPEUSDT", "FETUSDT", "RNDRUSDT", "TAOUSDT", "AAVEUSDT", "GRTUSDT", "ARBUSDT", "MKRUSDT", "JUPUSDT", "KASUSDT",
+        "SUIUSDT", "OPUSDT", "FLRUSDT", "LDOUSDT", "IMXUSDT", "CFXUSDT", "DYDXUSDT", "TUSDT", "AGIXUSDT", "CHZUSDT",
+        "DASHUSDT", "ZECUSDT", "ENSUSDT", "SANDUSDT", "MANAUSDT", "AXSUSDT", "1000SATSUSDT", "HYPEUSDT", "DEXEUSDT", "ZEREBROUSDT",
+        "STMXUSDT", "WLDUSDT", "RDNTUSDT", "LQTYUSDT", "OCEANUSDT", "RLCUSDT", "TUSDT", "BICOUSDT", "IDUSDT", "PORTALUSDT",
+        "ARKMUSDT", "TIAUSDT", "PYTHUSDT", "LINAUSDT", "HOOKUSDT", "BLURUSDT", "COTIUSDT", "KEYUSDT", "TRUUSDT", "MAGICUSDT",
+        "ACHUSDT", "ALPHAUSDT", "JOEUSDT", "DARUSDT", "HIGHUSDT", "SUPERUSDT", "DEXTUSDT", "MASKUSDT", "SSVUSDT", "BANDUSDT",
+        "DFIUSDT", "PHBUSDT", "BNTUSDT", "C98USDT", "DODOUSDT", "GALAUSDT", "WAVESUSDT", "SFPUSDT", "KAVAUSDT", "ILVUSDT"
     ]
+
     for symbol in symbols:
         df = get_klines(symbol)
-        message = analyze(df, symbol)
-        if message:
-            send_telegram(message)
-            print(message)
-        else:
-            print(f"{symbol}: Kein Signal.")
+        if df is not None:
+            msg = analyze(df, symbol)
+            if msg:
+                send_telegram(msg)
+                print(msg)
+            else:
+                print(f"{symbol}: Kein Signal.")
 
 def run_bot():
     while True:
@@ -129,6 +118,7 @@ def run_bot():
         time.sleep(300)
 
 if __name__ == "__main__":
-    send_telegram("🤖 Trading-Signal-Bot wurde gestartet.")
+    send_telegram("📡 Bot wurde gestartet und läuft.")
     threading.Thread(target=run_bot).start()
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host="0.0.0.0", port=8080)
+
