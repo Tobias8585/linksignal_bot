@@ -89,16 +89,13 @@ def run_bot():
     while True:
         check_all_symbols()
         time.sleep(300)
-        
-  @app.route('/')
+
+@app.route('/')
 def home():
     return "Bot läuft und empfängt Anfragen."
-
 
 if __name__ == "__main__":
     send_telegram("🚀 Bot wurde gestartet und überwacht 100 Coins.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
-
-
 
