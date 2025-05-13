@@ -86,19 +86,19 @@ def analyze(df, symbol):
     return msg if signal != "NEUTRAL" else None
 
 def check_all_symbols():
-    symbols = [ "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "SOLUSDT", "DOGEUSDT", "AVAXUSDT", "TRXUSDT", "DOTUSDT" ]  # gekürzt für Demo
+    symbols = [ "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "SOLUSDT", "DOGEUSDT" ]  # Beispielkürzung
     for symbol in symbols:
         df = get_klines(symbol)
         if df is not None:
             signal = analyze(df, symbol)
             if signal:
                 send_telegram(signal)
-                print(f"
-Telegram gesendet:
-Symbol: {symbol}
-Inhalt:
-{signal}
-")
+                print(
+                    f"Telegram gesendet:\n"
+                    f"Symbol: {symbol}\n"
+                    f"Inhalt:\n{signal}"
+                )
+
 
 def run_bot():
     while True:
