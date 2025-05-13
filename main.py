@@ -65,10 +65,11 @@ def analyze(df, symbol):
     quality = "★★★" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "★☆☆"
     icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⚡"
 
-    tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
+        tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
     sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
- msg = (
+
+    msg = (
         f"{icon} *{symbol}* Signal: *{signal}*\n"
         f"📝 Grund: {reason}\n"
         f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
@@ -77,6 +78,7 @@ def analyze(df, symbol):
         f"⭐️ Signalqualität: {quality}\n"
         f"⏰ {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
     )
+
 
     return msg if signal != "NEUTRAL" else None
 
