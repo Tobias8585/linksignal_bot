@@ -55,10 +55,10 @@ def analyze(df, symbol):
 
     signal = "NEUTRAL"
     reason = ""
-    if long_signals >= 2:
+    if long_signals >= 1:
         signal = "LONG"
         reason = f"{long_signals}/3 Kriterien für LONG erfüllt"
-    elif short_signals >= 2:
+    elif short_signals >= 1:
         signal = "SHORT"
         reason = f"{short_signals}/3 Kriterien für SHORT erfüllt"
 
