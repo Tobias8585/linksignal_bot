@@ -17,7 +17,9 @@ def send_telegram(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {'chat_id': CHAT_ID, 'text': message}
     try:
-        requests.post(url, json=payload)
+        response = requests.post(url, json=payload)
+        print("Telegram gesendet:", response.status_code)
+        time.sleep(1)  # Verzögerung zur Vermeidung von Spam
     except Exception as e:
         print("Telegram-Fehler:", e)
 
@@ -34,6 +36,7 @@ def get_klines(symbol, interval="1h", limit=100):
         df['volume'] = df['volume'].astype(float)
         df['high'] = df['high'].astype(float)
         df['low'] = df['low'].astype(float)
+        print(f"{symbol} geladen: {len(df)} Einträge")
         return df
     except Exception as e:
         print(f"Klines-Fehler bei {symbol}: {e}")
@@ -41,70 +44,63 @@ def get_klines(symbol, interval="1h", limit=100):
 
 def analyze(df, symbol):
     if df.empty:
+        print(f"{symbol}: Kein Datenframe")
         return None
-    rsi = RSIIndicator(close=df['close']).rsi().iloc[-1]
-    macd_line = MACD(close=df['close']).macd_diff().iloc[-1]
-    ema = EMAIndicator(close=df['close'], window=20).ema_indicator().iloc[-1]
-    price = df['close'].iloc[-1]
-    atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
-    volume = df['volume'].iloc[-1]
-    avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
+    try:
+        rsi = RSIIndicator(close=df['close']).rsi().iloc[-1]
+        macd_line = MACD(close=df['close']).macd_diff().iloc[-1]
+        ema = EMAIndicator(close=df['close'], window=20).ema_indicator().iloc[-1]
+        price = df['close'].iloc[-1]
+        atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
+        volume = df['volume'].iloc[-1]
+        avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
-    long_signals = sum([rsi < 35, macd_line > 0, price > ema])
-    short_signals = sum([rsi > 70, macd_line < 0, price < ema])
+        long_signals = sum([rsi < 35, macd_line > 0, price > ema])
+        short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
-    signal = "NEUTRAL"
-    reason = ""
-    if long_signals >= 1:
-        signal = "LONG"
-        reason = f"{long_signals}/3 Kriterien für LONG erfüllt"
-    elif short_signals >= 1:
-        signal = "SHORT"
-        reason = f"{short_signals}/3 Kriterien für SHORT erfüllt"
+        signal = "NEUTRAL"
+        reason = ""
+        if long_signals >= 2:
+            signal = "LONG"
+            reason = f"{long_signals}/3 Kriterien für LONG erfüllt"
+        elif short_signals >= 2:
+            signal = "SHORT"
+            reason = f"{short_signals}/3 Kriterien für SHORT erfüllt"
 
-    quality = "★★★" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "★☆☆"
-    icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⚡"
+        quality = "★★★" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "★☆☆"
+        icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⚡"
 
-    tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
-    tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
-    sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
+        tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
+        tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
+        sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
 
-    msg = (
-        f"{icon} *{symbol}* Signal: *{signal}*\n"
-        f"📝 Grund: {reason}\n"
-        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
-        f"💰 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
-        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
-        f"⭐️ Signalqualität: {quality}\n"
-        f"⏰ {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
-    )
-
-
-    return msg if signal != "NEUTRAL" else None
+        msg = (
+            f"{icon} *{symbol}* Signal: *{signal}*\n"
+            f"📝 Grund: {reason}\n"
+            f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
+            f"💰 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
+            f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
+            f"⭐️ Signalqualität: {quality}\n"
+            f"⏰ {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+        )
+        if signal != "NEUTRAL":
+            print(f"{symbol}: Signal erkannt ({signal})")
+        return msg if signal != "NEUTRAL" else None
+    except Exception as e:
+        print(f"Analysefehler bei {symbol}: {e}")
+        return None
 
 def check_all_symbols():
-    symbols = [  # Liste mit ca. 150 Coins
-        "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "SOLUSDT", "DOGEUSDT", "AVAXUSDT", "TRXUSDT", "DOTUSDT",
-        "MATICUSDT", "LTCUSDT", "SHIBUSDT", "LINKUSDT", "ATOMUSDT", "UNIUSDT", "XLMUSDT", "HBARUSDT", "APTUSDT", "ARBUSDT",
-        "VETUSDT", "ICPUSDT", "NEARUSDT", "FILUSDT", "INJUSDT", "RENDERUSDT", "QNTUSDT", "LDOUSDT", "EGLDUSDT", "AAVEUSDT",
-        "SANDUSDT", "MANAUSDT", "THETAUSDT", "AXSUSDT", "XTZUSDT", "CHZUSDT", "GRTUSDT", "ENSUSDT", "KAVAUSDT", "TWTUSDT",
-        "FXSUSDT", "RLCUSDT", "PEPEUSDT", "SUIUSDT", "FLUXUSDT", "CELOUSDT", "STXUSDT", "COMPUSDT", "ZILUSDT", "ZENUSDT",
-        "YFIUSDT", "DYDXUSDT", "SNXUSDT", "BANDUSDT", "LRCUSDT", "DASHUSDT", "CRVUSDT", "KSMUSDT", "ALICEUSDT", "GALAUSDT",
-        "ONEUSDT", "ARPAUSDT", "RNDRUSDT", "TOMOUSDT", "OCEANUSDT", "OMGUSDT", "CKBUSDT", "BLZUSDT", "ILVUSDT", "YGGUSDT",
-        "BICOUSDT", "JASMYUSDT", "JOEUSDT", "HOOKUSDT", "HIGHUSDT", "XNOUSDT", "LOOMUSDT", "TRUUSDT", "PERPUSDT", "BAKEUSDT",
-        "STMXUSDT", "ACHUSDT", "NKNUSDT", "ALPHAUSDT", "CTSIUSDT", "ANKRUSDT", "SKLUSDT", "ZRXUSDT", "AGIXUSDT", "PLAUSDT",
-        "API3USDT", "BELUSDT", "MOVRUSDT", "BNTUSDT", "DENTUSDT", "GLMRUSDT", "DEGOUSDT", "KNCUSDT", "QUICKUSDT", "TRBUSDT",
-        "HYPEUSDT", "TAOUSDT", "KASUSDT", "POLUSDT", "JUPUSDT", "MKRUSDT", "DEXEUSDT", "SOLAYERUSDT", "SXTUSDT", "INITUSDT",
-        "ZEREBROUSDT", "JTOUSDT", "PYTHUSDT", "ONDOUSDT", "ENAUSDT", "TNSRUSDT", "WUSDT", "NOTUSDT", "PIXELUSDT", "AEVOUSDT",
-        "TURBOUSDT", "MOGUSDT", "DYMUSDT", "PORTALUSDT", "1000SATSUSDT"
-    ]
+    symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]  # Für Diagnose nur 3 Coins
+    count = 0
     for symbol in symbols:
         df = get_klines(symbol)
         if df is not None:
             signal = analyze(df, symbol)
             if signal:
                 send_telegram(signal)
-                print(signal)
+            count += 1
+    print(f"{count} Coins geprüft")
 
 def run_bot():
     while True:
@@ -113,10 +109,9 @@ def run_bot():
 
 @app.route('/')
 def home():
-    return "Bot läuft und empfängt Anfragen."
+    return "Diagnose-Bot läuft."
 
 if __name__ == "__main__":
-    send_telegram("🚀 Bot wurde gestartet und überwacht 150 Coins mit gelockerten Bedingungen.")
+    send_telegram("🧪 Diagnose-Bot gestartet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
-
