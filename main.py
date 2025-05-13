@@ -109,13 +109,13 @@ def check_all_symbols():
     "KLAYUSDT", "OXTUSDT", "KEYUSDT", "ACMUSDT", "WAVESUSDT", "XRP3LUSDT"
 
     ]
-   for symbol in symbols:
-    df = get_klines(symbol)
-    if df is not None:
-        signal = analyze(df, symbol)
-        if signal:
-            send_telegram(signal)
-            print(f"\nTelegram gesendet:\nSymbol: {symbol}\nInhalt:\n{signal}\n")
+for symbol in symbols:
+df = get_klines(symbol)
+if df is not None:
+    signal = analyze(df, symbol)
+    if signal:
+        send_telegram(signal)
+        print(f"\nTelegram gesendet:\nSymbol: {symbol}\nInhalt:\n{signal}\n")
 
 
 def run_bot():
