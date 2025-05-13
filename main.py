@@ -50,14 +50,17 @@ def analyze(df, symbol):
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
+    long_signals = sum([rsi < 35, macd_line > 0, price > ema])
+    short_signals = sum([rsi > 70, macd_line < 0, price < ema])
+
     signal = "NEUTRAL"
     reason = ""
-    if rsi < 35 and macd_line > 0 and price > ema:
+    if long_signals >= 2:
         signal = "LONG"
-        reason = "RSI < 35, MACD > 0, Preis > EMA20"
-    elif rsi > 70 and macd_line < 0 and price < ema:
+        reason = f"{long_signals}/3 Kriterien für LONG erfüllt"
+    elif short_signals >= 2:
         signal = "SHORT"
-        reason = "RSI > 70, MACD < 0, Preis < EMA20"
+        reason = f"{short_signals}/3 Kriterien für SHORT erfüllt"
 
     quality = "★★★" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "★☆☆"
     icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⚡"
@@ -67,18 +70,38 @@ def analyze(df, symbol):
     sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
 
     msg = (
-    f"{icon} *{symbol}* Signal: *{signal}*\n"
-    f"📝 Grund: {reason}\n"
-    f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
-    f"💰 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
-    f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
-    f"⭐️ Signalqualität: {quality}\n"
-    f"⏰ {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
-)
+        f"{icon} *{symbol}* Signal: *{signal}*
+"
+        f"📝 Grund: {reason}
+"
+        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}
+"
+        f"💰 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}
+"
+        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}
+"
+        f"⭐️ Signalqualität: {quality}
+"
+        f"⏰ {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+    )
     return msg if signal != "NEUTRAL" else None
 
 def check_all_symbols():
-    symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT', 'SOLUSDT', 'DOGEUSDT', 'AVAXUSDT', 'TRXUSDT', 'DOTUSDT', 'MATICUSDT', 'LTCUSDT', 'SHIBUSDT', 'LINKUSDT', 'ATOMUSDT', 'UNIUSDT', 'XLMUSDT', 'HBARUSDT', 'APTUSDT', 'ARBUSDT', 'VETUSDT', 'ICPUSDT', 'NEARUSDT', 'FILUSDT', 'INJUSDT', 'RENDERUSDT', 'QNTUSDT', 'LDOUSDT', 'EGLDUSDT', 'AAVEUSDT', 'SANDUSDT', 'MANAUSDT', 'THETAUSDT', 'AXSUSDT', 'XTZUSDT', 'CHZUSDT', 'GRTUSDT', 'ENSUSDT', 'KAVAUSDT', 'TWTUSDT', 'FXSUSDT', 'RLCUSDT', 'PEPEUSDT', 'SUIUSDT', 'FLUXUSDT', 'CELOUSDT', 'STXUSDT', 'COMPUSDT', 'ZILUSDT', 'ZENUSDT', 'YFIUSDT', 'DYDXUSDT', 'SNXUSDT', 'BANDUSDT', 'LRCUSDT', 'DASHUSDT', 'CRVUSDT', 'KSMUSDT', 'ALICEUSDT', 'GALAUSDT', 'ONEUSDT', 'ARPAUSDT', 'RNDRUSDT', 'TOMOUSDT', 'OCEANUSDT', 'OMGUSDT', 'CKBUSDT', 'BLZUSDT', 'ILVUSDT', 'YGGUSDT', 'BICOUSDT', 'JASMYUSDT', 'JOEUSDT', 'HOOKUSDT', 'HIGHUSDT', 'XNOUSDT', 'LOOMUSDT', 'TRUUSDT', 'PERPUSDT', 'BAKEUSDT', 'STMXUSDT', 'ACHUSDT', 'NKNUSDT', 'ALPHAUSDT', 'CTSIUSDT', 'ANKRUSDT', 'SKLUSDT', 'ZRXUSDT', 'AGIXUSDT', 'PLAUSDT', 'API3USDT', 'BELUSDT', 'MOVRUSDT', 'BNTUSDT', 'DENTUSDT', 'GLMRUSDT', 'DEGOUSDT', 'KNCUSDT', 'QUICKUSDT', 'TRBUSDT']
+    symbols = [  # Liste mit ca. 150 Coins
+        "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "SOLUSDT", "DOGEUSDT", "AVAXUSDT", "TRXUSDT", "DOTUSDT",
+        "MATICUSDT", "LTCUSDT", "SHIBUSDT", "LINKUSDT", "ATOMUSDT", "UNIUSDT", "XLMUSDT", "HBARUSDT", "APTUSDT", "ARBUSDT",
+        "VETUSDT", "ICPUSDT", "NEARUSDT", "FILUSDT", "INJUSDT", "RENDERUSDT", "QNTUSDT", "LDOUSDT", "EGLDUSDT", "AAVEUSDT",
+        "SANDUSDT", "MANAUSDT", "THETAUSDT", "AXSUSDT", "XTZUSDT", "CHZUSDT", "GRTUSDT", "ENSUSDT", "KAVAUSDT", "TWTUSDT",
+        "FXSUSDT", "RLCUSDT", "PEPEUSDT", "SUIUSDT", "FLUXUSDT", "CELOUSDT", "STXUSDT", "COMPUSDT", "ZILUSDT", "ZENUSDT",
+        "YFIUSDT", "DYDXUSDT", "SNXUSDT", "BANDUSDT", "LRCUSDT", "DASHUSDT", "CRVUSDT", "KSMUSDT", "ALICEUSDT", "GALAUSDT",
+        "ONEUSDT", "ARPAUSDT", "RNDRUSDT", "TOMOUSDT", "OCEANUSDT", "OMGUSDT", "CKBUSDT", "BLZUSDT", "ILVUSDT", "YGGUSDT",
+        "BICOUSDT", "JASMYUSDT", "JOEUSDT", "HOOKUSDT", "HIGHUSDT", "XNOUSDT", "LOOMUSDT", "TRUUSDT", "PERPUSDT", "BAKEUSDT",
+        "STMXUSDT", "ACHUSDT", "NKNUSDT", "ALPHAUSDT", "CTSIUSDT", "ANKRUSDT", "SKLUSDT", "ZRXUSDT", "AGIXUSDT", "PLAUSDT",
+        "API3USDT", "BELUSDT", "MOVRUSDT", "BNTUSDT", "DENTUSDT", "GLMRUSDT", "DEGOUSDT", "KNCUSDT", "QUICKUSDT", "TRBUSDT",
+        "HYPEUSDT", "TAOUSDT", "KASUSDT", "POLUSDT", "JUPUSDT", "MKRUSDT", "DEXEUSDT", "SOLAYERUSDT", "SXTUSDT", "INITUSDT",
+        "ZEREBROUSDT", "JTOUSDT", "PYTHUSDT", "ONDOUSDT", "ENAUSDT", "TNSRUSDT", "WUSDT", "NOTUSDT", "PIXELUSDT", "AEVOUSDT",
+        "TURBOUSDT", "MOGUSDT", "DYMUSDT", "PORTALUSDT", "1000SATSUSDT"
+    ]
     for symbol in symbols:
         df = get_klines(symbol)
         if df is not None:
@@ -97,7 +120,7 @@ def home():
     return "Bot läuft und empfängt Anfragen."
 
 if __name__ == "__main__":
-    send_telegram("🚀 Bot wurde gestartet und überwacht 100 Coins.")
+    send_telegram("🚀 Bot wurde gestartet und überwacht 150 Coins mit gelockerten Bedingungen.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
 
