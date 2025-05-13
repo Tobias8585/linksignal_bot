@@ -45,7 +45,7 @@ def analyze(df, symbol):
     rsi = RSIIndicator(close=df['close']).rsi().iloc[-1]
     macd_line = MACD(close=df['close']).macd_diff().iloc[-1]
     ema = EMAIndicator(close=df['close'], window=20).ema_indicator().iloc[-1]
-         print(f"Analysiere {symbol.upper()}... RSI={rsi:.2f}, MACD={macd_line:.4f}, EMA={ema:.2f}")
+            print(f"Analysiere {symbol.upper()}... RSI={rsi:.2f}, MACD={macd_line:.4f}, EMA={ema:.2f}")
     price = df['close'].iloc[-1]
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
     volume = df['volume'].iloc[-1]
