@@ -69,21 +69,16 @@ def analyze(df, symbol):
     tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
     sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
 
-    msg = (
-        f"{icon} *{symbol}* Signal: *{signal}*
-"
-        f"📝 Grund: {reason}
-"
-        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}
-"
-        f"💰 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}
-"
-        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}
-"
-        f"⭐️ Signalqualität: {quality}
-"
-        f"⏰ {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
-    )
+   msg = (
+    f"{icon} *{symbol}* Signal: *{signal}*\n"
+    f"📝 Grund: {reason}\n"
+    f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
+    f"💰 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
+    f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
+    f"⭐️ Signalqualität: {quality}\n"
+    f"⏰ {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+)
+
     return msg if signal != "NEUTRAL" else None
 
 def check_all_symbols():
