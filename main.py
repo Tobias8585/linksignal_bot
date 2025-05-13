@@ -65,7 +65,7 @@ def analyze(df, symbol):
     quality = "★★★" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "★☆☆"
     icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⚡"
 
-        tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
+    tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
     sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
 
