@@ -44,34 +44,6 @@ def analyze(df, symbol):
         print(f"{symbol}: Zu wenig Daten für Analyse ({0 if df is None else len(df)} Kerzen)", flush=True)
         return None
 
-    # Indikatoren berechnen
-    rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
-    ema = df['close'].ewm(span=20).mean().iloc[-1]
-    macd_line = MACD(df['close']).macd().iloc[-1]
-    price = df['close'].iloc[-1]
-    atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
-    volume = df['volume'].iloc[-1]
-    avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
-
-  def analyze(df, symbol):
-    if df is None or len(df) < 50:
-        print(f"{symbol}: Zu wenig Daten für Analyse ({0 if df is None else len(df)} Kerzen)", flush=True)
-        return None
-
-    # Indikatoren berechnen
-    rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
-    ema = df['close'].ewm(span=20).mean().iloc[-1]
-    macd_line = MACD(df['close']).macd().iloc[-1]
-    price = df['close'].iloc[-1]
-    atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
-    volume = df['volume'].iloc[-1]
-    avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
-
-def analyze(df, symbol):
-    if df is None or len(df) < 50:
-        print(f"{symbol}: Zu wenig Daten für Analyse ({0 if df is None else len(df)} Kerzen)", flush=True)
-        return None
-
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     macd_line = MACD(df['close']).macd().iloc[-1]
@@ -107,30 +79,25 @@ def analyze(df, symbol):
     else:
         reason = "Zu wenig Übereinstimmung für ein Signal"
 
-    return signal
-
-
     if signal == "NEUTRAL":
         print(f"{symbol}: Kein Signal – Grund: {reason}", flush=True)
         return None
-
-    return f"**{symbol}**\nSignal: {signal}\nGrund: {reason}\nRSI: {rsi:.2f}, MACD: {macd_line:.4f}, EMA: {ema:.4f}, Preis: {price:.4f}"
-
-
-
-
-
 
     tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
     sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
 
     msg = (
-        f"🔔 *{symbol}* Signal: *{signal}*\n"
-        f"🧠 Grund: {reason}\n"
-        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
-        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
-        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
+        f"🔔 *{symbol}* Signal: *{signal}*
+"
+        f"🧠 Grund: {reason}
+"
+        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}
+"
+        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}
+"
+        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}
+"
         f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
     )
 
@@ -142,9 +109,6 @@ def analyze(df, symbol):
 
     return msg
 
-
-
-# alle Symbole unverändert übernommen
 def check_all_symbols():
     symbols = [  # alle deine originalen Coins – keine Änderung hier
         "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "SOLUSDT", "DOGEUSDT", "AVAXUSDT", "TRXUSDT", "DOTUSDT",
@@ -169,7 +133,6 @@ def check_all_symbols():
         "JAMUSDT", "ARKMUSDT", "NTRNUSDT", "ETHFIUSDT", "ALTUSDT", "BEAMUSDT", "STORJUSDT", "TOMO3SUSDT", "MANTAUSDT",
         "XAIUSDT", "NFPUSDT", "MAVUSDT", "ZKUSDT", "PYRUSDT", "BICO3LUSDT", "SANTOSUSDT", "JSTUSDT", "LOKAUSDT", "GNSUSDT"
     ]
-
     for symbol in symbols:
         df = get_klines(symbol)
         if df is not None:
@@ -194,4 +157,3 @@ if __name__ == "__main__":
     print("Telegram-Startnachricht wurde gesendet.", flush=True)
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
-
