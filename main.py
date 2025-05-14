@@ -66,22 +66,21 @@ print(
 signal = "NEUTRAL"
 reason = ""
 
+if long_signals >= 2 and long_signals >= short_signals:
+    signal = "LONG"
+    reason = "Mindestens 2 Long-Kriterien erfüllt"
+elif short_signals >= 2 and short_signals >= long_signals:
+    signal = "SHORT"
+    reason = "Mindestens 2 Short-Kriterien erfüllt"
+elif long_signals == 1 and short_signals == 0:
+    signal = "LONG"
+    reason = "1 Long-Kriterium ohne Short-Signale"
+elif short_signals == 1 and long_signals == 0:
+    signal = "SHORT"
+    reason = "1 Short-Kriterium ohne Long-Signale"
+else:
+    reason = "Zu wenig Übereinstimmung für ein Signal"
 
-
-    if long_signals >= 2 and long_signals >= short_signals:
-        signal = "LONG"
-        reason = "Mindestens 2 Long-Kriterien erfüllt"
-    elif short_signals >= 2 and short_signals >= long_signals:
-        signal = "SHORT"
-        reason = "Mindestens 2 Short-Kriterien erfüllt"
-    elif long_signals == 1 and short_signals == 0:
-        signal = "LONG"
-        reason = "1 Long-Kriterium ohne Short-Signale"
-    elif short_signals == 1 and long_signals == 0:
-        signal = "SHORT"
-        reason = "1 Short-Kriterium ohne Long-Signale"
-    else:
-        reason = "Zu wenig Übereinstimmung für ein Signal"
 
     if signal == "NEUTRAL":
         print(
