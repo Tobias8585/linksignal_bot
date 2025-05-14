@@ -60,27 +60,24 @@ def analyze(df, symbol):
     short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
     # Log-Ausgabe mit allen wichtigen Informationen
-    print(
+       print(
         f"{symbol}: "
         f"Long-Signals={long_signals}, Short-Signals={short_signals}, "
         f"RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}",
         flush=True
     )
 
-
-            signal = "NEUTRAL"
+    signal = "NEUTRAL"
     reason = ""
 
     if signal == "NEUTRAL":
         print(f"{symbol}: Kein Signal – Grund: {reason}", flush=True)
         return None
 
-
-
-
     if long_signals >= 2 and long_signals >= short_signals:
         signal = "LONG"
         reason = "Mindestens 2 Long-Kriterien erfüllt"
+
     elif short_signals >= 2 and short_signals >= long_signals:
         signal = "SHORT"
         reason = "Mindestens 2 Short-Kriterien erfüllt"
