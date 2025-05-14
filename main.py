@@ -68,11 +68,10 @@ def analyze(df, symbol):
         reason = "1 Short-Kriterium erfüllt, kein Long-Kriterium"
     else:
         reason = f"Zu wenig klare Signale – Long={long_signals}, Short={short_signals}"
-
-    if signal == "NEUTRAL":
         print(
             f"{symbol}: Kein Signal – RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
-            f"Long={long_signals}, Short={short_signals} | Grund: {reason}", flush=True
+            f"Long={long_signals}, Short={short_signals} | Grund: {reason}",
+            flush=True
         )
         return None
 
@@ -81,24 +80,22 @@ def analyze(df, symbol):
     sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
 
     msg = (
-        f"🔔 *{symbol}* Signal: *{signal}*
-"
-        f"🧠 Grund: {reason}
-"
-        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}
-"
-        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}
-"
-        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}
-"
+        f"🔔 *{symbol}* Signal: *{signal}*\n"
+        f"🧠 Grund: {reason}\n"
+        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
+        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
+        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
         f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
     )
 
     print(
         f"{symbol}: SIGNAL={signal} | RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
-        f"Vol={volume:.0f}/Ø{avg_volume:.0f}, TP1={tp1:.4f}, SL={sl:.4f}", flush=True
+        f"Vol={volume:.0f}/Ø{avg_volume:.0f}, TP1={tp1:.4f}, SL={sl:.4f}",
+        flush=True
     )
+
     return msg
+
 
 # alle Symbole unverändert übernommen
 def check_all_symbols():
