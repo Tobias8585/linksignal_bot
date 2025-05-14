@@ -44,11 +44,16 @@ def analyze(df, symbol):
         print(f"{symbol}: Zu wenig Daten für Analyse ({0 if df is None else len(df)} Kerzen)", flush=True)
         return None
 
+    # Indikatoren berechnen
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     macd_line = MACD(df['close']).macd().iloc[-1]
     price = df['close'].iloc[-1]
+    atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
+    volume = df['volume'].iloc[-1]
+    avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
+    # Signalbedingungen
     long_signals = sum([rsi < 65, macd_line > -1, price > ema])
     short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
@@ -77,13 +82,10 @@ def analyze(df, symbol):
         reason = "Zu wenig Übereinstimmung für ein Signal"
 
     if signal == "NEUTRAL":
-        print(
-            f"{symbol}: Kein Signal – RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
-            f"Long={long_signals}, Short={short_signals} | Grund: {reason}",
-            flush=True
-        )
+        print(f"{symbol}: Kein Signal | Grund: {reason}", flush=True)
 
-    return f"{symbol} → {signal} ({reason})" if signal != "NEUTRAL" else None
+    return f"{symbol} | Signal: *{signal}*\nGrund: {reason}" if signal != "NEUTRAL" else None
+
 
 
 
