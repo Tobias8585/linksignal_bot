@@ -109,7 +109,7 @@ def check_all_symbols():
     "JAMUSDT", "ARKMUSDT", "NTRNUSDT", "ETHFIUSDT", "ALTUSDT", "BEAMUSDT", "STORJUSDT", "TOMO3SUSDT", "MANTAUSDT",
     "XAIUSDT", "NFPUSDT", "MAVUSDT", "ZKUSDT", "PYRUSDT", "BICO3LUSDT", "SANTOSUSDT", "JSTUSDT", "LOKAUSDT", "GNSUSDT"
  ]  # Beispielkürzung
-    for symbol in symbols:
+     for symbol in symbols:
         df = get_klines(symbol)
         if df is not None:
             signal = analyze(df, symbol)
@@ -120,6 +120,10 @@ def check_all_symbols():
                     f"Symbol: {symbol}\n"
                     f"Inhalt:\n{signal}"
                 )
+            else:
+                print(f"Kein Signal für: {symbol}")
+        else:
+            print(f"Keine Daten erhalten für: {symbol}")
 
 
 def run_bot():
