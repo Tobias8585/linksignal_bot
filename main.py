@@ -55,6 +55,15 @@ def analyze(df, symbol):
     long_signals = sum([rsi < 65, macd_line > -1, price > ema])
     short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
+
+print(
+    f"{symbol}: "
+    f"Long-Signals={long_signals}, Short-Signals={short_signals}, "
+    f"RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}",
+    flush=True
+)
+
+
     signal = "NEUTRAL"
     reason = ""
 
