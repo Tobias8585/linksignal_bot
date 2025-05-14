@@ -88,7 +88,7 @@ def analyze(df, symbol):
     sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
 
     msg = (
-        f"🔔 *{symbol}* Signal: *{signal}*
+        f"🔔 *{symbol}* Signal: *{signal}*"
 "
         f"🧠 Grund: {reason}
 "
