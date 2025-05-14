@@ -13,13 +13,20 @@ CHAT_ID = os.getenv("CHAT_ID")
 
 app = Flask(__name__)
 
+log_file = open("log.txt", "a", encoding="utf-8")
+
+def log_print(message):
+    print(message, flush=True)
+    log_file.write(f"{message}\n")
+    log_file.flush()
+
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {'chat_id': CHAT_ID, 'text': message, 'parse_mode': 'Markdown'}
     try:
         requests.post(url, json=payload)
     except Exception as e:
-        print("Telegram-Fehler:", e)
+        log_print("Telegram-Fehler: " + str(e))
 
 def get_klines(symbol, interval="1m", limit=100):
     url = f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}"
@@ -36,18 +43,18 @@ def get_klines(symbol, interval="1m", limit=100):
         df['low'] = df['low'].astype(float)
         return df
     except Exception as e:
-        print(f"Klines-Fehler bei {symbol}: {e}")
+        log_print(f"Klines-Fehler bei {symbol}: {e}")
         return None
 
 def analyze(df, symbol):
     if df is None or len(df) < 50:
-        print(f"{symbol}: Analyse übersprungen – ungenügende oder fehlerhafte Daten ({0 if df is None else len(df)} Kerzen)", flush=True)
+        log_print(f"{symbol}: Analyse übersprungen – ungenügende oder fehlerhafte Daten ({0 if df is None else len(df)} Kerzen)")
         return None
 
     required_columns = ['close', 'high', 'low', 'volume']
     for col in required_columns:
         if col not in df.columns:
-            print(f"{symbol}: Analyse übersprungen – fehlende Spalte: {col}", flush=True)
+            log_print(f"{symbol}: Analyse übersprungen – fehlende Spalte: {col}")
             return None
 
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
@@ -61,11 +68,9 @@ def analyze(df, symbol):
     long_signals = sum([rsi < 65, macd_line > -1, price > ema])
     short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
-    print(
-        f"{symbol}: "
-        f"Long-Signals={long_signals}, Short-Signals={short_signals}, "
-        f"RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}",
-        flush=True
+    log_print(
+        f"{symbol}: Long-Signals={long_signals}, Short-Signals={short_signals}, "
+        f"RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}"
     )
 
     signal = "NEUTRAL"
@@ -73,8 +78,8 @@ def analyze(df, symbol):
 
     if long_signals < 2 and short_signals < 2:
         reason = f"Zu wenig klare Signale – Long={long_signals}, Short={short_signals}"
-        print(f"{symbol}: Kein Signal – Grund: {reason}", flush=True)
-        print(f"{symbol}: RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}", flush=True)
+        log_print(f"{symbol}: Kein Signal – Grund: {reason}")
+        log_print(f"{symbol}: RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}")
         return None
 
     if long_signals >= 2 and long_signals >= short_signals:
@@ -103,10 +108,9 @@ def analyze(df, symbol):
         f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
     )
 
-    print(
+    log_print(
         f"{symbol}: SIGNAL={signal} | Grund={reason} | RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
-        f"Vol={volume:.0f}/Ø{avg_volume:.0f}, TP1={tp1:.4f}, TP2={tp2:.4f}, SL={sl:.4f}",
-        flush=True
+        f"Vol={volume:.0f}/Ø{avg_volume:.0f}, TP1={tp1:.4f}, TP2={tp2:.4f}, SL={sl:.4f}"
     )
 
     return msg
@@ -125,7 +129,7 @@ def check_all_symbols():
         df = get_klines(symbol)
 
         if df is None or len(df) == 0:
-            print(f"{symbol}: Erster Datenversuch fehlgeschlagen – versuche erneut in 2 Sekunden", flush=True)
+            log_print(f"{symbol}: Erster Datenversuch fehlgeschlagen – versuche erneut in 2 Sekunden")
             time.sleep(2)
             df = get_klines(symbol)
 
@@ -134,17 +138,17 @@ def check_all_symbols():
             if signal:
                 send_telegram(signal)
                 signals += 1
-                print(f"Telegram gesendet: {symbol}\nInhalt: {signal}", flush=True)
+                log_print(f"Telegram gesendet: {symbol}\nInhalt: {signal}")
             else:
                 skipped += 1
         else:
             nodata += 1
-            print(f"{symbol}: Keine Daten vom Server", flush=True)
+            log_print(f"{symbol}: Keine Daten vom Server")
 
         time.sleep(0.3)
 
-    print("\n--- Zusammenfassung ---", flush=True)
-    print(f"Gesamt: {total} | Signale: {signals} | Übersprungen: {skipped} | Keine Daten: {nodata}\n", flush=True)
+    log_print("\n--- Zusammenfassung ---")
+    log_print(f"Gesamt: {total} | Signale: {signals} | Übersprungen: {skipped} | Keine Daten: {nodata}\n")
 
     if signals == 0:
         send_telegram("🧘 Kein Signal bei allen geprüften Coins – Markt aktuell ruhig.")
@@ -160,7 +164,7 @@ def home():
 
 if __name__ == "__main__":
     send_telegram("🚀 Bot wurde gestartet und überwacht Coins mit gelockerten Bedingungen.")
-    print("Telegram-Startnachricht wurde gesendet.", flush=True)
+    log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
 
