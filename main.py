@@ -40,9 +40,10 @@ def get_klines(symbol, interval="1m", limit=100):
         return None
 
 def analyze(df, symbol):
-    if len(df) < 50:
-        print(f"{symbol}: Zu wenig Daten für Analyse ({len(df)} Kerzen)", flush=True)
+    if df is None or len(df) < 50:
+        print(f"{symbol}: Zu wenig Daten für Analyse ({0 if df is None else len(df)} Kerzen)", flush=True)
         return None
+
 
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
