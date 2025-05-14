@@ -95,7 +95,7 @@ def analyze(df, symbol):
         signal = "SHORT"
         reason = "1 Short-Kriterium erfüllt, kein Long-Kriterium"
 
-    # Vorschlag 11 + 12: Sterne + Text-Signalstärke
+    # Vorschlag 11–13: Kriterien, Signalstärke, Breakout
     criteria_count = sum([
         (rsi < 65 if signal == "LONG" else rsi > 70),
         (macd_line > -1 if signal == "LONG" else macd_line < 0),
@@ -104,13 +104,23 @@ def analyze(df, symbol):
     if volume > avg_volume * 1.3:
         criteria_count += 1
 
-    if criteria_count >= 4:
+    # Breakout-Check
+    high_last_20 = df['high'].iloc[-21:-1].max()
+    low_last_20 = df['low'].iloc[-21:-1].min()
+    is_breakout = (signal == "LONG" and price > high_last_20) or \
+                  (signal == "SHORT" and price < low_last_20)
+
+    breakout_text = "🚀 Breakout erkannt!" if is_breakout else ""
+    if is_breakout:
+        criteria_count += 1
+
+    if criteria_count >= 5:
         stars = "★★★"
         signal_strength = "🟢 Sehr starkes Signal"
-    elif criteria_count == 3:
+    elif criteria_count == 4:
         stars = "★★"
         signal_strength = "🟡 Gutes Signal"
-    elif criteria_count == 2:
+    elif criteria_count == 3:
         stars = "★"
         signal_strength = "🟠 Schwaches Signal"
     else:
@@ -124,6 +134,7 @@ def analyze(df, symbol):
     msg = (
         f"🔔 *{symbol}* Signal: *{signal}* {stars}\n"
         f"{signal_strength}\n"
+        f"{breakout_text}\n"
         f"🧠 Grund: {reason}\n"
         f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
         f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
@@ -133,7 +144,7 @@ def analyze(df, symbol):
 
     log_print(
         f"{symbol}: SIGNAL={signal} | Grund={reason} | Sterne={stars} | Signalstärke={signal_strength} | "
-        f"RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
+        f"Breakout={is_breakout} | RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
         f"Vol={volume:.0f}/Ø{avg_volume:.0f}, TP1={tp1:.4f}, TP2={tp2:.4f}, SL={sl:.4f}"
     )
 
