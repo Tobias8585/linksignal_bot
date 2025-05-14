@@ -30,26 +30,29 @@ def send_telegram(message):
 
 def get_klines(symbol, interval="1m", limit=5):
     url = f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}"
-    try:
-        data = requests.get(url).json()
-        df = pd.DataFrame(data, columns=[
-            'timestamp', 'open', 'high', 'low', 'close', 'volume',
-            'close_time', 'quote_asset_volume', 'number_of_trades',
-            'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
-        ])
-        df['close'] = df['close'].astype(float)
-        df['volume'] = df['volume'].astype(float)
-        df['high'] = df['high'].astype(float)
-        df['low'] = df['low'].astype(float)
-        return df
-    except Exception as e:
-        log_print(f"Klines-Fehler bei {symbol}: {e}")
-        return None
+    for attempt in range(3):
+        try:
+            response = requests.get(url, timeout=5)
+            data = response.json()
+            if isinstance(data, list) and len(data) > 0:
+                df = pd.DataFrame(data, columns=[
+                    'timestamp', 'open', 'high', 'low', 'close', 'volume',
+                    'close_time', 'quote_asset_volume', 'number_of_trades',
+                    'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
+                ])
+                df['close'] = df['close'].astype(float)
+                df['volume'] = df['volume'].astype(float)
+                df['high'] = df['high'].astype(float)
+                df['low'] = df['low'].astype(float)
+                return df
+            else:
+                log_print(f"{symbol}: Leere Datenantwort (Versuch {attempt + 1}/3)")
+        except Exception as e:
+            log_print(f"{symbol}: API-Fehler (Versuch {attempt + 1}/3): {e}")
+        time.sleep(2)
+    return None
 
-def analyze(df, symbol):
-    if df is None or len(df) < 50:
-        log_print(f"{symbol}: Analyse übersprungen – ungenügende oder fehlerhafte Daten ({0 if df is None else len(df)} Kerzen)")
-        return None
+
 
     required_columns = ['close', 'high', 'low', 'volume']
     for col in required_columns:
