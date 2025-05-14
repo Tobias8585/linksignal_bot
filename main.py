@@ -48,39 +48,33 @@ def analyze(df, symbol):
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     macd_line = MACD(df['close']).macd().iloc[-1]
     price = df['close'].iloc[-1]
-    atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
-    volume = df['volume'].iloc[-1]
-    avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
     long_signals = sum([rsi < 65, macd_line > -1, price > ema])
     short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
+    print(
+        f"{symbol}: Long-Signals={long_signals}, Short-Signals={short_signals}, "
+        f"RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}",
+        flush=True
+    )
 
-print(
-    f"{symbol}: "
-    f"Long-Signals={long_signals}, Short-Signals={short_signals}, "
-    f"RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}",
-    flush=True
-)
+    signal = "NEUTRAL"
+    reason = ""
 
-signal = "NEUTRAL"
-reason = ""
-
-if long_signals >= 2 and long_signals >= short_signals:
-    signal = "LONG"
-    reason = "Mindestens 2 Long-Kriterien erfüllt"
-elif short_signals >= 2 and short_signals >= long_signals:
-    signal = "SHORT"
-    reason = "Mindestens 2 Short-Kriterien erfüllt"
-elif long_signals == 1 and short_signals == 0:
-    signal = "LONG"
-    reason = "1 Long-Kriterium ohne Short-Signale"
-elif short_signals == 1 and long_signals == 0:
-    signal = "SHORT"
-    reason = "1 Short-Kriterium ohne Long-Signale"
-else:
-    reason = "Zu wenig Übereinstimmung für ein Signal"
-
+    if long_signals >= 2 and long_signals >= short_signals:
+        signal = "LONG"
+        reason = "Mindestens 2 Long-Kriterien erfüllt"
+    elif short_signals >= 2 and short_signals >= long_signals:
+        signal = "SHORT"
+        reason = "Mindestens 2 Short-Kriterien erfüllt"
+    elif long_signals == 1 and short_signals == 0:
+        signal = "LONG"
+        reason = "1 Long-Kriterium ohne Short-Signale"
+    elif short_signals == 1 and long_signals == 0:
+        signal = "SHORT"
+        reason = "1 Short-Kriterium ohne Long-Signale"
+    else:
+        reason = "Zu wenig Übereinstimmung für ein Signal"
 
     if signal == "NEUTRAL":
         print(
@@ -89,7 +83,8 @@ else:
             flush=True
         )
 
-    return signal if signal != "NEUTRAL" else None
+    return f"{symbol} → {signal} ({reason})" if signal != "NEUTRAL" else None
+
 
 
 
