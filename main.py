@@ -46,7 +46,6 @@ def analyze(df, symbol):
     rsi = RSIIndicator(close=df['close']).rsi().iloc[-1]
     macd_line = MACD(close=df['close']).macd_diff().iloc[-1]
     ema = EMAIndicator(close=df['close'], window=20).ema_indicator().iloc[-1]
-    print(f"Analysiere {symbol.upper()}... RSI={rsi:.2f}, MACD={macd_line:.4f}, EMA={ema:.2f}")
 
     price = df['close'].iloc[-1]
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
@@ -65,7 +64,7 @@ def analyze(df, symbol):
         signal = "SHORT"
         reason = f"{short_signals}/3 Kriterien für SHORT erfüllt"
 
-    quality = "★★★" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "★☆☆"
+    quality = "⭐⭐⭐" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "⭐⭐"
     icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⚡"
 
     tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
@@ -73,17 +72,19 @@ def analyze(df, symbol):
     sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
 
     msg = (
-    f"{icon} *{symbol}* Signal: *{signal}*\n"
-    f"📝 Grund: {reason}\n"
-    f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
-    f"💰 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
-    f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
-    f"⭐️ Signalqualität: {quality}\n"
-    f"⏰ {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
-)
+        f"{icon} *{symbol}* Signal: *{signal}*\n"
+        f"📝 Grund: {reason}\n"
+        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
+        f"💰 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
+        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
+        f"⭐️ Signalqualität: {quality}\n"
+        f"⏰ {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+    )
 
+    print(f"[{symbol}] Ergebnis: Signal={signal}, LONG={long_signals}/3, SHORT={short_signals}/3")
 
     return msg if signal != "NEUTRAL" else None
+
 
 def check_all_symbols():
     symbols = [ "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "SOLUSDT", "DOGEUSDT", "AVAXUSDT", "TRXUSDT", "DOTUSDT",
