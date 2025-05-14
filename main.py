@@ -121,6 +121,13 @@ def check_all_symbols():
 
     for symbol in symbols:
         df = get_klines(symbol)
+
+        # Retry bei df=None oder df leer
+        if df is None or len(df) == 0:
+            print(f"{symbol}: Erster Datenversuch fehlgeschlagen – versuche erneut in 2 Sekunden", flush=True)
+            time.sleep(2)
+            df = get_klines(symbol)
+
         if df is not None:
             signal = analyze(df, symbol)
             if signal:
