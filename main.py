@@ -68,12 +68,14 @@ def analyze(df, symbol):
     )
 
 
-    signal = "NEUTRAL"
+            signal = "NEUTRAL"
     reason = ""
-    
-        if signal == "NEUTRAL":
+
+    if signal == "NEUTRAL":
         print(f"{symbol}: Kein Signal – Grund: {reason}", flush=True)
         return None
+
+
 
 
     if long_signals >= 2 and long_signals >= short_signals:
