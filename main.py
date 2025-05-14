@@ -40,6 +40,10 @@ def get_klines(symbol, interval="1h", limit=100):
         return None
 
 def analyze(df, symbol):
+    if len(df) < 50:
+        print(f"{symbol}: Zu wenig Daten für Analyse ({len(df)} Kerzen)", flush=True)
+        return None
+
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     macd_line = MACD(df['close']).macd().iloc[-1]
@@ -95,6 +99,7 @@ def analyze(df, symbol):
     )
 
     return msg
+
 
 
 # alle Symbole unverändert übernommen
