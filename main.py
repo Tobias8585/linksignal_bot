@@ -63,9 +63,9 @@ print(
     flush=True
 )
 
+signal = "NEUTRAL"
+reason = ""
 
-    signal = "NEUTRAL"
-    reason = ""
 
 
     if long_signals >= 2 and long_signals >= short_signals:
