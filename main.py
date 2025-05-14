@@ -77,14 +77,14 @@ elif long_signals == 1 and short_signals == 0:
 elif short_signals == 1 and long_signals == 0:
     signal = "SHORT"
     reason = "1 Short-Signal ohne Long-Signale"
-    else:
-        reason = "Zu wenig Übereinstimmung für ein Signal"
+else:
+    reason = "Zu wenig Übereinstimmung für ein Signal"
+    print(
+        f"{symbol}: Kein Signal – RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
+        f"Long={long_signals}, Short={short_signals} | Grund: {reason}",
+        flush=True
+    )
 
-        print(
-            f"{symbol}: Kein Signal – RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
-            f"Long={long_signals}, Short={short_signals} | Grund: {reason}",
-            flush=True
-        )
 
         return None
 
