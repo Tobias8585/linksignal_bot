@@ -53,10 +53,8 @@ def analyze(df, symbol):
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
     # Signalbedingungen: Long locker, Short streng
-    long_signals = sum([rsi < 65, macd_line > 0, price > ema])
-    short_signals = sum([rsi > 70, macd_line < 0, price < ema])
-
-        long_signals = sum([rsi < 65, macd_line > 0, price > ema])
+       # Signalbedingungen – bewusst locker zum Testen
+    long_signals = sum([rsi < 65, macd_line > -1, price > ema])
     short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
     signal = "NEUTRAL"
@@ -73,22 +71,16 @@ def analyze(df, symbol):
     else:
         signal = "NEUTRAL"
 
-    # Debug-Ausgabe für Render Log
-    print(
-        f"{symbol}: RSI={rsi}, MACD={macd_line}, Price={price}, EMA={ema}, "
-        f"LongSignals={long_signals}, ShortSignals={short_signals}, Signal={signal}",
-        flush=True
-    )
-
-
-    # Qualität und Kursziele
+    # Qualität + Icon
     quality = "⭐⭐⭐" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "⭐⭐"
-    icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⚡"
+    icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⏸️"
 
+    # TP / SL Berechnung
     tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
     sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
 
+    # Telegram-Nachricht
     msg = (
         f"{icon} *{symbol}* Signal: *{signal}*\n"
         f"🧠 Grund: {reason}\n"
@@ -99,9 +91,16 @@ def analyze(df, symbol):
         f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
     )
 
-    print(f"[{symbol}] Ergebnis: Signal={signal}, LONG={long_signals}/3, SHORT={short_signals}/3", flush=True)
+    # Debug-Ausgabe für Render
+    print(
+        f"{symbol}: RSI={rsi}, MACD={macd_line}, Price={price}, EMA={ema}, "
+        f"LongSignals={long_signals}, ShortSignals={short_signals}, Signal={signal}",
+        flush=True
+    )
 
+    # Rückgabe der Nachricht (nur wenn Signal vorhanden)
     return msg if signal != "NEUTRAL" else None
+
 
 
 
