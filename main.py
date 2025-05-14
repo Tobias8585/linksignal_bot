@@ -115,9 +115,8 @@ def analyze(df, symbol):
 
     return msg
 
-# alle Symbole unverändert übernommen
 def check_all_symbols():
-    symbols = [  # alle deine originalen Coins – keine Änderung hier
+    symbols = [
         "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "SOLUSDT", "DOGEUSDT", "AVAXUSDT", "TRXUSDT", "DOTUSDT"
         # ... (restliche Coins hier weiterhin enthalten wie in deiner Liste)
     ]
@@ -146,6 +145,5 @@ if __name__ == "__main__":
     print("Telegram-Startnachricht wurde gesendet.", flush=True)
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
-
 
 
