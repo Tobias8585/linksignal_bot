@@ -40,9 +40,15 @@ def get_klines(symbol, interval="1m", limit=100):
         return None
 
 def analyze(df, symbol):
-    if len(df) < 50:
-        print(f"{symbol}: Zu wenig Daten für Analyse ({len(df)} Kerzen)", flush=True)
+    if df is None or len(df) < 50:
+        print(f"{symbol}: Analyse übersprungen – ungenügende oder fehlerhafte Daten ({0 if df is None else len(df)} Kerzen)", flush=True)
         return None
+
+    required_columns = ['close', 'high', 'low', 'volume']
+    for col in required_columns:
+        if col not in df.columns:
+            print(f"{symbol}: Analyse übersprungen – fehlende Spalte: {col}", flush=True)
+            return None
 
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
@@ -140,5 +146,6 @@ if __name__ == "__main__":
     print("Telegram-Startnachricht wurde gesendet.", flush=True)
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
 
 
