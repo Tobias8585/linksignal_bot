@@ -95,12 +95,30 @@ def analyze(df, symbol):
         signal = "SHORT"
         reason = "1 Short-Kriterium erfüllt, kein Long-Kriterium"
 
+    # Vorschlag 11: Signalqualität in Sternen
+    criteria_count = sum([
+        (rsi < 65 if signal == "LONG" else rsi > 70),
+        (macd_line > -1 if signal == "LONG" else macd_line < 0),
+        (price > ema if signal == "LONG" else price < ema)
+    ])
+    if volume > avg_volume * 1.3:
+        criteria_count += 1
+
+    if criteria_count >= 4:
+        stars = "★★★"
+    elif criteria_count == 3:
+        stars = "★★"
+    elif criteria_count == 2:
+        stars = "★"
+    else:
+        stars = ""
+
     tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
     sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
 
     msg = (
-        f"🔔 *{symbol}* Signal: *{signal}*\n"
+        f"🔔 *{symbol}* Signal: *{signal}* {stars}\n"
         f"🧠 Grund: {reason}\n"
         f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
         f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
@@ -109,7 +127,7 @@ def analyze(df, symbol):
     )
 
     log_print(
-        f"{symbol}: SIGNAL={signal} | Grund={reason} | RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
+        f"{symbol}: SIGNAL={signal} | Grund={reason} | Sterne={stars} | RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
         f"Vol={volume:.0f}/Ø{avg_volume:.0f}, TP1={tp1:.4f}, TP2={tp2:.4f}, SL={sl:.4f}"
     )
 
@@ -167,6 +185,5 @@ if __name__ == "__main__":
     log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
-
 
 
