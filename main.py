@@ -133,5 +133,7 @@ def home():
 
 if __name__ == "__main__":
     send_telegram("🚀 Bot wurde gestartet und überwacht Coins mit gelockerten Bedingungen.")
+    print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
