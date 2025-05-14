@@ -53,52 +53,52 @@ def analyze(df, symbol):
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
     # Signalbedingungen: Long locker, Short streng
-long_signals = sum([rsi < 65, macd_line > 0, price > ema])
-short_signals = sum([rsi > 70, macd_line < 0, price < ema])
+    long_signals = sum([rsi < 65, macd_line > 0, price > ema])
+    short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
-signal = "NEUTRAL"
-reason = ""
-
-if long_signals >= 2 and long_signals >= short_signals:
-    signal = "LONG"
-elif short_signals >= 2 and short_signals >= long_signals:
-    signal = "SHORT"
-elif long_signals == 1 and short_signals == 0:
-    signal = "LONG"
-elif short_signals == 1 and long_signals == 0:
-    signal = "SHORT"
-else:
     signal = "NEUTRAL"
+    reason = ""
 
-# Debug-Ausgabe für Render-Logs
-print(
-    f"{symbol}: RSI={rsi}, MACD={macd_line}, Price={price}, EMA={ema}, "
-    f"LongSignals={long_signals}, ShortSignals={short_signals}, Signal={signal}",
-    flush=True
-)
+    if long_signals >= 2 and long_signals >= short_signals:
+        signal = "LONG"
+    elif short_signals >= 2 and short_signals >= long_signals:
+        signal = "SHORT"
+    elif long_signals == 1 and short_signals == 0:
+        signal = "LONG"
+    elif short_signals == 1 and long_signals == 0:
+        signal = "SHORT"
+    else:
+        signal = "NEUTRAL"
 
+    # Debug-Ausgabe für Render-Logs
+    print(
+        f"{symbol}: RSI={rsi}, MACD={macd_line}, Price={price}, EMA={ema}, "
+        f"LongSignals={long_signals}, ShortSignals={short_signals}, Signal={signal}",
+        flush=True
+    )
 
-# Qualität des Signals (optional je nach Nutzung)
-quality = "⭐⭐⭐" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "⭐⭐"
-icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⚡"
+    # Qualität und Kursziele
+    quality = "⭐⭐⭐" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "⭐⭐"
+    icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⚡"
 
-tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
-tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
-sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
+    tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
+    tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
+    sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
 
-msg = (
-    f"{icon} *{symbol}* Signal: *{signal}*\n"
-    f"🧠 Grund: {reason}\n"
-    f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
-    f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
-    f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
-    f"⭐️ Signalqualität: {quality}\n"
-    f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
-)
+    msg = (
+        f"{icon} *{symbol}* Signal: *{signal}*\n"
+        f"🧠 Grund: {reason}\n"
+        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
+        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
+        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
+        f"⭐️ Signalqualität: {quality}\n"
+        f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+    )
 
-print(f"[{symbol}] Ergebnis: Signal={signal}, LONG={long_signals}/3, SHORT={short_signals}/3", flush=True)
+    print(f"[{symbol}] Ergebnis: Signal={signal}, LONG={long_signals}/3, SHORT={short_signals}/3", flush=True)
 
-return msg if signal != "NEUTRAL" else None
+    return msg if signal != "NEUTRAL" else None
+
 
 
 
