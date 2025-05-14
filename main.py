@@ -43,6 +43,7 @@ def analyze(df, symbol):
     if df.empty:
         return None
 
+    # Indikatoren berechnen
     rsi = RSIIndicator(close=df['close']).rsi().iloc[-1]
     macd_line = MACD(close=df['close']).macd_diff().iloc[-1]
     ema = EMAIndicator(close=df['close'], window=20).ema_indicator().iloc[-1]
@@ -61,14 +62,16 @@ def analyze(df, symbol):
 
     if long_signals >= 2 and long_signals >= short_signals:
         signal = "LONG"
+        reason = "Mindestens 2 Long-Bedingungen erfüllt"
     elif short_signals >= 2 and short_signals >= long_signals:
         signal = "SHORT"
+        reason = "Mindestens 2 Short-Bedingungen erfüllt"
     elif long_signals == 1 and short_signals == 0:
         signal = "LONG"
+        reason = "1 Long-Kriterium erfüllt"
     elif short_signals == 1 and long_signals == 0:
         signal = "SHORT"
-    else:
-        signal = "NEUTRAL"
+        reason = "1 Short-Kriterium erfüllt"
 
     # Qualität + Icon
     quality = "⭐⭐⭐" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "⭐⭐"
@@ -93,9 +96,13 @@ def analyze(df, symbol):
     # Debug-Ausgabe für Render
     print(
         f"{symbol}: RSI={rsi:.2f}, MACD={macd_line:.4f}, Price={price:.4f}, EMA={ema:.4f}, "
-        f"LongSignals={long_signals}, ShortSignals={short_signals}, Signal={signal}",
+        f"LongSignals={long_signals}, ShortSignals={short_signals}, Signal={signal}, Reason={reason}",
         flush=True
     )
+
+    # Rückgabe nur bei echtem Signal
+    return msg if signal != "NEUTRAL" else None
+
 
     # Rückgabe der Nachricht (nur wenn Signal vorhanden)
     return msg if signal != "NEUTRAL" else None
