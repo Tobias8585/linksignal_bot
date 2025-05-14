@@ -52,17 +52,36 @@ def analyze(df, symbol):
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
-    long_signals = sum([rsi < 65, macd_line > 0, price > ema])
-    short_signals = sum([rsi > 35, macd_line < 0, price < ema])
+    # Signalbedingungen: Long locker, Short streng
+long_signals = sum([rsi < 65, macd_line > 0, price > ema])
+short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
+signal = "NEUTRAL"
+reason = ""
+
+if long_signals >= 2 and long_signals >= short_signals:
+    signal = "LONG"
+elif short_signals >= 2 and short_signals >= long_signals:
+    signal = "SHORT"
+elif long_signals == 1 and short_signals == 0:
+    signal = "LONG"
+elif short_signals == 1 and long_signals == 0:
+    signal = "SHORT"
+else:
     signal = "NEUTRAL"
-    reason = ""
-    if long_signals >= 1:
-        signal = "LONG"
-        reason = f"{long_signals}/3 Kriterien für LONG erfüllt"
-    elif short_signals >= 1:
-        signal = "SHORT"
-        reason = f"{short_signals}/3 Kriterien für SHORT erfüllt"
+
+# Debug-Ausgabe für Render-Logs
+print(
+    f"{symbol}: RSI={rsi}, MACD={macd_line}, Price={price}, EMA={ema}, "
+    f"LongSignals={long_signals}, ShortSignals={short_signals}, Signal={signal}",
+    flush=True
+)
+
+
+# Qualität des Signals (optional je nach Nutzung)
+quality = "★★★" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "★★"
+
+
 
     quality = "⭐⭐⭐" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "⭐⭐"
     icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⚡"
