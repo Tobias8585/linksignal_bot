@@ -21,7 +21,7 @@ def send_telegram(message):
     except Exception as e:
         print("Telegram-Fehler:", e)
 
-def get_klines(symbol, interval="1h", limit=100):
+def get_klines(symbol, interval="1m", limit=100):
     url = f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}"
     try:
         data = requests.get(url).json()
