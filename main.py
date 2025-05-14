@@ -40,20 +40,14 @@ def get_klines(symbol, interval="1h", limit=100):
         return None
 
 def analyze(df, symbol):
-    if df.empty:
-        return None
-
-    # Indikatoren berechnen
-    rsi = RSIIndicator(close=df['close']).rsi().iloc[-1]
-    macd_line = MACD(close=df['close']).macd_diff().iloc[-1]
-    ema = EMAIndicator(close=df['close'], window=20).ema_indicator().iloc[-1]
-
+    rsi = ta.momentum.RSIIndicator(df['close'], window=14).rsi().iloc[-1]
+    ema = df['close'].ewm(span=20).mean().iloc[-1]
+    macd_line = ta.trend.MACD(df['close']).macd().iloc[-1]
     price = df['close'].iloc[-1]
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
-    # Signalbedingungen
     long_signals = sum([rsi < 65, macd_line > -1, price > ema])
     short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
@@ -62,47 +56,48 @@ def analyze(df, symbol):
 
     if long_signals >= 2 and long_signals >= short_signals:
         signal = "LONG"
-        reason = "Mindestens 2 Long-Bedingungen erfüllt"
+        reason = "Mindestens 2 Long-Kriterien erfüllt"
     elif short_signals >= 2 and short_signals >= long_signals:
         signal = "SHORT"
-        reason = "Mindestens 2 Short-Bedingungen erfüllt"
+        reason = "Mindestens 2 Short-Kriterien erfüllt"
     elif long_signals == 1 and short_signals == 0:
         signal = "LONG"
-        reason = "1 Long-Kriterium erfüllt"
+        reason = "1 Long-Kriterium erfüllt, kein Short-Kriterium"
     elif short_signals == 1 and long_signals == 0:
         signal = "SHORT"
-        reason = "1 Short-Kriterium erfüllt"
+        reason = "1 Short-Kriterium erfüllt, kein Long-Kriterium"
     else:
-        reason = f"Unklar: Long={long_signals}/3, Short={short_signals}/3 – Kein eindeutiges Signal"
-
-    # Debug-Log für Render: plausibel & vollständig
-    print(
-        f"{symbol} | RSI={rsi:.2f} | MACD={macd_line:.4f} | EMA={ema:.4f} | Price={price:.4f} | "
-        f"Long={long_signals}/3 | Short={short_signals}/3 | Signal={signal} | Grund: {reason}",
-        flush=True
-    )
+        reason = f"Zu wenig klare Signale – Long={long_signals}, Short={short_signals}"
 
     if signal == "NEUTRAL":
+        print(
+            f"{symbol}: Kein Signal – RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
+            f"Long={long_signals}, Short={short_signals} | Grund: {reason}", flush=True
+        )
         return None
 
-    # TP / SL Berechnung
     tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
     sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
-    quality = "⭐⭐⭐" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "⭐⭐"
-    icon = "✅" if signal == "LONG" else "❌"
 
-    # Nachricht zusammenbauen
     msg = (
-        f"{icon} *{symbol}* Signal: *{signal}*\n"
-        f"🧠 Grund: {reason}\n"
-        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
-        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
-        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
-        f"⭐️ Signalqualität: {quality}\n"
+        f"🔔 *{symbol}* Signal: *{signal}*
+"
+        f"🧠 Grund: {reason}
+"
+        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}
+"
+        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}
+"
+        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}
+"
         f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
     )
 
+    print(
+        f"{symbol}: SIGNAL={signal} | RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
+        f"Vol={volume:.0f}/Ø{avg_volume:.0f}, TP1={tp1:.4f}, SL={sl:.4f}", flush=True
+    )
     return msg
 
 # alle Symbole unverändert übernommen
