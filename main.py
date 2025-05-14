@@ -79,7 +79,6 @@ print(
 
 
 # Qualität des Signals (optional je nach Nutzung)
-quality = "★★★" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "★★"
 
 
 
