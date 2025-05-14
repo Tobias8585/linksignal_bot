@@ -75,10 +75,8 @@ def analyze(df, symbol):
 
     if long_signals < 2 and short_signals < 2:
         reason = f"Zu wenig klare Signale – Long={long_signals}, Short={short_signals}"
-        print(
-            f"{symbol}: Kein Signal – Grund: {reason}",
-            flush=True
-        )
+        print(f"{symbol}: Kein Signal – Grund: {reason}", flush=True)
+        print(f"{symbol}: RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}", flush=True)
         return None
 
     if long_signals >= 2 and long_signals >= short_signals:
