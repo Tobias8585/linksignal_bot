@@ -56,6 +56,9 @@ def analyze(df, symbol):
     long_signals = sum([rsi < 65, macd_line > 0, price > ema])
     short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
+        long_signals = sum([rsi < 65, macd_line > 0, price > ema])
+    short_signals = sum([rsi > 70, macd_line < 0, price < ema])
+
     signal = "NEUTRAL"
     reason = ""
 
@@ -70,12 +73,13 @@ def analyze(df, symbol):
     else:
         signal = "NEUTRAL"
 
-    # Debug-Ausgabe für Render-Logs
+    # Debug-Ausgabe für Render Log
     print(
         f"{symbol}: RSI={rsi}, MACD={macd_line}, Price={price}, EMA={ema}, "
         f"LongSignals={long_signals}, ShortSignals={short_signals}, Signal={signal}",
         flush=True
     )
+
 
     # Qualität und Kursziele
     quality = "⭐⭐⭐" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "⭐⭐"
