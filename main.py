@@ -40,9 +40,9 @@ def get_klines(symbol, interval="1h", limit=100):
         return None
 
 def analyze(df, symbol):
-    rsi = ta.momentum.RSIIndicator(df['close'], window=14).rsi().iloc[-1]
+    rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
-    macd_line = ta.trend.MACD(df['close']).macd().iloc[-1]
+    macd_line = MACD(df['close']).macd().iloc[-1]
     price = df['close'].iloc[-1]
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
     volume = df['volume'].iloc[-1]
