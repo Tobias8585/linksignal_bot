@@ -67,6 +67,7 @@ print(
     signal = "NEUTRAL"
     reason = ""
 
+
     if long_signals >= 2 and long_signals >= short_signals:
         signal = "LONG"
         reason = "Mindestens 2 Long-Kriterien erfüllt"
