@@ -67,8 +67,12 @@ def analyze(df, symbol):
     signal = "NEUTRAL"
     reason = ""
 
-    if signal == "NEUTRAL":
-        print(f"{symbol}: Kein Signal - Grund: {reason}", flush=True)
+    if long_signals < 2 and short_signals < 2:
+        reason = f"Zu wenig klare Signale – Long={long_signals}, Short={short_signals}"
+        print(
+            f"{symbol}: Kein Signal – Grund: {reason}",
+            flush=True
+        )
         return None
 
     if long_signals >= 2 and long_signals >= short_signals:
@@ -83,14 +87,6 @@ def analyze(df, symbol):
     elif short_signals == 1 and long_signals == 0:
         signal = "SHORT"
         reason = "1 Short-Kriterium erfüllt, kein Long-Kriterium"
-    else:
-        reason = f"Zu wenig klare Signale – Long={long_signals}, Short={short_signals}"
-        print(
-            f"{symbol}: Kein Signal – RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
-            f"Long={long_signals}, Short={short_signals} | Grund: {reason}",
-            flush=True
-        )
-        return None
 
     tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
@@ -145,3 +141,4 @@ if __name__ == "__main__":
     print("Telegram-Startnachricht wurde gesendet.", flush=True)
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
