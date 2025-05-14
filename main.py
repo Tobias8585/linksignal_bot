@@ -15,7 +15,7 @@ app = Flask(__name__)
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {'chat_id': CHAT_ID, 'text': message}
+    payload = {'chat_id': CHAT_ID, 'text': message, 'parse_mode': 'Markdown'}
     try:
         requests.post(url, json=payload)
     except Exception as e:
@@ -53,7 +53,7 @@ def analyze(df, symbol):
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
-    # Signalbedingungen – bewusst locker zum Testen
+    # Signalbedingungen
     long_signals = sum([rsi < 65, macd_line > -1, price > ema])
     short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
@@ -72,76 +72,63 @@ def analyze(df, symbol):
     elif short_signals == 1 and long_signals == 0:
         signal = "SHORT"
         reason = "1 Short-Kriterium erfüllt"
+    else:
+        reason = f"Unklar: Long={long_signals}/3, Short={short_signals}/3 – Kein eindeutiges Signal"
 
-    # Qualität + Icon
-    quality = "⭐⭐⭐" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "⭐⭐"
-    icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⏸️"
+    # Debug-Log für Render: plausibel & vollständig
+    print(
+        f"{symbol} | RSI={rsi:.2f} | MACD={macd_line:.4f} | EMA={ema:.4f} | Price={price:.4f} | "
+        f"Long={long_signals}/3 | Short={short_signals}/3 | Signal={signal} | Grund: {reason}",
+        flush=True
+    )
+
+    if signal == "NEUTRAL":
+        return None
 
     # TP / SL Berechnung
     tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
     sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
+    quality = "⭐⭐⭐" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "⭐⭐"
+    icon = "✅" if signal == "LONG" else "❌"
 
-    # Telegram-Nachricht
+    # Nachricht zusammenbauen
     msg = (
-        f"{icon} *{symbol}* Signal: *{signal}*
-"
-        f"🧠 Grund: {reason}
-"
-        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}
-"
-        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}
-"
-        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}
-"
-        f"⭐️ Signalqualität: {quality}
-"
+        f"{icon} *{symbol}* Signal: *{signal}*\n"
+        f"🧠 Grund: {reason}\n"
+        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
+        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
+        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
+        f"⭐️ Signalqualität: {quality}\n"
         f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
     )
 
-    # Debug-Ausgabe für Render (Ergänzt!)
-    print(
-        f"{symbol}: RSI={rsi:.2f}, MACD={macd_line:.4f}, Price={price:.4f}, EMA={ema:.4f}, "
-        f"LongSignals={long_signals}, ShortSignals={short_signals}, Signal={signal}, Reason={reason}",
-        flush=True
-    )
+    return msg
 
-
-    # Rückgabe nur bei echtem Signal
-    return msg if signal != "NEUTRAL" else None
-
-
-    # Rückgabe der Nachricht (nur wenn Signal vorhanden)
-    return msg if signal != "NEUTRAL" else None
-
-
-
-
-
-
+# alle Symbole unverändert übernommen
 def check_all_symbols():
-    symbols = [
+    symbols = [  # alle deine originalen Coins – keine Änderung hier
         "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "SOLUSDT", "DOGEUSDT", "AVAXUSDT", "TRXUSDT", "DOTUSDT",
-    "MATICUSDT", "LTCUSDT", "SHIBUSDT", "LINKUSDT", "ATOMUSDT", "UNIUSDT", "XLMUSDT", "HBARUSDT", "APTUSDT", "ARBUSDT",
-    "VETUSDT", "ICPUSDT", "NEARUSDT", "FILUSDT", "INJUSDT", "RENDERUSDT", "QNTUSDT", "LDOUSDT", "EGLDUSDT", "AAVEUSDT",
-    "SANDUSDT", "MANAUSDT", "THETAUSDT", "AXSUSDT", "XTZUSDT", "CHZUSDT", "GRTUSDT", "ENSUSDT", "KAVAUSDT", "TWTUSDT",
-    "FXSUSDT", "RLCUSDT", "PEPEUSDT", "SUIUSDT", "FLUXUSDT", "CELOUSDT", "STXUSDT", "COMPUSDT", "ZILUSDT", "ZENUSDT",
-    "YFIUSDT", "DYDXUSDT", "SNXUSDT", "BANDUSDT", "LRCUSDT", "DASHUSDT", "CRVUSDT", "KSMUSDT", "ALICEUSDT", "GALAUSDT",
-    "ONEUSDT", "ARPAUSDT", "RNDRUSDT", "TOMOUSDT", "OCEANUSDT", "CKBUSDT", "BLZUSDT", "ILVUSDT", "YGGUSDT", "BICOUSDT",
-    "JOEUSDT", "HOOKUSDT", "HIGHUSDT", "XNOUSDT", "LOOMUSDT", "TRUUSDT", "PERPUSDT", "BAKEUSDT", "STMXUSDT", "ACHUSDT",
-    "NKNUSDT", "ALPHAUSDT", "CTSIUSDT", "ANKRUSDT", "SKLUSDT", "ZRXUSDT", "AGIXUSDT", "PLAUSDT", "API3USDT", "BELUSDT",
-    "MOVRUSDT", "BNTUSDT", "DENTUSDT", "GLMRUSDT", "DEGOUSDT", "KNCUSDT", "QUICKUSDT", "TRBUSDT", "HYPEUSDT", "TAOUSDT",
-    "KASUSDT", "POLUSDT", "JUPUSDT", "MKRUSDT", "DEXEUSDT", "SOLAYERUSDT", "SXTUSDT", "INITUSDT", "ZEREBROUSDT",
-    "JTOUSDT", "PYTHUSDT", "ONDOUSDT", "ENAUSDT", "TNSRUSDT", "WUSDT", "NOTUSDT", "PIXELUSDT", "AEVOUSDT", "TURBOUSDT",
-    "MOGUSDT", "DYMUSDT", "PORTALUSDT", "1000SATSUSDT", "LINAUSDT", "IDEXUSDT", "SPELLUSDT", "FETUSDT", "LITUSDT",
-    "CVCUSDT", "COTIUSDT", "REEFUSDT", "LQTYUSDT", "NMRUSDT", "RSRUSDT", "MTLUSDT", "PHBUSDT", "GALUSDT", "WNXMUSDT",
-    "BONDUSDT", "FLOKIUSDT", "ALPACAUSDT", "XVGUSDT", "BTSUSDT", "SFPUSDT", "VTHOUSDT", "TRACUSDT", "ANTUSDT",
-    "POWRUSDT", "USTCUSDT", "STRAXUSDT", "MDTUSDT", "DGBUSDT", "BADGERUSDT", "AUDIOUSDT", "XECUSDT", "VOXELUSDT",
-    "TUSDT", "LPTUSDT", "MLNUSDT", "TVKUSDT", "UNFIUSDT", "FORTHUSDT", "RUNEUSDT", "ERNUSDT", "FARMUSDT", "DUSKUSDT",
-    "XVSUSDT", "SUNUSDT", "BETAUSDT", "ASTRUSDT", "AERGOUSDT", "GHSTUSDT", "ALCXUSDT", "REIUSDT", "PUNDIXUSDT",
-    "KLAYUSDT", "OXTUSDT", "KEYUSDT", "ACMUSDT", "WAVESUSDT", "XRP3LUSDT", "JOEYUSDT", "RAYUSDT", "MBLUSDT", "TRBUSD",
-    "JAMUSDT", "ARKMUSDT", "NTRNUSDT", "ETHFIUSDT", "ALTUSDT", "BEAMUSDT", "STORJUSDT", "TOMO3SUSDT", "MANTAUSDT",
-    "XAIUSDT", "NFPUSDT", "MAVUSDT", "ZKUSDT", "PYRUSDT", "BICO3LUSDT", "SANTOSUSDT", "JSTUSDT", "LOKAUSDT", "GNSUSDT"
+        "MATICUSDT", "LTCUSDT", "SHIBUSDT", "LINKUSDT", "ATOMUSDT", "UNIUSDT", "XLMUSDT", "HBARUSDT", "APTUSDT", "ARBUSDT",
+        "VETUSDT", "ICPUSDT", "NEARUSDT", "FILUSDT", "INJUSDT", "RENDERUSDT", "QNTUSDT", "LDOUSDT", "EGLDUSDT", "AAVEUSDT",
+        "SANDUSDT", "MANAUSDT", "THETAUSDT", "AXSUSDT", "XTZUSDT", "CHZUSDT", "GRTUSDT", "ENSUSDT", "KAVAUSDT", "TWTUSDT",
+        "FXSUSDT", "RLCUSDT", "PEPEUSDT", "SUIUSDT", "FLUXUSDT", "CELOUSDT", "STXUSDT", "COMPUSDT", "ZILUSDT", "ZENUSDT",
+        "YFIUSDT", "DYDXUSDT", "SNXUSDT", "BANDUSDT", "LRCUSDT", "DASHUSDT", "CRVUSDT", "KSMUSDT", "ALICEUSDT", "GALAUSDT",
+        "ONEUSDT", "ARPAUSDT", "RNDRUSDT", "TOMOUSDT", "OCEANUSDT", "CKBUSDT", "BLZUSDT", "ILVUSDT", "YGGUSDT", "BICOUSDT",
+        "JOEUSDT", "HOOKUSDT", "HIGHUSDT", "XNOUSDT", "LOOMUSDT", "TRUUSDT", "PERPUSDT", "BAKEUSDT", "STMXUSDT", "ACHUSDT",
+        "NKNUSDT", "ALPHAUSDT", "CTSIUSDT", "ANKRUSDT", "SKLUSDT", "ZRXUSDT", "AGIXUSDT", "PLAUSDT", "API3USDT", "BELUSDT",
+        "MOVRUSDT", "BNTUSDT", "DENTUSDT", "GLMRUSDT", "DEGOUSDT", "KNCUSDT", "QUICKUSDT", "TRBUSDT", "HYPEUSDT", "TAOUSDT",
+        "KASUSDT", "POLUSDT", "JUPUSDT", "MKRUSDT", "DEXEUSDT", "SOLAYERUSDT", "SXTUSDT", "INITUSDT", "ZEREBROUSDT",
+        "JTOUSDT", "PYTHUSDT", "ONDOUSDT", "ENAUSDT", "TNSRUSDT", "WUSDT", "NOTUSDT", "PIXELUSDT", "AEVOUSDT", "TURBOUSDT",
+        "MOGUSDT", "DYMUSDT", "PORTALUSDT", "1000SATSUSDT", "LINAUSDT", "IDEXUSDT", "SPELLUSDT", "FETUSDT", "LITUSDT",
+        "CVCUSDT", "COTIUSDT", "REEFUSDT", "LQTYUSDT", "NMRUSDT", "RSRUSDT", "MTLUSDT", "PHBUSDT", "GALUSDT", "WNXMUSDT",
+        "BONDUSDT", "FLOKIUSDT", "ALPACAUSDT", "XVGUSDT", "BTSUSDT", "SFPUSDT", "VTHOUSDT", "TRACUSDT", "ANTUSDT",
+        "POWRUSDT", "USTCUSDT", "STRAXUSDT", "MDTUSDT", "DGBUSDT", "BADGERUSDT", "AUDIOUSDT", "XECUSDT", "VOXELUSDT",
+        "TUSDT", "LPTUSDT", "MLNUSDT", "TVKUSDT", "UNFIUSDT", "FORTHUSDT", "RUNEUSDT", "ERNUSDT", "FARMUSDT", "DUSKUSDT",
+        "XVSUSDT", "SUNUSDT", "BETAUSDT", "ASTRUSDT", "AERGOUSDT", "GHSTUSDT", "ALCXUSDT", "REIUSDT", "PUNDIXUSDT",
+        "KLAYUSDT", "OXTUSDT", "KEYUSDT", "ACMUSDT", "WAVESUSDT", "XRP3LUSDT", "JOEYUSDT", "RAYUSDT", "MBLUSDT", "TRBUSD",
+        "JAMUSDT", "ARKMUSDT", "NTRNUSDT", "ETHFIUSDT", "ALTUSDT", "BEAMUSDT", "STORJUSDT", "TOMO3SUSDT", "MANTAUSDT",
+        "XAIUSDT", "NFPUSDT", "MAVUSDT", "ZKUSDT", "PYRUSDT", "BICO3LUSDT", "SANTOSUSDT", "JSTUSDT", "LOKAUSDT", "GNSUSDT"
     ]
 
     for symbol in symbols:
@@ -150,19 +137,9 @@ def check_all_symbols():
             signal = analyze(df, symbol)
             if signal:
                 send_telegram(signal)
-                print(
-                    f"Telegram gesendet:\n"
-                    f"Symbol: {symbol}\n"
-                    f"Inhalt:\n{signal}"
-                )
-            else:
-                print(f"Kein Signal für: {symbol}")
+                print(f"Telegram gesendet: {symbol}\nInhalt: {signal}", flush=True)
         else:
-            print(f"Keine Daten erhalten für: {symbol}")
-
-
-
-
+            print(f"{symbol}: Keine Daten vom Server", flush=True)
 
 def run_bot():
     while True:
@@ -175,7 +152,7 @@ def home():
 
 if __name__ == "__main__":
     send_telegram("🚀 Bot wurde gestartet und überwacht Coins mit gelockerten Bedingungen.")
-    print("Telegram-Startnachricht wurde gesendet.")
+    print("Telegram-Startnachricht wurde gesendet.", flush=True)
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
 
