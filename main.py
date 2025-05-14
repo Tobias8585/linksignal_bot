@@ -52,8 +52,7 @@ def analyze(df, symbol):
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
-    # Signalbedingungen: Long locker, Short streng
-       # Signalbedingungen – bewusst locker zum Testen
+    # Signalbedingungen – bewusst locker zum Testen
     long_signals = sum([rsi < 65, macd_line > -1, price > ema])
     short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
@@ -93,13 +92,14 @@ def analyze(df, symbol):
 
     # Debug-Ausgabe für Render
     print(
-        f"{symbol}: RSI={rsi}, MACD={macd_line}, Price={price}, EMA={ema}, "
+        f"{symbol}: RSI={rsi:.2f}, MACD={macd_line:.4f}, Price={price:.4f}, EMA={ema:.4f}, "
         f"LongSignals={long_signals}, ShortSignals={short_signals}, Signal={signal}",
         flush=True
     )
 
     # Rückgabe der Nachricht (nur wenn Signal vorhanden)
     return msg if signal != "NEUTRAL" else None
+
 
 
 
