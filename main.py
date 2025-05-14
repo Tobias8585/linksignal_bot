@@ -67,7 +67,7 @@ def analyze(df, symbol):
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
-  def analyze(df, symbol):
+def analyze(df, symbol):
     if df is None or len(df) < 50:
         print(f"{symbol}: Zu wenig Daten für Analyse ({0 if df is None else len(df)} Kerzen)", flush=True)
         return None
@@ -108,6 +108,7 @@ def analyze(df, symbol):
         reason = "Zu wenig Übereinstimmung für ein Signal"
 
     return signal
+
 
     if signal == "NEUTRAL":
         print(f"{symbol}: Kein Signal – Grund: {reason}", flush=True)
