@@ -102,13 +102,12 @@ def analyze(df, symbol):
     )
 
     print(
-        f"{symbol}: SIGNAL={signal} | RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
-        f"Vol={volume:.0f}/Ø{avg_volume:.0f}, TP1={tp1:.4f}, SL={sl:.4f}",
+        f"{symbol}: SIGNAL={signal} | Grund={reason} | RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
+        f"Vol={volume:.0f}/Ø{avg_volume:.0f}, TP1={tp1:.4f}, TP2={tp2:.4f}, SL={sl:.4f}",
         flush=True
     )
 
     return msg
-
 
 # alle Symbole unverändert übernommen
 def check_all_symbols():
@@ -141,4 +140,5 @@ if __name__ == "__main__":
     print("Telegram-Startnachricht wurde gesendet.", flush=True)
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
 
