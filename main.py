@@ -58,6 +58,7 @@ def analyze(df, symbol):
         # Berechnungen für Long- und Short-Signale
     def analyze(df, symbol):
     # Berechnungen für Long- und Short-Signale
+       # Berechnungen für Long- und Short-Signale
     long_signals = sum([rsi < 65, macd_line > -1, price > ema])
     short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
@@ -75,6 +76,7 @@ def analyze(df, symbol):
     if signal == "NEUTRAL":
         print(f"{symbol}: Kein Signal – Grund: {reason}", flush=True)
         return None
+
 
     # Restliche Analyse (z. B. LONG/SHORT Entscheidung) …
 
