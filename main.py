@@ -55,8 +55,18 @@ def analyze(df, symbol):
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
+        # Berechnungen für Long- und Short-Signale
     long_signals = sum([rsi < 65, macd_line > -1, price > ema])
     short_signals = sum([rsi > 70, macd_line < 0, price < ema])
+
+    # Log-Ausgabe mit allen wichtigen Informationen
+    print(
+        f"{symbol}: "
+        f"Long-Signals={long_signals}, Short-Signals={short_signals}, "
+        f"RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}",
+        flush=True
+    )
+
 
     signal = "NEUTRAL"
     reason = ""
