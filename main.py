@@ -79,25 +79,23 @@ print(
 
 
 # Qualität des Signals (optional je nach Nutzung)
+quality = "⭐⭐⭐" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "⭐⭐"
+icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⚡"
 
+tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
+tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
+sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
 
+msg = (
+    f"{icon} *{symbol}* Signal: *{signal}*\n"
+    f"📝 Grund: {reason}\n"
+    f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
+    f"💰 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
+    f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
+    f"⭐️ Signalqualität: {quality}\n"
+    f"⏰ {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+)
 
-    quality = "⭐⭐⭐" if abs(rsi - 50) > 20 and volume > avg_volume * 1.5 else "⭐⭐"
-    icon = "✅" if signal == "LONG" else "❌" if signal == "SHORT" else "⚡"
-
-    tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
-    tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
-    sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
-
-    msg = (
-        f"{icon} *{symbol}* Signal: *{signal}*\n"
-        f"📝 Grund: {reason}\n"
-        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
-        f"💰 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
-        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
-        f"⭐️ Signalqualität: {quality}\n"
-        f"⏰ {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
-    )
 
     print(f"[{symbol}] Ergebnis: Signal={signal}, LONG={long_signals}/3, SHORT={short_signals}/3")
 
