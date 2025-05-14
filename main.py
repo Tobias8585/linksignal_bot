@@ -122,7 +122,6 @@ def check_all_symbols():
     for symbol in symbols:
         df = get_klines(symbol)
 
-        # Retry bei df=None oder df leer
         if df is None or len(df) == 0:
             print(f"{symbol}: Erster Datenversuch fehlgeschlagen – versuche erneut in 2 Sekunden", flush=True)
             time.sleep(2)
@@ -135,6 +134,9 @@ def check_all_symbols():
                 print(f"Telegram gesendet: {symbol}\nInhalt: {signal}", flush=True)
         else:
             print(f"{symbol}: Keine Daten vom Server", flush=True)
+
+        # Vorschlag 8 – adaptive Pause nach jedem Symbol (leichtes Rate-Limit-Handling)
+        time.sleep(0.3)
 
 def run_bot():
     while True:
