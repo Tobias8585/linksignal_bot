@@ -84,21 +84,28 @@ def analyze(df, symbol):
 
     # Telegram-Nachricht
     msg = (
-        f"{icon} *{symbol}* Signal: *{signal}*\n"
-        f"🧠 Grund: {reason}\n"
-        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
-        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
-        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
-        f"⭐️ Signalqualität: {quality}\n"
+        f"{icon} *{symbol}* Signal: *{signal}*
+"
+        f"🧠 Grund: {reason}
+"
+        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}
+"
+        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}
+"
+        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}
+"
+        f"⭐️ Signalqualität: {quality}
+"
         f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
     )
 
-    # Debug-Ausgabe für Render
+    # Debug-Ausgabe für Render (Ergänzt!)
     print(
         f"{symbol}: RSI={rsi:.2f}, MACD={macd_line:.4f}, Price={price:.4f}, EMA={ema:.4f}, "
         f"LongSignals={long_signals}, ShortSignals={short_signals}, Signal={signal}, Reason={reason}",
         flush=True
     )
+
 
     # Rückgabe nur bei echtem Signal
     return msg if signal != "NEUTRAL" else None
