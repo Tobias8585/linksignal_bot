@@ -44,7 +44,6 @@ def analyze(df, symbol):
         print(f"{symbol}: Zu wenig Daten für Analyse ({0 if df is None else len(df)} Kerzen)", flush=True)
         return None
 
-
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     macd_line = MACD(df['close']).macd().iloc[-1]
@@ -54,15 +53,8 @@ def analyze(df, symbol):
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
     long_signals = sum([rsi < 65, macd_line > -1, price > ema])
-short_signals = sum([rsi > 70, macd_line < 0, price < ema])
+    short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
-print(
-    f"{symbol}: Long-Signals = {long_signals}, Short-Signals = {short_signals}, "
-    f"RSI = {rsi:.2f}, MACD = {macd_line:.4f}, Preis = {price:.4f}, EMA = {ema:.4f}",
-    flush=True
-)
-
-def analyze(df, symbol):
     signal = "NEUTRAL"
     reason = ""
 
@@ -74,18 +66,22 @@ def analyze(df, symbol):
         reason = "Mindestens 2 Short-Kriterien erfüllt"
     elif long_signals == 1 and short_signals == 0:
         signal = "LONG"
-        reason = "1 Long-Signal ohne Short-Signale"
+        reason = "1 Long-Kriterium ohne Short-Signale"
     elif short_signals == 1 and long_signals == 0:
         signal = "SHORT"
-        reason = "1 Short-Signal ohne Long-Signale"
+        reason = "1 Short-Kriterium ohne Long-Signale"
     else:
         reason = "Zu wenig Übereinstimmung für ein Signal"
+
+    if signal == "NEUTRAL":
         print(
             f"{symbol}: Kein Signal – RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
             f"Long={long_signals}, Short={short_signals} | Grund: {reason}",
             flush=True
         )
-        return None
+
+    return signal if signal != "NEUTRAL" else None
+
 
 
     tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
