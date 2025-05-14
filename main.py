@@ -58,11 +58,9 @@ def analyze(df, symbol):
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
-    # Berechnungen für Long- und Short-Signale
     long_signals = sum([rsi < 65, macd_line > -1, price > ema])
     short_signals = sum([rsi > 70, macd_line < 0, price < ema])
 
-    # Log-Ausgabe mit allen wichtigen Informationen
     print(
         f"{symbol}: "
         f"Long-Signals={long_signals}, Short-Signals={short_signals}, "
@@ -116,8 +114,12 @@ def analyze(df, symbol):
 def check_all_symbols():
     symbols = [
         "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "SOLUSDT", "DOGEUSDT", "AVAXUSDT", "TRXUSDT", "DOTUSDT"
-        # ... (restliche Coins hier weiterhin enthalten wie in deiner Liste)
     ]
+
+    total = len(symbols)
+    skipped = 0
+    signals = 0
+    nodata = 0
 
     for symbol in symbols:
         df = get_klines(symbol)
@@ -131,12 +133,21 @@ def check_all_symbols():
             signal = analyze(df, symbol)
             if signal:
                 send_telegram(signal)
+                signals += 1
                 print(f"Telegram gesendet: {symbol}\nInhalt: {signal}", flush=True)
+            else:
+                skipped += 1
         else:
+            nodata += 1
             print(f"{symbol}: Keine Daten vom Server", flush=True)
 
-        # Vorschlag 8 – adaptive Pause nach jedem Symbol (leichtes Rate-Limit-Handling)
         time.sleep(0.3)
+
+    print("\n--- Zusammenfassung ---", flush=True)
+    print(f"Gesamt: {total} | Signale: {signals} | Übersprungen: {skipped} | Keine Daten: {nodata}\n", flush=True)
+
+    if signals == 0:
+        send_telegram("🧘 Kein Signal bei allen geprüften Coins – Markt aktuell ruhig.")
 
 def run_bot():
     while True:
@@ -152,5 +163,6 @@ if __name__ == "__main__":
     print("Telegram-Startnachricht wurde gesendet.", flush=True)
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
 
 
