@@ -1,5 +1,3 @@
-# 🔹 Angepasst: Logik für 2/3-Signale mit Volumenpflicht
-
 import requests
 import time
 import threading
@@ -75,8 +73,8 @@ def analyze_combined(symbol):
 
     signal_1m, count_1m = get_simple_signal(df_1m)
     signal_5m, count_5m = get_simple_signal(df_5m)
-    if not signal_1m or not signal_5m or signal_1m != signal_5m:
-        log_print(f"{symbol}: Kein doppeltes übereinstimmendes Signal")
+    if not signal_1m:
+        log_print(f"{symbol}: Kein 1m-Signal")
         return None
 
     df = df_5m
@@ -86,7 +84,7 @@ def analyze_combined(symbol):
     macd = MACD(df['close'])
     macd_line = macd.macd().iloc[-1]
     macd_signal = macd.macd_signal().iloc[-1]
-    macd_cross = macd_line > macd_signal if signal_5m == "LONG" else macd_line < macd_signal
+    macd_cross = macd_line > macd_signal if signal_1m == "LONG" else macd_line < macd_signal
     price = df['close'].iloc[-1]
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
     volume = df['volume'].iloc[-1]
@@ -96,17 +94,16 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Kein Signal – ATR zu niedrig")
         return None
 
-    breakout = (signal_5m == "LONG" and price > df['high'].iloc[-21:-1].max()) or \
-               (signal_5m == "SHORT" and price < df['low'].iloc[-21:-1].min())
+    breakout = (signal_1m == "LONG" and price > df['high'].iloc[-21:-1].max()) or \
+               (signal_1m == "SHORT" and price < df['low'].iloc[-21:-1].min())
     strong_volume = volume > avg_volume * 1.3
-    ema_cross = ema > ema50 if signal_5m == "LONG" else ema < ema50
+    ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
 
-    # Neue Regel: 2/3-Signale müssen Volumen OBLIGATORISCH erfüllen
-    if count_5m == 2 and not strong_volume:
+    if count_1m == 2 and not strong_volume:
         log_print(f"{symbol}: 2/3 aber Volumen zu schwach")
         return None
 
-    criteria_count = count_5m + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross)
+    criteria_count = count_1m + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross)
 
     if criteria_count >= 6:
         stars = "⭐⭐⭐"
@@ -115,9 +112,9 @@ def analyze_combined(symbol):
         stars = "⭐⭐"
         signal_strength = "🟡 Gutes Signal"
 
-    tp1 = price + 1.5 * atr if signal_5m == "LONG" else price - 1.5 * atr
-    tp2 = price + 2.5 * atr if signal_5m == "LONG" else price - 2.5 * atr
-    sl = price - 1.2 * atr if signal_5m == "LONG" else price + 1.2 * atr
+    tp1 = price + 1.5 * atr if signal_1m == "LONG" else price - 1.5 * atr
+    tp2 = price + 2.5 * atr if signal_1m == "LONG" else price - 2.5 * atr
+    sl = price - 1.2 * atr if signal_1m == "LONG" else price + 1.2 * atr
 
     volatility_pct = atr / price * 100
     trend_text = "Seitwärts"
@@ -136,10 +133,10 @@ def analyze_combined(symbol):
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
     msg = (
-        f"🔔 *{symbol}* Doppelsignal: *{signal_5m}* {stars}\n"
+        f"🔔 *{symbol}* Signal: *{signal_1m}* {stars}\n"
         f"{signal_strength}\n"
         f"{breakout_text}\n"
-        f"🧠 Bestätigt durch 1m + 5m\n"
+        f"🧠 Hauptsignal aus 1m | 5m: {signal_5m or 'kein'}\n"
         f"📈 Trend: {trend_text} | RSI-Zone: {rsi_zone} | Volatilität: {volatility_pct:.2f} %\n"
         f"{macd_text} | EMA-Cross: {'✅' if ema_cross else '❌'}\n"
         f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
@@ -158,7 +155,7 @@ def check_all_symbols():
             send_telegram(signal)
             log_print(f"{symbol}: Signal gesendet\n{signal}")
         else:
-            log_print(f"{symbol}: Kein übereinstimmendes Doppelsignal")
+            log_print(f"{symbol}: Kein Signal")
         time.sleep(1)
 
 def run_bot():
@@ -168,10 +165,10 @@ def run_bot():
 
 @app.route('/')
 def home():
-    return "Bot mit Doppelanalyse läuft."
+    return "Bot mit primärer 1m-Analyse läuft."
 
 if __name__ == "__main__":
-    send_telegram("🚀 Bot wurde mit Doppelanalyse gestartet.")
+    send_telegram("🚀 Bot wurde mit 1m-Hauptanalyse gestartet.")
     log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
