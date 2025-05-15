@@ -84,7 +84,7 @@ def analyze(df, symbol):
     signal = "NEUTRAL"
     reason = ""
 
-    if long_signals < 2 and short_signals < 2:
+    if long_signals < 3 and short_signals < 3:
         reason = f"Zu wenig klare Signale – Long={long_signals}, Short={short_signals}"
         log_print(f"{symbol}: Kein Signal – Grund: {reason}")
         log_print(f"{symbol}: RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}")
