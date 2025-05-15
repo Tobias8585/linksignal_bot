@@ -7,6 +7,13 @@ from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD
 import os
 from datetime import datetime
+from binance.um_futures import UMFutures  # Binance Futures-Client importieren
+
+# Binance API-Schlüssel aus Umgebungsvariablen laden
+api_key = os.getenv("phcsyXmPGXpBE6Gu7yuLUPQIwgV6MvPCSV8iEhPxf9DbvSbu7nuhCqSg1Mzegkli")
+api_secret = os.getenv("QIChHDZC0k7HOSWN109ccwGj0BvBWsuMZLdUaUhDw8No4R5yPUE9LJqTfODNL6cM")
+client = UMFutures(key=api_key, secret=api_secret)
+
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
