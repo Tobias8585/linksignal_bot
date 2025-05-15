@@ -111,17 +111,20 @@ def analyze(df, symbol):
 
     strong_volume = volume > avg_volume * 1.3
 
-    # Bewertung
+        # EMA-Cross prüfen
+    ema_cross = ema > ema50 if signal == "LONG" else ema < ema50
+
+    # Bewertung inkl. EMA-Cross
     if long_signals == 3 or short_signals == 3:
-        criteria_count = 3 + int(strong_volume) + int(breakout) + int(macd_cross)
-        if criteria_count >= 5:
+        criteria_count = 3 + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross)
+        if criteria_count >= 6:
             stars = "⭐⭐⭐"
             signal_strength = "🟢 Sehr starkes Signal"
         else:
             stars = "⭐⭐"
             signal_strength = "🟡 Gutes Signal"
     elif strong_volume and breakout:
-        criteria_count = 2 + 1 + 1 + int(macd_cross)  # 2 Hauptkriterien + Volume + Breakout + evtl. MACD-Cross
+        criteria_count = 2 + 1 + 1 + int(macd_cross) + int(ema_cross)
         if criteria_count >= 5:
             stars = "⭐⭐⭐"
             signal_strength = "🟢 Sehr starkes Signal"
@@ -131,6 +134,7 @@ def analyze(df, symbol):
     else:
         log_print(f"{symbol}: Kein Signal – 2 Kriterien aber kein Volumen oder Breakout")
         return None
+
 
     tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
