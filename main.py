@@ -142,7 +142,7 @@ def analyze(df, symbol):
     return msg
 
 def check_all_symbols():
-    symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT"]  # TEMPORÄR GEKÜRZT
+    symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
 
     total = len(symbols)
     skipped = 0
@@ -191,4 +191,5 @@ if __name__ == "__main__":
     log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
 
