@@ -68,7 +68,12 @@ def analyze(df, symbol):
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     ema50 = df['close'].ewm(span=50).mean().iloc[-1]
-    macd_line = MACD(df['close']).macd().iloc[-1]
+
+    macd = MACD(df['close'])
+    macd_line = macd.macd().iloc[-1]
+    macd_signal = macd.macd_signal().iloc[-1]
+    macd_cross = macd_line > macd_signal  # für LONG – wird unten je nach Richtung angepasst
+
     price = df['close'].iloc[-1]
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
     volume = df['volume'].iloc[-1]
@@ -92,9 +97,11 @@ def analyze(df, symbol):
     if long_signals >= 2:
         signal = "LONG"
         reason = f"{long_signals} von 3 Long-Kriterien erfüllt"
+        macd_cross = macd_line > macd_signal  # relevant für LONG
     elif short_signals >= 2:
         signal = "SHORT"
         reason = f"{short_signals} von 3 Short-Kriterien erfüllt"
+        macd_cross = macd_line < macd_signal  # relevant für SHORT
     else:
         log_print(f"{symbol}: Kein Signal - Grund: Weniger als 2 Kriterien erfüllt")
         return None
@@ -104,17 +111,23 @@ def analyze(df, symbol):
 
     strong_volume = volume > avg_volume * 1.3
 
+    # Bewertung
     if long_signals == 3 or short_signals == 3:
-        criteria_count = 3 + int(strong_volume) + int(breakout)
+        criteria_count = 3 + int(strong_volume) + int(breakout) + int(macd_cross)
         if criteria_count >= 5:
             stars = "⭐⭐⭐"
             signal_strength = "🟢 Sehr starkes Signal"
         else:
             stars = "⭐⭐"
             signal_strength = "🟡 Gutes Signal"
-    elif (strong_volume and breakout):
-        stars = "⭐⭐"
-        signal_strength = "🟡 Gutes Signal"
+    elif strong_volume and breakout:
+        criteria_count = 2 + 1 + 1 + int(macd_cross)  # 2 Hauptkriterien + Volume + Breakout + evtl. MACD-Cross
+        if criteria_count >= 5:
+            stars = "⭐⭐⭐"
+            signal_strength = "🟢 Sehr starkes Signal"
+        else:
+            stars = "⭐⭐"
+            signal_strength = "🟡 Gutes Signal"
     else:
         log_print(f"{symbol}: Kein Signal – 2 Kriterien aber kein Volumen oder Breakout")
         return None
@@ -138,11 +151,13 @@ def analyze(df, symbol):
 
     log_print(
         f"{symbol}: SIGNAL={signal} | Grund={reason} | Sterne={stars} | Signalstärke={signal_strength} | "
-        f"Breakout={breakout} | RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA20={ema:.4f}, EMA50={ema50:.4f}, "
-        f"Vol={volume:.0f}/Ø{avg_volume:.0f}, TP1={tp1:.4f}, TP2={tp2:.4f}, SL={sl:.4f}"
+        f"Breakout={breakout} | MACD-Cross={macd_cross} | RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, "
+        f"EMA20={ema:.4f}, EMA50={ema50:.4f}, Vol={volume:.0f}/Ø{avg_volume:.0f}, "
+        f"TP1={tp1:.4f}, TP2={tp2:.4f}, SL={sl:.4f}"
     )
 
     return msg
+
 
 
 def check_all_symbols():
