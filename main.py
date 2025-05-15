@@ -156,7 +156,7 @@ def analyze_combined(symbol):
 
 def check_all_symbols():
     try:
-        exchange_info = client.futures_exchange_info()
+        exchange_info = client.exchange_info()
         symbols = [
             s['symbol'] for s in exchange_info['symbols']
             if s['contractType'] == 'PERPETUAL' and s['symbol'].endswith("USDT")
