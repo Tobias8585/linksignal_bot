@@ -138,16 +138,41 @@ def analyze(df, symbol):
 
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
+        # Zusatzinfos für Nachricht (A9)
+    volatility_pct = atr / price * 100
+    trend_text = "Seitwärts"
+    if price > ema and price > ema50:
+        trend_text = "Aufwärts"
+    elif price < ema and price < ema50:
+        trend_text = "Abwärts"
+
+    rsi_zone = "neutral"
+    if rsi < 30:
+        rsi_zone = "überverkauft"
+    elif rsi > 70:
+        rsi_zone = "überkauft"
+
+    macd_text = ""
+    if macd_cross:
+        macd_text = "MACD-Cross: ✅"
+    else:
+        macd_text = "MACD-Cross: ❌"
+
+    breakout_text = "🚀 Breakout erkannt!" if breakout else ""
+
     msg = (
         f"🔔 *{symbol}* Signal: *{signal}* {stars}\n"
         f"{signal_strength}\n"
         f"{breakout_text}\n"
         f"🧠 Grund: {reason}\n"
+        f"📈 Trend: {trend_text} | RSI-Zone: {rsi_zone} | Volatilität: {volatility_pct:.2f} %\n"
+        f"{macd_text}\n"
         f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
         f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
         f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
         f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
     )
+
 
     log_print(
         f"{symbol}: SIGNAL={signal} | Grund={reason} | Sterne={stars} | Signalstärke={signal_strength} | "
