@@ -1,4 +1,5 @@
-# Vollintegrierte Version mit Doppelanalyse (1m + 5m)
+# 🔹 Angepasst: Logik für 2/3-Signale mit Volumenpflicht
+
 import requests
 import time
 import threading
@@ -61,10 +62,10 @@ def get_simple_signal(df):
     short_signals = sum([rsi > 70, macd_line < 0, price < ema * 0.995 and price < ema50])
 
     if long_signals >= 2:
-        return "LONG"
+        return "LONG", long_signals
     elif short_signals >= 2:
-        return "SHORT"
-    return None
+        return "SHORT", short_signals
+    return None, 0
 
 def analyze_combined(symbol):
     df_1m = get_klines(symbol, interval="1m", limit=50)
@@ -72,13 +73,13 @@ def analyze_combined(symbol):
     if df_1m is None or df_5m is None:
         return None
 
-    signal_1m = get_simple_signal(df_1m)
-    signal_5m = get_simple_signal(df_5m)
+    signal_1m, count_1m = get_simple_signal(df_1m)
+    signal_5m, count_5m = get_simple_signal(df_5m)
     if not signal_1m or not signal_5m or signal_1m != signal_5m:
         log_print(f"{symbol}: Kein doppeltes übereinstimmendes Signal")
         return None
 
-    df = df_5m  # Hauptanalyse basiert auf 5m für alle weiteren Werte
+    df = df_5m
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     ema50 = df['close'].ewm(span=50).mean().iloc[-1]
@@ -99,7 +100,13 @@ def analyze_combined(symbol):
                (signal_5m == "SHORT" and price < df['low'].iloc[-21:-1].min())
     strong_volume = volume > avg_volume * 1.3
     ema_cross = ema > ema50 if signal_5m == "LONG" else ema < ema50
-    criteria_count = 3 + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross)
+
+    # Neue Regel: 2/3-Signale müssen Volumen OBLIGATORISCH erfüllen
+    if count_5m == 2 and not strong_volume:
+        log_print(f"{symbol}: 2/3 aber Volumen zu schwach")
+        return None
+
+    criteria_count = count_5m + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross)
 
     if criteria_count >= 6:
         stars = "⭐⭐⭐"
@@ -167,6 +174,4 @@ if __name__ == "__main__":
     send_telegram("🚀 Bot wurde mit Doppelanalyse gestartet.")
     log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
-    app.run(host='0.0.0.0', port=8080)
-
-
+    app.run(host='0.0.0.0', port=
