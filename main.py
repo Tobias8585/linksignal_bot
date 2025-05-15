@@ -10,10 +10,9 @@ from datetime import datetime
 from binance.um_futures import UMFutures  # Binance Futures-Client importieren
 
 # Binance API-Schlüssel aus Umgebungsvariablen laden
-api_key = os.getenv("phcsyXmPGXpBE6Gu7yuLUPQIwgV6MvPCSV8iEhPxf9DbvSbu7nuhCqSg1Mzegkli")
-api_secret = os.getenv("QIChHDZC0k7HOSWN109ccwGj0BvBWsuMZLdUaUhDw8No4R5yPUE9LJqTfODNL6cM")
+api_key = os.getenv("BINANCE_API_KEY")
+api_secret = os.getenv("BINANCE_API_SECRET")
 client = UMFutures(key=api_key, secret=api_secret)
-
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
@@ -106,9 +105,11 @@ def analyze_combined(symbol):
     strong_volume = volume > avg_volume * 1.3
     ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
 
-    if count_1m == 2 and not strong_volume:
-        log_print(f"{symbol}: 2/3 aber Volumen zu schwach")
-        return None
+    # Verschärfte Bedingung für 2/3-Signale
+    if count_1m == 2:
+        if not (strong_volume and breakout):
+            log_print(f"{symbol}: 2/3 aber kein Breakout oder Volumen")
+            return None
 
     criteria_count = count_1m + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross)
 
@@ -139,21 +140,19 @@ def analyze_combined(symbol):
     macd_text = "MACD-Cross: ✅" if macd_cross else "MACD-Cross: ❌"
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
-                msg = (
-            f"🔔 *{symbol}* Signal: *{signal_1m}* {stars}\n"
-            f"{signal_strength}\n"
-            f"{breakout_text}\n"
-            f"🧠 Grund: {count_1m} von 3 {signal_1m}-Kriterien erfüllt\n"
-            f"🧠 Hauptsignal aus 1m | 5m: {signal_5m or 'kein'}\n"
-            f"📈 Trend: {trend_text} | RSI-Zone: {rsi_zone} | Volatilität: {volatility_pct:.2f} %\n"
-            f"{macd_text} | EMA-Cross: {'✅' if ema_cross else '❌'}\n"
-            f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
-            f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
-            f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
-            f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
-        )
-
-
+    msg = (
+        f"🔔 *{symbol}* Signal: *{signal_1m}* {stars}\n"
+        f"{signal_strength}\n"
+        f"{breakout_text}\n"
+        f"🧠 Grund: {count_1m} von 3 {signal_1m}-Kriterien erfüllt\n"
+        f"🧠 Hauptsignal aus 1m | 5m: {signal_5m or 'kein'}\n"
+        f"📈 Trend: {trend_text} | RSI-Zone: {rsi_zone} | Volatilität: {volatility_pct:.2f} %\n"
+        f"{macd_text} | EMA-Cross: {'✅' if ema_cross else '❌'}\n"
+        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
+        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
+        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
+        f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+    )
 
     return msg
 
@@ -177,15 +176,6 @@ def check_all_symbols():
             log_print(f"{symbol}: Kein Signal")
         time.sleep(1)
 
-    for symbol in symbols:
-        signal = analyze_combined(symbol)
-        if signal:
-            send_telegram(signal)
-            log_print(f"{symbol}: Signal gesendet\n{signal}")
-        else:
-            log_print(f"{symbol}: Kein Signal")
-        time.sleep(1)
-
 def run_bot():
     while True:
         check_all_symbols()
@@ -196,9 +186,10 @@ def home():
     return "Bot mit primärer 1m-Analyse läuft."
 
 if __name__ == "__main__":
-    send_telegram("🚀 Bot wurde mit 1m-Hauptanalyse gestartet.")
+    send_telegram("🚀 Bot wurde mit Doppelanalyse gestartet.")
     log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
 
 
