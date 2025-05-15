@@ -148,7 +148,25 @@ def analyze_combined(symbol):
     return msg
 
 def check_all_symbols():
-    symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
+    try:
+        exchange_info = client.futures_exchange_info()
+        symbols = [
+            s['symbol'] for s in exchange_info['symbols']
+            if s['contractType'] == 'PERPETUAL' and s['symbol'].endswith("USDT")
+        ]
+    except Exception as e:
+        log_print(f"Fehler beim Laden der Symbolliste: {e}")
+        return
+
+    for symbol in symbols:
+        signal = analyze_combined(symbol)
+        if signal:
+            send_telegram(signal)
+            log_print(f"{symbol}: Signal gesendet\n{signal}")
+        else:
+            log_print(f"{symbol}: Kein Signal")
+        time.sleep(1)
+
     for symbol in symbols:
         signal = analyze_combined(symbol)
         if signal:
@@ -172,4 +190,5 @@ if __name__ == "__main__":
     log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
 
