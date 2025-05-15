@@ -74,7 +74,6 @@ def analyze(df, symbol):
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
-    # ATR-Filter – wenn Markt zu ruhig, kein Signal
     if atr < price * 0.003:
         log_print(f"{symbol}: Kein Signal – ATR zu niedrig ({atr:.6f} < 0.3 % von {price:.4f})")
         return None
@@ -87,45 +86,44 @@ def analyze(df, symbol):
         f"RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA20={ema:.4f}, EMA50={ema50:.4f}"
     )
 
-    signal = "NEUTRAL"
+    signal = None
     reason = ""
 
-    if long_signals == 3:
+    if long_signals >= 2:
         signal = "LONG"
-        reason = "Alle 3 Long-Kriterien erfüllt"
-    elif short_signals == 3:
+        reason = f"{long_signals} von 3 Long-Kriterien erfüllt"
+    elif short_signals >= 2:
         signal = "SHORT"
-        reason = "Alle 3 Short-Kriterien erfüllt"
+        reason = f"{short_signals} von 3 Short-Kriterien erfüllt"
     else:
-        log_print(f"{symbol}: Kein Signal - Grund: Weniger als 3 Kriterien erfüllt")
+        log_print(f"{symbol}: Kein Signal - Grund: Weniger als 2 Kriterien erfüllt")
         return None
 
-    criteria_count = 3
-    if volume > avg_volume * 1.3:
-        criteria_count += 1
+    breakout = (signal == "LONG" and price > df['high'].iloc[-21:-1].max()) or \
+               (signal == "SHORT" and price < df['low'].iloc[-21:-1].min())
 
-    high_last_20 = df['high'].iloc[-21:-1].max()
-    low_last_20 = df['low'].iloc[-21:-1].min()
-    is_breakout = (signal == "LONG" and price > high_last_20) or \
-                  (signal == "SHORT" and price < low_last_20)
+    strong_volume = volume > avg_volume * 1.3
 
-    breakout_text = "🚀 Breakout erkannt!" if is_breakout else ""
-    if is_breakout:
-        criteria_count += 1
-
-    if criteria_count >= 5:
-        stars = "⭐⭐⭐"
-        signal_strength = "🟢 Sehr starkes Signal"
-    elif criteria_count == 4:
+    if long_signals == 3 or short_signals == 3:
+        criteria_count = 3 + int(strong_volume) + int(breakout)
+        if criteria_count >= 5:
+            stars = "⭐⭐⭐"
+            signal_strength = "🟢 Sehr starkes Signal"
+        else:
+            stars = "⭐⭐"
+            signal_strength = "🟡 Gutes Signal"
+    elif (strong_volume and breakout):
         stars = "⭐⭐"
         signal_strength = "🟡 Gutes Signal"
     else:
-        stars = "⭐"
-        signal_strength = "🟠 Schwaches Signal"
+        log_print(f"{symbol}: Kein Signal – 2 Kriterien aber kein Volumen oder Breakout")
+        return None
 
     tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
     sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
+
+    breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
     msg = (
         f"🔔 *{symbol}* Signal: *{signal}* {stars}\n"
@@ -140,11 +138,12 @@ def analyze(df, symbol):
 
     log_print(
         f"{symbol}: SIGNAL={signal} | Grund={reason} | Sterne={stars} | Signalstärke={signal_strength} | "
-        f"Breakout={is_breakout} | RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA20={ema:.4f}, EMA50={ema50:.4f}, "
+        f"Breakout={breakout} | RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA20={ema:.4f}, EMA50={ema50:.4f}, "
         f"Vol={volume:.0f}/Ø{avg_volume:.0f}, TP1={tp1:.4f}, TP2={tp2:.4f}, SL={sl:.4f}"
     )
 
     return msg
+
 
 def check_all_symbols():
     symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
