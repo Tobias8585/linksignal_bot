@@ -30,8 +30,8 @@ def send_telegram(message):
 
 def get_klines(symbol, interval="5m", limit=100):
     urls = [
-        f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}",  # Futures
-        f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"     # Spot
+        f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}",
+        f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
     ]
     sources = ["Futures", "Spot"]
     for url, source in zip(urls, sources):
@@ -84,30 +84,17 @@ def analyze(df, symbol):
     signal = "NEUTRAL"
     reason = ""
 
-    if long_signals < 3 and short_signals < 3:
-        reason = f"Zu wenig klare Signale – Long={long_signals}, Short={short_signals}"
-        log_print(f"{symbol}: Kein Signal – Grund: {reason}")
-        log_print(f"{symbol}: RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}")
+    if long_signals == 3:
+        signal = "LONG"
+        reason = "Alle 3 Long-Kriterien erfüllt"
+    elif short_signals == 3:
+        signal = "SHORT"
+        reason = "Alle 3 Short-Kriterien erfüllt"
+    else:
+        log_print(f"{symbol}: Kein Signal - Grund: Weniger als 3 Kriterien erfüllt")
         return None
 
-    if long_signals >= 2 and long_signals >= short_signals:
-        signal = "LONG"
-        reason = "Mindestens 2 Long-Kriterien erfüllt"
-    elif short_signals >= 2 and short_signals >= long_signals:
-        signal = "SHORT"
-        reason = "Mindestens 2 Short-Kriterien erfüllt"
-    elif long_signals == 1 and short_signals == 0:
-        signal = "LONG"
-        reason = "1 Long-Kriterium erfüllt, kein Short-Kriterium"
-    elif short_signals == 1 and long_signals == 0:
-        signal = "SHORT"
-        reason = "1 Short-Kriterium erfüllt, kein Long-Kriterium"
-
-    criteria_count = sum([
-        (rsi < 35 if signal == "LONG" else rsi > 70),
-        (macd_line > 0 if signal == "LONG" else macd_line < 0),
-        (price > ema * 1.005 if signal == "LONG" else price < ema * 0.995)
-    ])
+    criteria_count = 3
     if volume > avg_volume * 1.3:
         criteria_count += 1
 
@@ -126,12 +113,9 @@ def analyze(df, symbol):
     elif criteria_count == 4:
         stars = "★★"
         signal_strength = "🟡 Gutes Signal"
-    elif criteria_count == 3:
+    else:
         stars = "★"
         signal_strength = "🟠 Schwaches Signal"
-    else:
-        stars = ""
-        signal_strength = ""
 
     tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
@@ -155,6 +139,7 @@ def analyze(df, symbol):
     )
 
     return msg
+
 
 def check_all_symbols():
     symbols = [
