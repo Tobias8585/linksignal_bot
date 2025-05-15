@@ -73,8 +73,8 @@ def analyze(df, symbol):
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
-    long_signals = sum([rsi < 65, macd_line > -1, price > ema])
-    short_signals = sum([rsi > 70, macd_line < 0, price < ema])
+    long_signals = sum([rsi < 35, macd_line > 0, price > ema * 1.005])
+    short_signals = sum([rsi > 70, macd_line < 0, price < ema * 0.995])
 
     log_print(
         f"{symbol}: Long-Signals={long_signals}, Short-Signals={short_signals}, "
@@ -104,9 +104,9 @@ def analyze(df, symbol):
         reason = "1 Short-Kriterium erfüllt, kein Long-Kriterium"
 
     criteria_count = sum([
-        (rsi < 65 if signal == "LONG" else rsi > 70),
-        (macd_line > -1 if signal == "LONG" else macd_line < 0),
-        (price > ema if signal == "LONG" else price < ema)
+        (rsi < 35 if signal == "LONG" else rsi > 70),
+        (macd_line > 0 if signal == "LONG" else macd_line < 0),
+        (price > ema * 1.005 if signal == "LONG" else price < ema * 0.995)
     ])
     if volume > avg_volume * 1.3:
         criteria_count += 1
@@ -206,4 +206,3 @@ if __name__ == "__main__":
     log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
-
