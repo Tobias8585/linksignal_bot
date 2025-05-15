@@ -29,27 +29,33 @@ def send_telegram(message):
         log_print("Telegram-Fehler: " + str(e))
 
 def get_klines(symbol, interval="5m", limit=100):
-    url = f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}"
-    for attempt in range(3):
-        try:
-            response = requests.get(url, timeout=5)
-            data = response.json()
-            if isinstance(data, list) and len(data) > 0:
-                df = pd.DataFrame(data, columns=[
-                    'timestamp', 'open', 'high', 'low', 'close', 'volume',
-                    'close_time', 'quote_asset_volume', 'number_of_trades',
-                    'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
-                ])
-                df['close'] = df['close'].astype(float)
-                df['volume'] = df['volume'].astype(float)
-                df['high'] = df['high'].astype(float)
-                df['low'] = df['low'].astype(float)
-                return df
-            else:
-                log_print(f"{symbol}: Leere Datenantwort (Versuch {attempt + 1}/3)")
-        except Exception as e:
-            log_print(f"{symbol}: API-Fehler (Versuch {attempt + 1}/3): {e}")
-        time.sleep(2)
+    urls = [
+        f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}",  # Futures
+        f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"     # Spot
+    ]
+    sources = ["Futures", "Spot"]
+    for url, source in zip(urls, sources):
+        for attempt in range(3):
+            try:
+                response = requests.get(url, timeout=5)
+                data = response.json()
+                if isinstance(data, list) and len(data) > 0:
+                    df = pd.DataFrame(data, columns=[
+                        'timestamp', 'open', 'high', 'low', 'close', 'volume',
+                        'close_time', 'quote_asset_volume', 'number_of_trades',
+                        'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
+                    ])
+                    df['close'] = df['close'].astype(float)
+                    df['volume'] = df['volume'].astype(float)
+                    df['high'] = df['high'].astype(float)
+                    df['low'] = df['low'].astype(float)
+                    log_print(f"{symbol}: Daten erfolgreich geladen von {source}")
+                    return df
+                else:
+                    log_print(f"{symbol}: {source} – Leere Datenantwort (Versuch {attempt + 1}/3)")
+            except Exception as e:
+                log_print(f"{symbol}: {source} – Fehler (Versuch {attempt + 1}/3): {e}")
+            time.sleep(2)
     return None
 
 def analyze(df, symbol):
@@ -107,7 +113,8 @@ def analyze(df, symbol):
 
     high_last_20 = df['high'].iloc[-21:-1].max()
     low_last_20 = df['low'].iloc[-21:-1].min()
-    is_breakout = (signal == "LONG" and price > high_last_20) or                   (signal == "SHORT" and price < low_last_20)
+    is_breakout = (signal == "LONG" and price > high_last_20) or \
+                  (signal == "SHORT" and price < low_last_20)
 
     breakout_text = "🚀 Breakout erkannt!" if is_breakout else ""
     if is_breakout:
