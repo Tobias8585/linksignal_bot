@@ -74,6 +74,11 @@ def analyze(df, symbol):
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
+    # ATR-Filter – wenn Markt zu ruhig, kein Signal
+    if atr < price * 0.003:
+        log_print(f"{symbol}: Kein Signal – ATR zu niedrig ({atr:.6f} < 0.3 % von {price:.4f})")
+        return None
+
     long_signals = sum([rsi < 35, macd_line > 0, price > ema * 1.005 and price > ema50])
     short_signals = sum([rsi > 70, macd_line < 0, price < ema * 0.995 and price < ema50])
 
