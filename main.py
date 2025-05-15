@@ -72,7 +72,7 @@ def analyze(df, symbol):
     macd = MACD(df['close'])
     macd_line = macd.macd().iloc[-1]
     macd_signal = macd.macd_signal().iloc[-1]
-    macd_cross = macd_line > macd_signal  # für LONG – wird unten je nach Richtung angepasst
+    macd_cross = macd_line > macd_signal
 
     price = df['close'].iloc[-1]
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
@@ -97,11 +97,11 @@ def analyze(df, symbol):
     if long_signals >= 2:
         signal = "LONG"
         reason = f"{long_signals} von 3 Long-Kriterien erfüllt"
-        macd_cross = macd_line > macd_signal  # relevant für LONG
+        macd_cross = macd_line > macd_signal
     elif short_signals >= 2:
         signal = "SHORT"
         reason = f"{short_signals} von 3 Short-Kriterien erfüllt"
-        macd_cross = macd_line < macd_signal  # relevant für SHORT
+        macd_cross = macd_line < macd_signal
     else:
         log_print(f"{symbol}: Kein Signal - Grund: Weniger als 2 Kriterien erfüllt")
         return None
@@ -111,10 +111,8 @@ def analyze(df, symbol):
 
     strong_volume = volume > avg_volume * 1.3
 
-        # EMA-Cross prüfen
     ema_cross = ema > ema50 if signal == "LONG" else ema < ema50
 
-    # Bewertung inkl. EMA-Cross
     if long_signals == 3 or short_signals == 3:
         criteria_count = 3 + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross)
         if criteria_count >= 6:
@@ -135,14 +133,10 @@ def analyze(df, symbol):
         log_print(f"{symbol}: Kein Signal – 2 Kriterien aber kein Volumen oder Breakout")
         return None
 
-
     tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
     sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
 
-    breakout_text = "🚀 Breakout erkannt!" if breakout else ""
-
-        # Zusatzinfos für Nachricht (A9)
     volatility_pct = atr / price * 100
     trend_text = "Seitwärts"
     if price > ema and price > ema50:
@@ -156,12 +150,7 @@ def analyze(df, symbol):
     elif rsi > 70:
         rsi_zone = "überkauft"
 
-    macd_text = ""
-    if macd_cross:
-        macd_text = "MACD-Cross: ✅"
-    else:
-        macd_text = "MACD-Cross: ❌"
-
+    macd_text = "MACD-Cross: ✅" if macd_cross else "MACD-Cross: ❌"
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
     msg = (
@@ -171,26 +160,24 @@ def analyze(df, symbol):
         f"🧠 Grund: {reason}\n"
         f"📈 Trend: {trend_text} | RSI-Zone: {rsi_zone} | Volatilität: {volatility_pct:.2f} %\n"
         f"{macd_text}\n"
+        f"📉 EMA-Cross: {'✅' if ema_cross else '❌'}\n"
         f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
         f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
         f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
         f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
     )
 
-
     log_print(
         f"{symbol}: SIGNAL={signal} | Grund={reason} | Sterne={stars} | Signalstärke={signal_strength} | "
-        f"Breakout={breakout} | MACD-Cross={macd_cross} | RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, "
-        f"EMA20={ema:.4f}, EMA50={ema50:.4f}, Vol={volume:.0f}/Ø{avg_volume:.0f}, "
+        f"Breakout={breakout} | MACD-Cross={macd_cross} | EMA-Cross={ema_cross} | RSI={rsi:.2f}, MACD={macd_line:.4f}, "
+        f"Preis={price:.4f}, EMA20={ema:.4f}, EMA50={ema50:.4f}, Vol={volume:.0f}/Ø{avg_volume:.0f}, "
         f"TP1={tp1:.4f}, TP2={tp2:.4f}, SL={sl:.4f}"
     )
 
     return msg
 
-
-
 def check_all_symbols():
-    symbols = [    symbols = [
+    symbols = [
         "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "SOLUSDT", "DOGEUSDT", "AVAXUSDT", "TRXUSDT", "DOTUSDT",
         "MATICUSDT", "LTCUSDT", "SHIBUSDT", "LINKUSDT", "ATOMUSDT", "UNIUSDT", "XLMUSDT", "HBARUSDT", "APTUSDT", "ARBUSDT",
         "VETUSDT", "ICPUSDT", "NEARUSDT", "FILUSDT", "INJUSDT", "RENDERUSDT", "QNTUSDT", "LDOUSDT", "EGLDUSDT", "AAVEUSDT",
@@ -213,7 +200,6 @@ def check_all_symbols():
         "JAMUSDT", "ARKMUSDT", "NTRNUSDT", "ETHFIUSDT", "ALTUSDT", "BEAMUSDT", "STORJUSDT", "TOMO3SUSDT", "MANTAUSDT",
         "XAIUSDT", "NFPUSDT", "MAVUSDT", "ZKUSDT", "PYRUSDT", "BICO3LUSDT", "SANTOSUSDT", "JSTUSDT", "LOKAUSDT", "GNSUSDT"
     ]
-]
 
     total = len(symbols)
     skipped = 0
