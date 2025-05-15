@@ -28,7 +28,7 @@ def send_telegram(message):
     except Exception as e:
         log_print("Telegram-Fehler: " + str(e))
 
-def get_klines(symbol, interval="5m", limit=100):
+def get_klines(symbol, interval="5m", limit=75):
     urls = [
         f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}",
         f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
