@@ -174,4 +174,5 @@ if __name__ == "__main__":
     send_telegram("🚀 Bot wurde mit Doppelanalyse gestartet.")
     log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
-    app.run(host='0.0.0.0', port=
+    app.run(host='0.0.0.0', port=8080)
+
