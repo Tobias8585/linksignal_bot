@@ -1,3 +1,4 @@
+# Vollintegrierte Version mit Doppelanalyse (1m + 5m)
 import requests
 import time
 import threading
@@ -12,7 +13,6 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 app = Flask(__name__)
-
 log_file = open("log.txt", "a", encoding="utf-8")
 
 def log_print(message):
@@ -29,113 +29,88 @@ def send_telegram(message):
         log_print("Telegram-Fehler: " + str(e))
 
 def get_klines(symbol, interval="5m", limit=75):
-    urls = [
-        f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}",
-        f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
-    ]
-    sources = ["Futures", "Spot"]
-    for url, source in zip(urls, sources):
-        for attempt in range(3):
-            try:
-                response = requests.get(url, timeout=5)
-                data = response.json()
-                if isinstance(data, list) and len(data) > 0:
-                    df = pd.DataFrame(data, columns=[
-                        'timestamp', 'open', 'high', 'low', 'close', 'volume',
-                        'close_time', 'quote_asset_volume', 'number_of_trades',
-                        'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
-                    ])
-                    df['close'] = df['close'].astype(float)
-                    df['volume'] = df['volume'].astype(float)
-                    df['high'] = df['high'].astype(float)
-                    df['low'] = df['low'].astype(float)
-                    log_print(f"{symbol}: Daten erfolgreich geladen von {source}")
-                    return df
-                else:
-                    log_print(f"{symbol}: {source} – Leere Datenantwort (Versuch {attempt + 1}/3)")
-            except Exception as e:
-                log_print(f"{symbol}: {source} – Fehler (Versuch {attempt + 1}/3): {e}")
-            time.sleep(2)
+    url = f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}"
+    for attempt in range(3):
+        try:
+            response = requests.get(url, timeout=5)
+            data = response.json()
+            if isinstance(data, list) and len(data) > 0:
+                df = pd.DataFrame(data, columns=[
+                    'timestamp', 'open', 'high', 'low', 'close', 'volume',
+                    'close_time', 'quote_asset_volume', 'number_of_trades',
+                    'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
+                ])
+                df['close'] = df['close'].astype(float)
+                df['volume'] = df['volume'].astype(float)
+                df['high'] = df['high'].astype(float)
+                df['low'] = df['low'].astype(float)
+                return df
+        except Exception as e:
+            log_print(f"{symbol} {interval}: Fehler (Versuch {attempt + 1}/3): {e}")
+        time.sleep(2)
     return None
 
-def analyze(df, symbol):
-    required_columns = ['close', 'high', 'low', 'volume']
-    for col in required_columns:
-        if col not in df.columns:
-            log_print(f"{symbol}: Analyse übersprungen – fehlende Spalte: {col}")
-            return None
-
+def get_simple_signal(df):
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     ema50 = df['close'].ewm(span=50).mean().iloc[-1]
+    macd_line = MACD(df['close']).macd().iloc[-1]
+    price = df['close'].iloc[-1]
 
+    long_signals = sum([rsi < 35, macd_line > 0, price > ema * 1.005 and price > ema50])
+    short_signals = sum([rsi > 70, macd_line < 0, price < ema * 0.995 and price < ema50])
+
+    if long_signals >= 2:
+        return "LONG"
+    elif short_signals >= 2:
+        return "SHORT"
+    return None
+
+def analyze_combined(symbol):
+    df_1m = get_klines(symbol, interval="1m", limit=50)
+    df_5m = get_klines(symbol, interval="5m", limit=75)
+    if df_1m is None or df_5m is None:
+        return None
+
+    signal_1m = get_simple_signal(df_1m)
+    signal_5m = get_simple_signal(df_5m)
+    if not signal_1m or not signal_5m or signal_1m != signal_5m:
+        log_print(f"{symbol}: Kein doppeltes übereinstimmendes Signal")
+        return None
+
+    df = df_5m  # Hauptanalyse basiert auf 5m für alle weiteren Werte
+    rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
+    ema = df['close'].ewm(span=20).mean().iloc[-1]
+    ema50 = df['close'].ewm(span=50).mean().iloc[-1]
     macd = MACD(df['close'])
     macd_line = macd.macd().iloc[-1]
     macd_signal = macd.macd_signal().iloc[-1]
-    macd_cross = macd_line > macd_signal
-
+    macd_cross = macd_line > macd_signal if signal_5m == "LONG" else macd_line < macd_signal
     price = df['close'].iloc[-1]
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
     if atr < price * 0.003:
-        log_print(f"{symbol}: Kein Signal – ATR zu niedrig ({atr:.6f} < 0.3 % von {price:.4f})")
+        log_print(f"{symbol}: Kein Signal – ATR zu niedrig")
         return None
 
-    long_signals = sum([rsi < 35, macd_line > 0, price > ema * 1.005 and price > ema50])
-    short_signals = sum([rsi > 70, macd_line < 0, price < ema * 0.995 and price < ema50])
-
-    log_print(
-        f"{symbol}: Long-Signals={long_signals}, Short-Signals={short_signals}, "
-        f"RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA20={ema:.4f}, EMA50={ema50:.4f}"
-    )
-
-    signal = None
-    reason = ""
-
-    if long_signals >= 2:
-        signal = "LONG"
-        reason = f"{long_signals} von 3 Long-Kriterien erfüllt"
-        macd_cross = macd_line > macd_signal
-    elif short_signals >= 2:
-        signal = "SHORT"
-        reason = f"{short_signals} von 3 Short-Kriterien erfüllt"
-        macd_cross = macd_line < macd_signal
-    else:
-        log_print(f"{symbol}: Kein Signal - Grund: Weniger als 2 Kriterien erfüllt")
-        return None
-
-    breakout = (signal == "LONG" and price > df['high'].iloc[-21:-1].max()) or \
-               (signal == "SHORT" and price < df['low'].iloc[-21:-1].min())
-
+    breakout = (signal_5m == "LONG" and price > df['high'].iloc[-21:-1].max()) or \
+               (signal_5m == "SHORT" and price < df['low'].iloc[-21:-1].min())
     strong_volume = volume > avg_volume * 1.3
+    ema_cross = ema > ema50 if signal_5m == "LONG" else ema < ema50
+    criteria_count = 3 + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross)
 
-    ema_cross = ema > ema50 if signal == "LONG" else ema < ema50
-
-    if long_signals == 3 or short_signals == 3:
-        criteria_count = 3 + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross)
-        if criteria_count >= 6:
-            stars = "⭐⭐⭐"
-            signal_strength = "🟢 Sehr starkes Signal"
-        else:
-            stars = "⭐⭐"
-            signal_strength = "🟡 Gutes Signal"
-    elif strong_volume and breakout:
-        criteria_count = 2 + 1 + 1 + int(macd_cross) + int(ema_cross)
-        if criteria_count >= 5:
-            stars = "⭐⭐⭐"
-            signal_strength = "🟢 Sehr starkes Signal"
-        else:
-            stars = "⭐⭐"
-            signal_strength = "🟡 Gutes Signal"
+    if criteria_count >= 6:
+        stars = "⭐⭐⭐"
+        signal_strength = "🟢 Sehr starkes Signal"
     else:
-        log_print(f"{symbol}: Kein Signal – 2 Kriterien aber kein Volumen oder Breakout")
-        return None
+        stars = "⭐⭐"
+        signal_strength = "🟡 Gutes Signal"
 
-    tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
-    tp2 = price + 2.5 * atr if signal == "LONG" else price - 2.5 * atr
-    sl = price - 1.2 * atr if signal == "LONG" else price + 1.2 * atr
+    tp1 = price + 1.5 * atr if signal_5m == "LONG" else price - 1.5 * atr
+    tp2 = price + 2.5 * atr if signal_5m == "LONG" else price - 2.5 * atr
+    sl = price - 1.2 * atr if signal_5m == "LONG" else price + 1.2 * atr
 
     volatility_pct = atr / price * 100
     trend_text = "Seitwärts"
@@ -154,85 +129,30 @@ def analyze(df, symbol):
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
     msg = (
-        f"🔔 *{symbol}* Signal: *{signal}* {stars}\n"
+        f"🔔 *{symbol}* Doppelsignal: *{signal_5m}* {stars}\n"
         f"{signal_strength}\n"
         f"{breakout_text}\n"
-        f"🧠 Grund: {reason}\n"
+        f"🧠 Bestätigt durch 1m + 5m\n"
         f"📈 Trend: {trend_text} | RSI-Zone: {rsi_zone} | Volatilität: {volatility_pct:.2f} %\n"
-        f"{macd_text}\n"
-        f"📉 EMA-Cross: {'✅' if ema_cross else '❌'}\n"
+        f"{macd_text} | EMA-Cross: {'✅' if ema_cross else '❌'}\n"
         f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
         f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
         f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
         f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
     )
 
-    log_print(
-        f"{symbol}: SIGNAL={signal} | Grund={reason} | Sterne={stars} | Signalstärke={signal_strength} | "
-        f"Breakout={breakout} | MACD-Cross={macd_cross} | EMA-Cross={ema_cross} | RSI={rsi:.2f}, MACD={macd_line:.4f}, "
-        f"Preis={price:.4f}, EMA20={ema:.4f}, EMA50={ema50:.4f}, Vol={volume:.0f}/Ø{avg_volume:.0f}, "
-        f"TP1={tp1:.4f}, TP2={tp2:.4f}, SL={sl:.4f}"
-    )
-
     return msg
 
 def check_all_symbols():
-    symbols = [
-        "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "SOLUSDT", "DOGEUSDT", "AVAXUSDT", "TRXUSDT", "DOTUSDT",
-        "MATICUSDT", "LTCUSDT", "SHIBUSDT", "LINKUSDT", "ATOMUSDT", "UNIUSDT", "XLMUSDT", "HBARUSDT", "APTUSDT", "ARBUSDT",
-        "VETUSDT", "ICPUSDT", "NEARUSDT", "FILUSDT", "INJUSDT", "RENDERUSDT", "QNTUSDT", "LDOUSDT", "EGLDUSDT", "AAVEUSDT",
-        "SANDUSDT", "MANAUSDT", "THETAUSDT", "AXSUSDT", "XTZUSDT", "CHZUSDT", "GRTUSDT", "ENSUSDT", "KAVAUSDT", "TWTUSDT",
-        "FXSUSDT", "RLCUSDT", "PEPEUSDT", "SUIUSDT", "FLUXUSDT", "CELOUSDT", "STXUSDT", "COMPUSDT", "ZILUSDT", "ZENUSDT",
-        "YFIUSDT", "DYDXUSDT", "SNXUSDT", "BANDUSDT", "LRCUSDT", "DASHUSDT", "CRVUSDT", "KSMUSDT", "ALICEUSDT", "GALAUSDT",
-        "ONEUSDT", "ARPAUSDT", "RNDRUSDT", "TOMOUSDT", "OCEANUSDT", "CKBUSDT", "BLZUSDT", "ILVUSDT", "YGGUSDT", "BICOUSDT",
-        "JOEUSDT", "HOOKUSDT", "HIGHUSDT", "XNOUSDT", "LOOMUSDT", "TRUUSDT", "PERPUSDT", "BAKEUSDT", "STMXUSDT", "ACHUSDT",
-        "NKNUSDT", "ALPHAUSDT", "CTSIUSDT", "ANKRUSDT", "SKLUSDT", "ZRXUSDT", "AGIXUSDT", "PLAUSDT", "API3USDT", "BELUSDT",
-        "MOVRUSDT", "BNTUSDT", "DENTUSDT", "GLMRUSDT", "DEGOUSDT", "KNCUSDT", "QUICKUSDT", "TRBUSDT", "HYPEUSDT", "TAOUSDT",
-        "KASUSDT", "POLUSDT", "JUPUSDT", "MKRUSDT", "DEXEUSDT", "SOLAYERUSDT", "SXTUSDT", "INITUSDT", "ZEREBROUSDT",
-        "JTOUSDT", "PYTHUSDT", "ONDOUSDT", "ENAUSDT", "TNSRUSDT", "WUSDT", "NOTUSDT", "PIXELUSDT", "AEVOUSDT", "TURBOUSDT",
-        "MOGUSDT", "DYMUSDT", "PORTALUSDT", "1000SATSUSDT", "LINAUSDT", "IDEXUSDT", "SPELLUSDT", "FETUSDT", "LITUSDT",
-        "CVCUSDT", "COTIUSDT", "REEFUSDT", "LQTYUSDT", "NMRUSDT", "RSRUSDT", "MTLUSDT", "PHBUSDT", "GALUSDT", "WNXMUSDT",
-        "BONDUSDT", "FLOKIUSDT", "ALPACAUSDT", "XVGUSDT", "BTSUSDT", "SFPUSDT", "VTHOUSDT", "TRACUSDT", "ANTUSDT",
-        "POWRUSDT", "USTCUSDT", "STRAXUSDT", "MDTUSDT", "DGBUSDT", "BADGERUSDT", "AUDIOUSDT", "XECUSDT", "VOXELUSDT",
-        "TUSDT", "LPTUSDT", "MLNUSDT", "TVKUSDT", "UNFIUSDT", "FORTHUSDT", "RUNEUSDT", "ERNUSDT", "FARMUSDT", "DUSKUSDT",
-        "XVSUSDT", "SUNUSDT", "BETAUSDT", "ASTRUSDT", "AERGOUSDT", "GHSTUSDT", "ALCXUSDT", "REIUSDT", "PUNDIXUSDT",
-        "KLAYUSDT", "OXTUSDT", "KEYUSDT", "ACMUSDT", "WAVESUSDT", "XRP3LUSDT", "JOEYUSDT", "RAYUSDT", "MBLUSDT", "TRBUSD",
-        "JAMUSDT", "ARKMUSDT", "NTRNUSDT", "ETHFIUSDT", "ALTUSDT", "BEAMUSDT", "STORJUSDT", "TOMO3SUSDT", "MANTAUSDT",
-        "XAIUSDT", "NFPUSDT", "MAVUSDT", "ZKUSDT", "PYRUSDT", "BICO3LUSDT", "SANTOSUSDT", "JSTUSDT", "LOKAUSDT", "GNSUSDT"
-    ]
-
-    total = len(symbols)
-    skipped = 0
-    signals = 0
-    nodata = 0
-
+    symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
     for symbol in symbols:
-        df = get_klines(symbol)
-
-        if df is None or len(df) == 0:
-            log_print(f"{symbol}: Erster Datenversuch fehlgeschlagen – versuche erneut in 2 Sekunden")
-            time.sleep(2)
-            df = get_klines(symbol)
-
-        if df is not None:
-            signal = analyze(df, symbol)
-            if signal:
-                send_telegram(signal)
-                signals += 1
-                log_print(f"Telegram gesendet: {symbol}\nInhalt: {signal}")
-            else:
-                skipped += 1
+        signal = analyze_combined(symbol)
+        if signal:
+            send_telegram(signal)
+            log_print(f"{symbol}: Signal gesendet\n{signal}")
         else:
-            nodata += 1
-            log_print(f"{symbol}: Keine Daten vom Server")
-
-        time.sleep(0.5)
-
-    log_print("\n--- Zusammenfassung ---")
-    log_print(f"Gesamt: {total} | Signale: {signals} | Übersprungen: {skipped} | Keine Daten: {nodata}\n")
-
-    if signals == 0:
-        send_telegram("🧘 Kein Signal bei allen geprüften Coins – Markt aktuell ruhig.")
+            log_print(f"{symbol}: Kein übereinstimmendes Doppelsignal")
+        time.sleep(1)
 
 def run_bot():
     while True:
@@ -241,10 +161,10 @@ def run_bot():
 
 @app.route('/')
 def home():
-    return "Bot läuft und empfängt Anfragen."
+    return "Bot mit Doppelanalyse läuft."
 
 if __name__ == "__main__":
-    send_telegram("🚀 Bot wurde gestartet und überwacht Coins mit gelockerten Bedingungen.")
+    send_telegram("🚀 Bot wurde mit Doppelanalyse gestartet.")
     log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
