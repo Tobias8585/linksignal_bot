@@ -67,18 +67,19 @@ def analyze(df, symbol):
 
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
+    ema50 = df['close'].ewm(span=50).mean().iloc[-1]
     macd_line = MACD(df['close']).macd().iloc[-1]
     price = df['close'].iloc[-1]
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
-    long_signals = sum([rsi < 35, macd_line > 0, price > ema * 1.005])
-    short_signals = sum([rsi > 70, macd_line < 0, price < ema * 0.995])
+    long_signals = sum([rsi < 35, macd_line > 0, price > ema * 1.005 and price > ema50])
+    short_signals = sum([rsi > 70, macd_line < 0, price < ema * 0.995 and price < ema50])
 
     log_print(
         f"{symbol}: Long-Signals={long_signals}, Short-Signals={short_signals}, "
-        f"RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}"
+        f"RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA20={ema:.4f}, EMA50={ema50:.4f}"
     )
 
     signal = "NEUTRAL"
@@ -108,13 +109,13 @@ def analyze(df, symbol):
         criteria_count += 1
 
     if criteria_count >= 5:
-        stars = "★★★"
+        stars = "⭐⭐⭐"
         signal_strength = "🟢 Sehr starkes Signal"
     elif criteria_count == 4:
-        stars = "★★"
+        stars = "⭐⭐"
         signal_strength = "🟡 Gutes Signal"
     else:
-        stars = "★"
+        stars = "⭐"
         signal_strength = "🟠 Schwaches Signal"
 
     tp1 = price + 1.5 * atr if signal == "LONG" else price - 1.5 * atr
@@ -126,7 +127,7 @@ def analyze(df, symbol):
         f"{signal_strength}\n"
         f"{breakout_text}\n"
         f"🧠 Grund: {reason}\n"
-        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA: {ema:.2f}\n"
+        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
         f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
         f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
         f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
@@ -134,37 +135,14 @@ def analyze(df, symbol):
 
     log_print(
         f"{symbol}: SIGNAL={signal} | Grund={reason} | Sterne={stars} | Signalstärke={signal_strength} | "
-        f"Breakout={is_breakout} | RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA={ema:.4f}, "
+        f"Breakout={is_breakout} | RSI={rsi:.2f}, MACD={macd_line:.4f}, Preis={price:.4f}, EMA20={ema:.4f}, EMA50={ema50:.4f}, "
         f"Vol={volume:.0f}/Ø{avg_volume:.0f}, TP1={tp1:.4f}, TP2={tp2:.4f}, SL={sl:.4f}"
     )
 
     return msg
 
-
 def check_all_symbols():
-    symbols = [
-        "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "SOLUSDT", "DOGEUSDT", "AVAXUSDT", "TRXUSDT", "DOTUSDT",
-        "MATICUSDT", "LTCUSDT", "SHIBUSDT", "LINKUSDT", "ATOMUSDT", "UNIUSDT", "XLMUSDT", "HBARUSDT", "APTUSDT", "ARBUSDT",
-        "VETUSDT", "ICPUSDT", "NEARUSDT", "FILUSDT", "INJUSDT", "RENDERUSDT", "QNTUSDT", "LDOUSDT", "EGLDUSDT", "AAVEUSDT",
-        "SANDUSDT", "MANAUSDT", "THETAUSDT", "AXSUSDT", "XTZUSDT", "CHZUSDT", "GRTUSDT", "ENSUSDT", "KAVAUSDT", "TWTUSDT",
-        "FXSUSDT", "RLCUSDT", "PEPEUSDT", "SUIUSDT", "FLUXUSDT", "CELOUSDT", "STXUSDT", "COMPUSDT", "ZILUSDT", "ZENUSDT",
-        "YFIUSDT", "DYDXUSDT", "SNXUSDT", "BANDUSDT", "LRCUSDT", "DASHUSDT", "CRVUSDT", "KSMUSDT", "ALICEUSDT", "GALAUSDT",
-        "ONEUSDT", "ARPAUSDT", "RNDRUSDT", "TOMOUSDT", "OCEANUSDT", "CKBUSDT", "BLZUSDT", "ILVUSDT", "YGGUSDT", "BICOUSDT",
-        "JOEUSDT", "HOOKUSDT", "HIGHUSDT", "XNOUSDT", "LOOMUSDT", "TRUUSDT", "PERPUSDT", "BAKEUSDT", "STMXUSDT", "ACHUSDT",
-        "NKNUSDT", "ALPHAUSDT", "CTSIUSDT", "ANKRUSDT", "SKLUSDT", "ZRXUSDT", "AGIXUSDT", "PLAUSDT", "API3USDT", "BELUSDT",
-        "MOVRUSDT", "BNTUSDT", "DENTUSDT", "GLMRUSDT", "DEGOUSDT", "KNCUSDT", "QUICKUSDT", "TRBUSDT", "HYPEUSDT", "TAOUSDT",
-        "KASUSDT", "POLUSDT", "JUPUSDT", "MKRUSDT", "DEXEUSDT", "SOLAYERUSDT", "SXTUSDT", "INITUSDT", "ZEREBROUSDT",
-        "JTOUSDT", "PYTHUSDT", "ONDOUSDT", "ENAUSDT", "TNSRUSDT", "WUSDT", "NOTUSDT", "PIXELUSDT", "AEVOUSDT", "TURBOUSDT",
-        "MOGUSDT", "DYMUSDT", "PORTALUSDT", "1000SATSUSDT", "LINAUSDT", "IDEXUSDT", "SPELLUSDT", "FETUSDT", "LITUSDT",
-        "CVCUSDT", "COTIUSDT", "REEFUSDT", "LQTYUSDT", "NMRUSDT", "RSRUSDT", "MTLUSDT", "PHBUSDT", "GALUSDT", "WNXMUSDT",
-        "BONDUSDT", "FLOKIUSDT", "ALPACAUSDT", "XVGUSDT", "BTSUSDT", "SFPUSDT", "VTHOUSDT", "TRACUSDT", "ANTUSDT",
-        "POWRUSDT", "USTCUSDT", "STRAXUSDT", "MDTUSDT", "DGBUSDT", "BADGERUSDT", "AUDIOUSDT", "XECUSDT", "VOXELUSDT",
-        "TUSDT", "LPTUSDT", "MLNUSDT", "TVKUSDT", "UNFIUSDT", "FORTHUSDT", "RUNEUSDT", "ERNUSDT", "FARMUSDT", "DUSKUSDT",
-        "XVSUSDT", "SUNUSDT", "BETAUSDT", "ASTRUSDT", "AERGOUSDT", "GHSTUSDT", "ALCXUSDT", "REIUSDT", "PUNDIXUSDT",
-        "KLAYUSDT", "OXTUSDT", "KEYUSDT", "ACMUSDT", "WAVESUSDT", "XRP3LUSDT", "JOEYUSDT", "RAYUSDT", "MBLUSDT", "TRBUSD",
-        "JAMUSDT", "ARKMUSDT", "NTRNUSDT", "ETHFIUSDT", "ALTUSDT", "BEAMUSDT", "STORJUSDT", "TOMO3SUSDT", "MANTAUSDT",
-        "XAIUSDT", "NFPUSDT", "MAVUSDT", "ZKUSDT", "PYRUSDT", "BICO3LUSDT", "SANTOSUSDT", "JSTUSDT", "LOKAUSDT", "GNSUSDT"
-    ]
+    symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT"]  # TEMPORÄR GEKÜRZT
 
     total = len(symbols)
     skipped = 0
@@ -213,3 +191,4 @@ if __name__ == "__main__":
     log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
