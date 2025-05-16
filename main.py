@@ -96,6 +96,11 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Kein 1m-Signal")
         return None
 
+    # Vorschlag 19: Ausschluss bei divergierendem Trend
+    if (signal_1m == "LONG" and signal_5m == "SHORT") or (signal_1m == "SHORT" and signal_5m == "LONG"):
+        log_print(f"{symbol}: Divergenz 1m/5m erkannt – kein klares Setup")
+        return None
+
     if signal_1m == "LONG":
         market_sentiment["long"] += 1
     elif signal_1m == "SHORT":
