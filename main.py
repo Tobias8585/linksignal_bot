@@ -4,7 +4,7 @@ import threading
 from flask import Flask
 import pandas as pd
 from ta.momentum import RSIIndicator
-from ta.trend import EMAIndicator, MACD, CCIIndicator, IchimokuIndicator  # erweitert & korrekt
+from ta.trend import EMAIndicator, MACD, CCIIndicator, IchimokuIndicator, BollingerBands
 import os
 from datetime import datetime
 from binance.um_futures import UMFutures  # Binance Futures-Client importieren
