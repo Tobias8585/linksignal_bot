@@ -235,13 +235,14 @@ def analyze_combined(symbol):
     strong_volume = volume > avg_volume * 1.3
     ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
 
-        if count_1m == 2:
+            if count_1m == 2:
         if not (strong_volume and breakout):
             log_print(f"{symbol}: 2/3 aber kein Breakout oder Volumen")
             return None
         if signal_1m == "SHORT" and not (ema_trend_down and ema50_trend_down):
             log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
             return None
+
 
     # NEU: Breakout-Vorbereitung (Vorschlag 25)
     pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
