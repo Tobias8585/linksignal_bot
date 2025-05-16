@@ -286,6 +286,12 @@ def analyze_combined(symbol):
     if is_near_recent_low(df, window=50, tolerance=0.02):
         low_coins.append(symbol)
 
+    # 📉 Reversal-Check
+if is_reversal_candidate(df):
+    send_telegram(f"🔄 *Reversal-Kandidat erkannt*: {symbol}\n"
+                  f"Coin zeigt starke Umkehrsignale (RSI/CCI/MACD/Volumen).")
+
+
     criteria_count = (
         count_1m +
         int(strong_volume) +
