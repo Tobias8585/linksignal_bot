@@ -96,7 +96,7 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Kein 1m-Signal")
         return None
 
-    df = df_5m
+       df = df_5m
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     ema50 = df['close'].ewm(span=50).mean().iloc[-1]
@@ -110,7 +110,19 @@ def analyze_combined(symbol):
     macd_signal = macd.macd_signal().iloc[-1]
     macd_cross = macd_line > macd_signal if signal_1m == "LONG" else macd_line < macd_signal
     price = df['close'].iloc[-1]
+
+    # Ichimoku-Trendfilter (Kijun-Sen)
+    ichimoku = IchimokuIndicator(high=df['high'], low=df['low'], window1=9, window2=26, window3=52)
+    kijun_sen = ichimoku.ichimoku_base_line().iloc[-1]
+    if signal_1m == "LONG" and price < kijun_sen:
+        log_print(f"{symbol}: LONG aber unter Ichimoku-Kijun")
+        return None
+    if signal_1m == "SHORT" and price > kijun_sen:
+        log_print(f"{symbol}: SHORT aber über Ichimoku-Kijun")
+        return None
+
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
+
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
