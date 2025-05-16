@@ -150,6 +150,8 @@ def get_simple_signal(df):
     return None, 0
 
 market_sentiment = {"long": 0, "short": 0}
+low_coins = []  # Liste der Coins nahe am Tiefstand
+
 
 def analyze_combined(symbol):
     df_1m = get_klines(symbol, interval="1m", limit=50)
