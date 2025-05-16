@@ -286,11 +286,10 @@ def analyze_combined(symbol):
     if is_near_recent_low(df, window=50, tolerance=0.02):
         low_coins.append(symbol)
 
-    # 📉 Reversal-Check
-if is_reversal_candidate(df):
-    send_telegram(f"🔄 *Reversal-Kandidat erkannt*: {symbol}\n"
-                  f"Coin zeigt starke Umkehrsignale (RSI/CCI/MACD/Volumen).")
-
+       # 📉 Reversal-Check
+    if is_reversal_candidate(df):
+        send_telegram(f"🔄 *Reversal-Kandidat erkannt*: {symbol}\n"
+                      f"Coin zeigt starke Umkehrsignale (RSI/CCI/MACD/Volumen).")
 
     criteria_count = (
         count_1m +
@@ -342,6 +341,7 @@ if is_reversal_candidate(df):
     bollinger_text = "Bollinger-Rebound: ✅" if bollinger_signal else "Bollinger-Rebound: ❌"
     fib_text = "Fibonacci-Bestätigung: ✅" if fib_signal else "Fibonacci-Bestätigung: ❌"
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
+
 
     msg = (
         f"🔔 *{symbol}* Signal: *{signal_1m}* {stars}\n"
