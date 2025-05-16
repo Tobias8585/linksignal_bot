@@ -84,6 +84,90 @@ def get_simple_signal(df):
     return None, 0
 
 
+import requests
+import time
+import threading
+from flask import Flask
+import pandas as pd
+from ta.momentum import RSIIndicator
+from ta.trend import EMAIndicator, MACD, CCIIndicator, IchimokuIndicator, BollingerBands  # erweitert & korrekt
+import os
+from datetime import datetime
+from binance.um_futures import UMFutures  # Binance Futures-Client importieren
+
+# Binance API-Schlüssel aus Umgebungsvariablen laden
+api_key = os.getenv("BINANCE_API_KEY")
+api_secret = os.getenv("BINANCE_API_SECRET")
+client = UMFutures(key=api_key, secret=api_secret)
+
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
+
+app = Flask(__name__)
+log_file = open("log.txt", "a", encoding="utf-8")
+
+def log_print(message):
+    print(message, flush=True)
+    log_file.write(f"{message}\n")
+    log_file.flush()
+
+def send_telegram(message):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {'chat_id': CHAT_ID, 'text': message, 'parse_mode': 'Markdown'}
+    try:
+        requests.post(url, json=payload)
+    except Exception as e:
+        log_print("Telegram-Fehler: " + str(e))
+
+def get_klines(symbol, interval="5m", limit=75):
+    url = f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}"
+    for attempt in range(3):
+        try:
+            response = requests.get(url, timeout=5)
+            data = response.json()
+            if isinstance(data, list) and len(data) > 0:
+                df = pd.DataFrame(data, columns=[
+                    'timestamp', 'open', 'high', 'low', 'close', 'volume',
+                    'close_time', 'quote_asset_volume', 'number_of_trades',
+                    'taker_buy_base_asset_volume', 'taker_buy_quote_asset_volume', 'ignore'
+                ])
+                df['close'] = df['close'].astype(float)
+                df['volume'] = df['volume'].astype(float)
+                df['high'] = df['high'].astype(float)
+                df['low'] = df['low'].astype(float)
+                return df
+        except Exception as e:
+            log_print(f"{symbol} {interval}: Fehler (Versuch {attempt + 1}/3): {e}")
+        time.sleep(2)
+    return None
+
+def get_simple_signal(df):
+    rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
+    cci = CCIIndicator(high=df['high'], low=df['low'], close=df['close'], window=20).cci().iloc[-1]
+    ema = df['close'].ewm(span=20).mean().iloc[-1]
+    ema50 = df['close'].ewm(span=50).mean().iloc[-1]
+    macd_line = MACD(df['close']).macd().iloc[-1]
+    price = df['close'].iloc[-1]
+
+    long_signals = sum([
+        rsi < 35,
+        macd_line > 0,
+        price > ema * 1.005 and price > ema50,
+        cci < -100
+    ])
+    short_signals = sum([
+        rsi > 70,
+        macd_line < 0,
+        price < ema * 0.995 and price < ema50,
+        cci > 100
+    ])
+
+    if long_signals >= 2:
+        return "LONG", long_signals
+    elif short_signals >= 2:
+        return "SHORT", short_signals
+    return None, 0
+
 def analyze_combined(symbol):
     df_1m = get_klines(symbol, interval="1m", limit=50)
     df_5m = get_klines(symbol, interval="5m", limit=75)
@@ -111,6 +195,12 @@ def analyze_combined(symbol):
     macd_cross = macd_line > macd_signal if signal_1m == "LONG" else macd_line < macd_signal
     price = df['close'].iloc[-1]
 
+    # Bollinger Bänder
+    bb = BollingerBands(close=df['close'], window=20, window_dev=2)
+    bb_upper = bb.bollinger_hband().iloc[-1]
+    bb_lower = bb.bollinger_lband().iloc[-1]
+    bollinger_signal = (signal_1m == "LONG" and price < bb_lower) or (signal_1m == "SHORT" and price > bb_upper)
+
     # Ichimoku-Trendfilter (Kijun-Sen)
     ichimoku = IchimokuIndicator(high=df['high'], low=df['low'], window1=9, window2=26, window3=52)
     kijun_sen = ichimoku.ichimoku_base_line().iloc[-1]
@@ -134,7 +224,6 @@ def analyze_combined(symbol):
     strong_volume = volume > avg_volume * 1.3
     ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
 
-    # Verschärfte Bedingung für 2/3-Signale
     if count_1m == 2:
         if not (strong_volume and breakout):
             log_print(f"{symbol}: 2/3 aber kein Breakout oder Volumen")
@@ -143,7 +232,7 @@ def analyze_combined(symbol):
             log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
             return None
 
-    criteria_count = count_1m + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross)
+    criteria_count = count_1m + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross) + int(bollinger_signal)
 
     if criteria_count >= 6:
         stars = "⭐⭐⭐"
@@ -170,6 +259,7 @@ def analyze_combined(symbol):
         rsi_zone = "überkauft"
 
     macd_text = "MACD-Cross: ✅" if macd_cross else "MACD-Cross: ❌"
+    bollinger_text = "Bollinger-Rebound: ✅" if bollinger_signal else "Bollinger-Rebound: ❌"
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
     msg = (
@@ -179,7 +269,7 @@ def analyze_combined(symbol):
         f"🧠 Grund: {count_1m} von 3 {signal_1m}-Kriterien erfüllt\n"
         f"🧠 Hauptsignal aus 1m | 5m: {signal_5m or 'kein'}\n"
         f"📈 Trend: {trend_text} | RSI-Zone: {rsi_zone} | Volatilität: {volatility_pct:.2f} %\n"
-        f"{macd_text} | EMA-Cross: {'✅' if ema_cross else '❌'}\n"
+        f"{macd_text} | EMA-Cross: {'✅' if ema_cross else '❌'} | {bollinger_text}\n"
         f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
         f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
         f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
