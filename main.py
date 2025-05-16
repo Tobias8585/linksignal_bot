@@ -93,20 +93,21 @@ def run_bot():
     while True:
         check_all_symbols()
 
-        if time.time() - last_status_time > 3600:
-    market_status = classify_market_sentiment()
-    low_list_text = ", ".join(low_coins) if low_coins else "–"
+                if time.time() - last_status_time > 3600:
+            market_status = classify_market_sentiment()
+            low_list_text = ", ".join(low_coins) if low_coins else "–"
 
-    send_telegram(
-        f"📊 *Marktstatus-Update*\n"
-        f"{market_status}\n"
-        f"📈 LONG: {market_sentiment['long']}x | 📉 SHORT: {market_sentiment['short']}x\n"
-        f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
-        f"🔍 Kandidaten: {low_list_text}"
-    )
+            send_telegram(
+                f"📊 *Marktstatus-Update*\n"
+                f"{market_status}\n"
+                f"📈 LONG: {market_sentiment['long']}x | 📉 SHORT: {market_sentiment['short']}x\n"
+                f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
+                f"🔍 Kandidaten: {low_list_text}"
+            )
 
-    last_status_time = time.time()
-    low_coins = []
+            last_status_time = time.time()
+            low_coins = []
+
 
 
 
