@@ -44,7 +44,6 @@ def send_telegram(message):
             response = requests.post(url, json=payload, timeout=5)
             if not response.ok:
                 log_print(f"Telegram HTTP-Fehler {response.status_code} bei {chat_id}: {response.text}")
-            requests.post(url, json=payload, timeout=5)
         except requests.exceptions.Timeout:
             log_print(f"Telegram-Timeout bei {chat_id} – Nachricht nicht gesendet.")
         except requests.exceptions.RequestException as e:
