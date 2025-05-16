@@ -89,10 +89,11 @@ def is_breakout_in_preparation(df, direction="LONG"):
 # BOT STARTEN UND MARKTSTATUS SENDEN
 
 def run_bot():
-    global last_status_time
+    global last_status_time, last_breakout_check
     while True:
         check_all_symbols()
 
+        # Marktstatus-Update alle 60 Minuten
         if time.time() - last_status_time > 3600:
             market_status = classify_market_sentiment()
             low_list_text = ", ".join(low_coins) if low_coins else "–"
@@ -108,7 +109,21 @@ def run_bot():
             last_status_time = time.time()
             low_coins = []
 
+        # Breakout-Vorbereitung alle 15 Minuten
+        if time.time() - last_breakout_check > 900:
+            if pre_breakout_coins:
+                breakout_list = ", ".join(pre_breakout_coins)
+                send_telegram(
+                    f"🚀 *Breakout-Vorbereitung*\n"
+                    f"{len(pre_breakout_coins)} Coins zeigen frühe Breakout-Signale:\n"
+                    f"🔍 {breakout_list}"
+                )
+                pre_breakout_coins = []
+
+            last_breakout_check = time.time()
+
         time.sleep(600)
+
 
 
 
