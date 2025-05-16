@@ -374,6 +374,8 @@ def check_all_symbols():
         return
 
     symbols = get_top_volume_symbols(limit=100)
+top3_symbols = symbols[:3]  # Die drei volumenstärksten Coins
+
     if not symbols:
         log_print("Keine Symbole zum Prüfen verfügbar.")
         return
