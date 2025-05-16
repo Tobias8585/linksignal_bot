@@ -229,7 +229,20 @@ def analyze_combined(symbol):
             log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
             return None
 
-    criteria_count = count_1m + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross) + int(bollinger_signal) + int(fib_signal)
+        # NEU: Breakout-Vorbereitung (Vorschlag 25)
+    pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
+
+    criteria_count = (
+        count_1m
+        + int(strong_volume)
+        + int(breakout)
+        + int(pre_breakout)
+        + int(macd_cross)
+        + int(ema_cross)
+        + int(bollinger_signal)
+        + int(fib_signal)
+    )
+
 
     if criteria_count >= 7:
         stars = "⭐⭐⭐"
