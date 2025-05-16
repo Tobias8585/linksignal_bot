@@ -411,9 +411,38 @@ def webhook():
 
 
 def run_bot():
+    global last_status_time, last_breakout_check
     while True:
         check_all_symbols()
+
+        # MARKTSTATUS ALLE 60 MIN
+        if time.time() - last_status_time > 3600:
+            market_status = classify_market_sentiment()
+            low_list_text = ", ".join(low_coins) if low_coins else "-"
+            send_telegram(
+                f"📊 *Marktstatus-Update*\n"
+                f"{market_status}\n"
+                f"📈 LONG: {market_sentiment['long']}x | 📉 SHORT: {market_sentiment['short']}x\n"
+                f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
+                f"🔍 Kandidaten: {low_list_text}"
+            )
+            last_status_time = time.time()
+            low_coins = []
+
+        # BREAKOUT-VORBEREITUNG ALLE 15 MIN
+        if time.time() - last_breakout_check > 900:
+            if pre_breakout_coins:
+                breakout_list = ", ".join(pre_breakout_coins)
+                send_telegram(
+                    f"🚀 *Breakout-Vorbereitung*\n"
+                    f"{len(pre_breakout_coins)} Coins zeigen frühe Breakout-Signale:\n"
+                    f"🔍 {breakout_list}"
+                )
+                pre_breakout_coins = []
+            last_breakout_check = time.time()
+
         time.sleep(600)
+
 
 
 if __name__ == "__main__":
