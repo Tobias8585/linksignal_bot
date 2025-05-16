@@ -339,7 +339,6 @@ def analyze_combined(symbol):
     return msg
 
 
-
 def get_top_volume_symbols(limit=100):
     try:
         url = "https://fapi.binance.com/fapi/v1/ticker/24hr"
@@ -359,8 +358,7 @@ def get_top_volume_symbols(limit=100):
 def check_all_symbols():
     global market_sentiment
     market_sentiment["long"] = 0
-market_sentiment["short"] = 0
-
+    market_sentiment["short"] = 0
 
     try:
         exchange_info = client.exchange_info()
@@ -390,7 +388,6 @@ market_sentiment["short"] = 0
     log_print(f"📊 Marktbreite: {market_sentiment['long']}x LONG | {market_sentiment['short']}x SHORT")
 
 
-
 @app.route('/')
 def home():
     return "Bot mit primärer 1m-Analyse läuft."
@@ -407,6 +404,7 @@ def webhook():
         return {"status": "received"}, 200
     else:
         return {"error": "symbol fehlt"}, 400
+
 
 
 
