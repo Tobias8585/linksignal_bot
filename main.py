@@ -96,6 +96,7 @@ def run_bot():
         if time.time() - last_status_time > 3600:
     market_status = classify_market_sentiment()
     low_list_text = ", ".join(low_coins) if low_coins else "–"
+
     send_telegram(
         f"📊 *Marktstatus-Update*\n"
         f"{market_status}\n"
@@ -103,8 +104,10 @@ def run_bot():
         f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
         f"🔍 Kandidaten: {low_list_text}"
     )
+
     last_status_time = time.time()
-    low_coins = []  # Liste zurücksetzen
+    low_coins = []
+
 
 
         time.sleep(600)
