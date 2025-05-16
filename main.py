@@ -80,42 +80,27 @@ def is_breakout_in_preparation(df, direction="LONG"):
     rsi = RSIIndicator(df['close'], window=14).rsi()
     cci = CCIIndicator(high=df['high'], low=df['low'], close=df['close'], window=20).cci()
 
-    volume_ok = volume > avg_volume * 1.1
-    if direction == "LONG":
-        price_near_high = price >= recent_high * 0.985
-        rsi_ok = rsi.iloc[-1] > 60
-        cci_ok = cci.iloc[-1] > cci.iloc[-2]
-        return price_near_high and volume_ok and rsi_ok and cci_ok
-    elif direction == "SHORT":
-        price_near_low = price <= recent_low * 1.015
-        rsi_ok = rsi.iloc[-1] < 40
-        cci_ok = cci.iloc[-1] < cci.iloc[-2]
-        return price_near_low and volume_ok and rsi_ok and cci_ok
-    return False
-
-# BOT STARTEN UND MARKTSTATUS SENDEN
+    # BOT STARTEN UND MARKTSTATUS SENDEN
 
 def run_bot():
     global last_status_time, last_breakout_check
     while True:
         check_all_symbols()
 
-       if time.time() - last_status_time > 3600:
-    market_status = classify_market_sentiment()
-    low_list_text = ", ".join(low_coins) if low_coins else "-"
+        if time.time() - last_status_time > 3600:
+            market_status = classify_market_sentiment()
+            low_list_text = ", ".join(low_coins) if low_coins else "-"
 
-    send_telegram(
-        f"📊 *Marktstatus-Update*\n"
-        f"{market_status}\n"
-        f"📈 LONG: {market_sentiment['long']}x | 📉 SHORT: {market_sentiment['short']}x\n"
-        f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
-        f"🔍 Kandidaten: {low_list_text}"
-    )
+            send_telegram(
+                f"📊 *Marktstatus-Update*\n"
+                f"{market_status}\n"
+                f"📈 LONG: {market_sentiment['long']}x | 📉 SHORT: {market_sentiment['short']}x\n"
+                f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
+                f"🔍 Kandidaten: {low_list_text}"
+            )
 
-    last_status_time = time.time()
-    low_coins = []
-
-     
+            last_status_time = time.time()
+            low_coins = []
 
         # Breakout-Vorbereitung alle 15 Minuten
         if time.time() - last_breakout_check > 900:
