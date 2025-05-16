@@ -281,7 +281,7 @@ def analyze_combined(symbol):
         count_1m +
         int(strong_volume) +
         int(breakout) +
-        int(pre_breakout) +
+        int(pre_breakout is True) +
         int(macd_cross) +
         int(ema_cross) +
         int(bollinger_signal) +
