@@ -183,8 +183,6 @@ def get_simple_signal(df):
         return "SHORT", short_signals
     return None, 0
 
-market_sentiment = {"long": 0, "short": 0}
-low_coins = []  # Liste der Coins nahe am Tiefstand
 
 
 def analyze_combined(symbol):
@@ -360,7 +358,9 @@ def get_top_volume_symbols(limit=100):
 
 def check_all_symbols():
     global market_sentiment
-    market_sentiment = {"long": 0, "short": 0}
+    market_sentiment["long"] = 0
+market_sentiment["short"] = 0
+
 
     try:
         exchange_info = client.exchange_info()
