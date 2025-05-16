@@ -82,7 +82,6 @@ def get_simple_signal(df):
         return "SHORT", short_signals
     return None, 0
 
-# NEU: Marktbreiten-Zähler
 market_sentiment = {"long": 0, "short": 0}
 
 def analyze_combined(symbol):
@@ -97,7 +96,6 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Kein 1m-Signal")
         return None
 
-    # Marktstimmung zählen
     if signal_1m == "LONG":
         market_sentiment["long"] += 1
     elif signal_1m == "SHORT":
@@ -160,12 +158,17 @@ def analyze_combined(symbol):
 
     criteria_count = count_1m + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross) + int(bollinger_signal) + int(fib_signal)
 
-    if criteria_count >= 6:
+    if criteria_count >= 7:
         stars = "⭐⭐⭐"
         signal_strength = "🟢 Sehr starkes Signal"
-    else:
+    elif criteria_count >= 5:
         stars = "⭐⭐"
         signal_strength = "🟡 Gutes Signal"
+    elif criteria_count >= 3:
+        stars = "⭐"
+        signal_strength = "🔸 Mögliches Signal"
+    else:
+        return None
 
     tp1 = price + 1.5 * atr if signal_1m == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal_1m == "LONG" else price - 2.5 * atr
@@ -227,20 +230,16 @@ def check_all_symbols():
             log_print(f"{symbol}: Kein Signal")
         time.sleep(1)
 
-    # Nach Auswertung aller Coins: Marktbreite loggen
     log_print(f"📊 Marktbreite: {market_sentiment['long']}x LONG | {market_sentiment['short']}x SHORT")
-
 
 @app.route('/')
 def home():
     return "Bot mit primärer 1m-Analyse läuft."
 
-
 def run_bot():
     while True:
         check_all_symbols()
         time.sleep(600)
-
 
 if __name__ == "__main__":
     send_telegram("🚀 Bot wurde mit Doppelanalyse gestartet.")
