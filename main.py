@@ -271,6 +271,19 @@ def check_all_symbols():
 def home():
     return "Bot mit primärer 1m-Analyse läuft."
 
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    data = request.get_json()
+    symbol = data.get('symbol')
+    note = data.get('note', '')
+    if symbol:
+        log_print(f"Webhook erhalten für {symbol} – Hinweis: {note}")
+        send_telegram(f"🔔 Webhook-Trigger für *{symbol}*\nHinweis: {note}")
+        return {"status": "received"}, 200
+    else:
+        return {"error": "symbol fehlt"}, 400
+
+
 def run_bot():
     while True:
         check_all_symbols()
