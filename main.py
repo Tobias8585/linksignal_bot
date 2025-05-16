@@ -96,7 +96,6 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Kein 1m-Signal")
         return None
 
-    # Vorschlag 19: Ausschluss bei divergierendem Trend
     if (signal_1m == "LONG" and signal_5m == "SHORT") or (signal_1m == "SHORT" and signal_5m == "LONG"):
         log_print(f"{symbol}: Divergenz 1m/5m erkannt – kein klares Setup")
         return None
@@ -141,6 +140,8 @@ def analyze_combined(symbol):
         return None
 
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
+    volatility_pct = atr / price * 100
+
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
@@ -175,11 +176,18 @@ def analyze_combined(symbol):
     else:
         return None
 
-    tp1 = price + 1.5 * atr if signal_1m == "LONG" else price - 1.5 * atr
-    tp2 = price + 2.5 * atr if signal_1m == "LONG" else price - 2.5 * atr
-    sl = price - 1.2 * atr if signal_1m == "LONG" else price + 1.2 * atr
+    # Vorschlag 20: Adaptive TP/SL je nach Volatilität
+    if volatility_pct < 0.5:
+        tp1_factor, tp2_factor, sl_factor = 1.2, 1.8, 1.0
+    elif volatility_pct < 1.5:
+        tp1_factor, tp2_factor, sl_factor = 1.5, 2.5, 1.2
+    else:
+        tp1_factor, tp2_factor, sl_factor = 1.8, 3.0, 1.4
 
-    volatility_pct = atr / price * 100
+    tp1 = price + tp1_factor * atr if signal_1m == "LONG" else price - tp1_factor * atr
+    tp2 = price + tp2_factor * atr if signal_1m == "LONG" else price - tp2_factor * atr
+    sl = price - sl_factor * atr if signal_1m == "LONG" else price + sl_factor * atr
+
     trend_text = "Seitwärts"
     if price > ema and price > ema50:
         trend_text = "Aufwärts"
