@@ -183,6 +183,21 @@ def get_simple_signal(df):
         return "SHORT", short_signals
     return None, 0
 
+def is_reversal_candidate(df):
+    rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
+    cci = CCIIndicator(high=df['high'], low=df['low'], close=df['close'], window=20).cci().iloc[-1]
+    macd_line = MACD(df['close']).macd().iloc[-1]
+    volume = df['volume'].iloc[-1]
+    avg_volume = df['volume'].rolling(20).mean().iloc[-1]
+
+    score = sum([
+        rsi < 30,
+        cci < -100,
+        macd_line > 0,
+        volume > avg_volume
+    ])
+    return score >= 3
+
 
 
 def analyze_combined(symbol):
