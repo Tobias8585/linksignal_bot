@@ -246,6 +246,11 @@ def analyze_combined(symbol):
         # NEU: Breakout-Vorbereitung (Vorschlag 25)
     pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
 
+        if pre_breakout:
+        global pre_breakout_coins
+        pre_breakout_coins.append(symbol)
+
+
     criteria_count = (
         count_1m
         + int(strong_volume)
