@@ -5,7 +5,7 @@ from flask import Flask
 import pandas as pd
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD, CCIIndicator, IchimokuIndicator
-from ta.volatility import BollingerBands  # <- korrektes Modul für BBANDS
+from ta.volatility import BollingerBands  # korrektes Modul für BBANDS
 import os
 from datetime import datetime
 from binance.um_futures import UMFutures  # Binance Futures-Client importieren
