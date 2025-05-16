@@ -28,6 +28,14 @@ def log_print(message):
 
 CHAT_IDS = [os.getenv("CHAT_ID"), os.getenv("CHAT_ID_2")]  # Haupt- und Kollegen-ID
 
+# Globale Statusvariablen für Timing und Analysen
+last_status_time = 0
+last_breakout_check = 0
+low_coins = []
+pre_breakout_coins = []
+market_sentiment = {"long": 0, "short": 0}
+
+
 def send_telegram(message):
     for chat_id in CHAT_IDS:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
