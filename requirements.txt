@@ -1,5 +1,5 @@
 requests==2.31.0
 pandas
-ta
+ta>=0.10.0
 flask
 binance-futures-connector
