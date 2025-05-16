@@ -93,7 +93,7 @@ def run_bot():
     while True:
         check_all_symbols()
 
-                if time.time() - last_status_time > 3600:
+        if time.time() - last_status_time > 3600:
             market_status = classify_market_sentiment()
             low_list_text = ", ".join(low_coins) if low_coins else "–"
 
@@ -108,10 +108,8 @@ def run_bot():
             last_status_time = time.time()
             low_coins = []
 
-
-
-
         time.sleep(600)
+
 
 
 def get_klines(symbol, interval="5m", limit=75):
