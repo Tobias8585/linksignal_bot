@@ -1,7 +1,7 @@
 import requests
 import time
 import threading
-from flask import Flask
+from flask import Flask, request
 import pandas as pd
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD, CCIIndicator, IchimokuIndicator
@@ -32,13 +32,52 @@ def send_telegram(message):
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
         payload = {'chat_id': chat_id, 'text': message, 'parse_mode': 'Markdown'}
         try:
-            response = requests.post(url, json=payload, timeout=5)
-            if not response.ok:
-                log_print(f"Telegram HTTP-Fehler {response.status_code} bei {chat_id}: {response.text}")
+            requests.post(url, json=payload, timeout=5)
         except requests.exceptions.Timeout:
             log_print(f"Telegram-Timeout bei {chat_id} – Nachricht nicht gesendet.")
         except requests.exceptions.RequestException as e:
             log_print(f"Telegram-Request-Fehler bei {chat_id}: {e}")
+
+# MARKTSTATUS-TIMER
+last_status_time = 0
+
+# MARKTFILTER-HILFSFUNKTION
+def classify_market_sentiment():
+    long_count = market_sentiment["long"]
+    short_count = market_sentiment["short"]
+    if long_count > short_count * 1.5:
+        return "📈 Markt bullisch"
+    elif short_count > long_count * 1.5:
+        return "📉 Markt bärisch"
+    else:
+        return "🔄 Markt neutral"
+
+# FUNKTION FÜR TIEFSTANDSANALYSE
+def is_near_recent_low(df, window=50, tolerance=0.02):
+    current_price = df['close'].iloc[-1]
+    recent_low = df['low'].iloc[-window:].min()
+    return current_price <= recent_low * (1 + tolerance)
+
+# FRÜHES BREAKOUT-SIGNAL
+def is_breakout_in_preparation(df):
+    price = df['close'].iloc[-1]
+    recent_high = df['high'].iloc[-21:-1].max()
+    volume = df['volume'].iloc[-1]
+    avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
+    return price >= recent_high * 0.985 and volume > avg_volume * 1.1
+
+# BOT STARTEN UND MARKTSTATUS SENDEN
+
+def run_bot():
+    global last_status_time
+    while True:
+        check_all_symbols()
+
+        if time.time() - last_status_time > 3600:
+            send_telegram(f"📊 Marktstatus:\n{classify_market_sentiment()}\nAktuell: {market_sentiment['long']}x LONG | {market_sentiment['short']}x SHORT")
+            last_status_time = time.time()
+
+        time.sleep(600)
 
 
 def get_klines(symbol, interval="5m", limit=75):
