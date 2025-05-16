@@ -37,7 +37,7 @@ market_sentiment = {"long": 0, "short": 0}
 
 
 def send_telegram(message):
-    for chat_id in CHAT_IDS:
+    for chat_id in set(CHAT_IDS):
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
         payload = {'chat_id': chat_id, 'text': message, 'parse_mode': 'Markdown'}
         try:
