@@ -3,7 +3,7 @@ import time
 import threading
 from flask import Flask
 import pandas as pd
-from ta.momentum import RSIIndicator
+from ta.momentum import RSIIndicator, CCIIndicator  # CCI jetzt dabei
 from ta.trend import EMAIndicator, MACD
 import os
 from datetime import datetime
