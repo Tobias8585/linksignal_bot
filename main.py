@@ -96,7 +96,7 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Kein 1m-Signal")
         return None
 
-           df = df_5m
+    df = df_5m
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     ema50 = df['close'].ewm(span=50).mean().iloc[-1]
@@ -122,7 +122,6 @@ def analyze_combined(symbol):
         return None
 
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
-
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
@@ -188,6 +187,7 @@ def analyze_combined(symbol):
     )
 
     return msg
+
 
 
 def check_all_symbols():
