@@ -5,12 +5,11 @@ from flask import Flask
 import pandas as pd
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD, CCIIndicator, IchimokuIndicator
-from ta.volatility import BollingerBands  # korrektes Modul für BBANDS
+from ta.volatility import BollingerBands
 import os
 from datetime import datetime
-from binance.um_futures import UMFutures  # Binance Futures-Client importieren
+from binance.um_futures import UMFutures
 
-# Binance API-Schlüssel aus Umgebungsvariablen laden
 api_key = os.getenv("BINANCE_API_KEY")
 api_secret = os.getenv("BINANCE_API_SECRET")
 client = UMFutures(key=api_key, secret=api_secret)
@@ -83,6 +82,9 @@ def get_simple_signal(df):
         return "SHORT", short_signals
     return None, 0
 
+# NEU: Marktbreiten-Zähler
+market_sentiment = {"long": 0, "short": 0}
+
 def analyze_combined(symbol):
     df_1m = get_klines(symbol, interval="1m", limit=50)
     df_5m = get_klines(symbol, interval="5m", limit=75)
@@ -94,6 +96,12 @@ def analyze_combined(symbol):
     if not signal_1m:
         log_print(f"{symbol}: Kein 1m-Signal")
         return None
+
+    # Marktstimmung zählen
+    if signal_1m == "LONG":
+        market_sentiment["long"] += 1
+    elif signal_1m == "SHORT":
+        market_sentiment["short"] += 1
 
     df = df_5m
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
@@ -110,19 +118,16 @@ def analyze_combined(symbol):
     macd_cross = macd_line > macd_signal if signal_1m == "LONG" else macd_line < macd_signal
     price = df['close'].iloc[-1]
 
-    # Fibonacci-Retracement basierend auf letzten 50 Kerzen
     recent_high = df['high'].iloc[-50:].max()
     recent_low = df['low'].iloc[-50:].min()
     fib_618 = recent_low + 0.618 * (recent_high - recent_low)
     fib_signal = (signal_1m == "LONG" and price > fib_618) or (signal_1m == "SHORT" and price < fib_618)
 
-    # Bollinger Bänder
     bb = BollingerBands(close=df['close'], window=20, window_dev=2)
     bb_upper = bb.bollinger_hband().iloc[-1]
     bb_lower = bb.bollinger_lband().iloc[-1]
     bollinger_signal = (signal_1m == "LONG" and price < bb_lower) or (signal_1m == "SHORT" and price > bb_upper)
 
-    # Ichimoku-Trendfilter (Kijun-Sen)
     ichimoku = IchimokuIndicator(high=df['high'], low=df['low'], window1=9, window2=26, window3=52)
     kijun_sen = ichimoku.ichimoku_base_line().iloc[-1]
     if signal_1m == "LONG" and price < kijun_sen:
@@ -200,9 +205,9 @@ def analyze_combined(symbol):
 
     return msg
 
-
-
 def check_all_symbols():
+    global market_sentiment
+    market_sentiment = {"long": 0, "short": 0}
     try:
         exchange_info = client.exchange_info()
         symbols = [
@@ -222,10 +227,9 @@ def check_all_symbols():
             log_print(f"{symbol}: Kein Signal")
         time.sleep(1)
 
-def run_bot():
-    while True:
-        check_all_symbols()
-        time.sleep(600)
+    # Nach Auswertung aller Coins: Marktbreite loggen
+    log_print(f"📊 Marktbreite: {market_sentiment['long']}x LONG | {market_sentiment['short']}x SHORT")
+
 
 @app.route('/')
 def home():
