@@ -9,6 +9,7 @@ import os
 from datetime import datetime
 from binance.um_futures import UMFutures  # Binance Futures-Client importieren
 
+
 # Binance API-Schlüssel aus Umgebungsvariablen laden
 api_key = os.getenv("BINANCE_API_KEY")
 api_secret = os.getenv("BINANCE_API_SECRET")
