@@ -299,7 +299,13 @@ def analyze_combined(symbol):
         f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
         f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
         f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+        
     )
+        # Tiefstandserkennung (5m-Chart)
+    if is_near_recent_low(df, window=50, tolerance=0.02):
+        global low_coins
+        low_coins.append(symbol)
+
 
     return msg
 def get_top_volume_symbols(limit=100):
