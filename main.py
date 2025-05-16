@@ -29,9 +29,13 @@ def send_telegram(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {'chat_id': CHAT_ID, 'text': message, 'parse_mode': 'Markdown'}
     try:
-        requests.post(url, json=payload)
-    except Exception as e:
-        log_print("Telegram-Fehler: " + str(e))
+        response = requests.post(url, json=payload, timeout=5)
+        if not response.ok:
+            log_print(f"Telegram HTTP-Fehler {response.status_code}: {response.text}")
+    except requests.exceptions.Timeout:
+        log_print("Telegram-Timeout – Nachricht nicht gesendet.")
+    except requests.exceptions.RequestException as e:
+        log_print(f"Telegram-Request-Fehler: {e}")
 
 def get_klines(symbol, interval="5m", limit=75):
     url = f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}"
