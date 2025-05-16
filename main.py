@@ -230,19 +230,18 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Kein Signal – ATR zu niedrig")
         return None
 
-    breakout = (signal_1m == "LONG" and price > df['high'].iloc[-21:-1].max()) or \
+       breakout = (signal_1m == "LONG" and price > df['high'].iloc[-21:-1].max()) or \
                (signal_1m == "SHORT" and price < df['low'].iloc[-21:-1].min())
     strong_volume = volume > avg_volume * 1.3
     ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
 
-            if count_1m == 2:
+    if count_1m == 2:
         if not (strong_volume and breakout):
             log_print(f"{symbol}: 2/3 aber kein Breakout oder Volumen")
             return None
         if signal_1m == "SHORT" and not (ema_trend_down and ema50_trend_down):
             log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
             return None
-
 
     # NEU: Breakout-Vorbereitung (Vorschlag 25)
     pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
@@ -314,8 +313,8 @@ def analyze_combined(symbol):
         f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
         f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
         f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
-        
     )
+
         # Tiefstandserkennung (5m-Chart)
     if is_near_recent_low(df, window=50, tolerance=0.02):
         global low_coins
