@@ -87,6 +87,11 @@ def analyze_combined(symbol):
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     ema50 = df['close'].ewm(span=50).mean().iloc[-1]
+    ema_prev = df['close'].ewm(span=20).mean().iloc[-2]
+    ema50_prev = df['close'].ewm(span=50).mean().iloc[-2]
+    ema_trend_down = ema < ema_prev
+    ema50_trend_down = ema50 < ema50_prev
+
     macd = MACD(df['close'])
     macd_line = macd.macd().iloc[-1]
     macd_signal = macd.macd_signal().iloc[-1]
@@ -109,6 +114,9 @@ def analyze_combined(symbol):
     if count_1m == 2:
         if not (strong_volume and breakout):
             log_print(f"{symbol}: 2/3 aber kein Breakout oder Volumen")
+            return None
+        if signal_1m == "SHORT" and not (ema_trend_down and ema50_trend_down):
+            log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
             return None
 
     criteria_count = count_1m + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross)
@@ -155,6 +163,7 @@ def analyze_combined(symbol):
     )
 
     return msg
+
 
 def check_all_symbols():
     try:
