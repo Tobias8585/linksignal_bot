@@ -373,8 +373,7 @@ def check_all_symbols():
         log_print(f"Fehler beim Laden der Symbolliste: {e}")
         return
 
-    symbols = get_top_volume_symbols(limit=100)
-top3_symbols = symbols[:3]  # Die drei volumenstärksten Coins
+    symbols = get_top_volume_symbols(limit=100)  # ✅ richtig eingerückt
 
     if not symbols:
         log_print("Keine Symbole zum Prüfen verfügbar.")
@@ -390,6 +389,7 @@ top3_symbols = symbols[:3]  # Die drei volumenstärksten Coins
         time.sleep(1)
 
     log_print(f"📊 Marktbreite: {market_sentiment['long']}x LONG | {market_sentiment['short']}x SHORT")
+
 
 
 @app.route('/')
