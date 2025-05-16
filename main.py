@@ -62,13 +62,29 @@ def is_near_recent_low(df, window=50, tolerance=0.02):
     recent_low = df['low'].iloc[-window:].min()
     return current_price <= recent_low * (1 + tolerance)
 
-# FRÜHES BREAKOUT-SIGNAL
-def is_breakout_in_preparation(df):
+# ERWEITERTE BREAKOUT-VORBEREITUNG mit RSI & CCI
+def is_breakout_in_preparation(df, direction="LONG"):
     price = df['close'].iloc[-1]
     recent_high = df['high'].iloc[-21:-1].max()
+    recent_low = df['low'].iloc[-21:-1].min()
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
-    return price >= recent_high * 0.985 and volume > avg_volume * 1.1
+    
+    rsi = RSIIndicator(df['close'], window=14).rsi()
+    cci = CCIIndicator(high=df['high'], low=df['low'], close=df['close'], window=20).cci()
+
+    volume_ok = volume > avg_volume * 1.1
+    if direction == "LONG":
+        price_near_high = price >= recent_high * 0.985
+        rsi_ok = rsi.iloc[-1] > 60
+        cci_ok = cci.iloc[-1] > cci.iloc[-2]
+        return price_near_high and volume_ok and rsi_ok and cci_ok
+    elif direction == "SHORT":
+        price_near_low = price <= recent_low * 1.015
+        rsi_ok = rsi.iloc[-1] < 40
+        cci_ok = cci.iloc[-1] < cci.iloc[-2]
+        return price_near_low and volume_ok and rsi_ok and cci_ok
+    return False
 
 # BOT STARTEN UND MARKTSTATUS SENDEN
 
