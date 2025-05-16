@@ -166,6 +166,8 @@ low_coins = []  # Liste der Coins nahe am Tiefstand
 
 
 def analyze_combined(symbol):
+    global market_sentiment, low_coins, pre_breakout_coins
+
     df_1m = get_klines(symbol, interval="1m", limit=50)
     df_5m = get_klines(symbol, interval="5m", limit=75)
     if df_1m is None or df_5m is None:
@@ -230,8 +232,7 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Kein Signal – ATR zu niedrig")
         return None
 
-    breakout = (signal_1m == "LONG" and price > df['high'].iloc[-21:-1].max()) or \
-               (signal_1m == "SHORT" and price < df['low'].iloc[-21:-1].min())
+    breakout = (signal_1m == "LONG" and price > df['high'].iloc[-21:-1].max()) or                (signal_1m == "SHORT" and price < df['low'].iloc[-21:-1].min())
     strong_volume = volume > avg_volume * 1.3
     ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
 
@@ -243,21 +244,22 @@ def analyze_combined(symbol):
             log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
             return None
 
-    # NEU: Breakout-Vorbereitung (Vorschlag 25)
     pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
     if pre_breakout:
-        global pre_breakout_coins
         pre_breakout_coins.append(symbol)
 
+    if is_near_recent_low(df, window=50, tolerance=0.02):
+        low_coins.append(symbol)
+
     criteria_count = (
-        count_1m
-        + int(strong_volume)
-        + int(breakout)
-        + int(pre_breakout)
-        + int(macd_cross)
-        + int(ema_cross)
-        + int(bollinger_signal)
-        + int(fib_signal)
+        count_1m +
+        int(strong_volume) +
+        int(breakout) +
+        int(pre_breakout) +
+        int(macd_cross) +
+        int(ema_cross) +
+        int(bollinger_signal) +
+        int(fib_signal)
     )
 
     if criteria_count >= 7:
@@ -272,7 +274,6 @@ def analyze_combined(symbol):
     else:
         return None
 
-    # Vorschlag 20: Adaptive TP/SL je nach Volatilität
     if volatility_pct < 0.5:
         tp1_factor, tp2_factor, sl_factor = 1.2, 1.8, 1.0
     elif volatility_pct < 1.5:
@@ -315,21 +316,10 @@ def analyze_combined(symbol):
         f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
     )
 
-    # Tiefstandserkennung (5m-Chart)
-    if is_near_recent_low(df, window=50, tolerance=0.02):
-        global low_coins
-        low_coins.append(symbol)
-
     return msg
 
 
-        # Tiefstandserkennung (5m-Chart)
-    if is_near_recent_low(df, window=50, tolerance=0.02):
-        global low_coins
-        low_coins.append(symbol)
 
-
-    return msg
 def get_top_volume_symbols(limit=100):
     try:
         url = "https://fapi.binance.com/fapi/v1/ticker/24hr"
@@ -345,9 +335,11 @@ def get_top_volume_symbols(limit=100):
         log_print(f"Fehler beim Laden der Volume-Daten: {e}")
         return []
 
+
 def check_all_symbols():
     global market_sentiment
     market_sentiment = {"long": 0, "short": 0}
+
     try:
         exchange_info = client.exchange_info()
         symbols = [
@@ -356,6 +348,7 @@ def check_all_symbols():
         ]
     except Exception as e:
         log_print(f"Fehler beim Laden der Symbolliste: {e}")
+        return
 
     symbols = get_top_volume_symbols(limit=100)
     if not symbols:
@@ -373,9 +366,11 @@ def check_all_symbols():
 
     log_print(f"📊 Marktbreite: {market_sentiment['long']}x LONG | {market_sentiment['short']}x SHORT")
 
+
 @app.route('/')
 def home():
     return "Bot mit primärer 1m-Analyse läuft."
+
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -394,6 +389,7 @@ def run_bot():
     while True:
         check_all_symbols()
         time.sleep(600)
+
 
 if __name__ == "__main__":
     send_telegram("🚀 Bot wurde mit Doppelanalyse gestartet.")
