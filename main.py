@@ -25,17 +25,21 @@ def log_print(message):
     log_file.write(f"{message}\n")
     log_file.flush()
 
+CHAT_IDS = [os.getenv("CHAT_ID"), os.getenv("CHAT_ID_2")]  # Haupt- und Kollegen-ID
+
 def send_telegram(message):
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {'chat_id': CHAT_ID, 'text': message, 'parse_mode': 'Markdown'}
-    try:
-        response = requests.post(url, json=payload, timeout=5)
-        if not response.ok:
-            log_print(f"Telegram HTTP-Fehler {response.status_code}: {response.text}")
-    except requests.exceptions.Timeout:
-        log_print("Telegram-Timeout – Nachricht nicht gesendet.")
-    except requests.exceptions.RequestException as e:
-        log_print(f"Telegram-Request-Fehler: {e}")
+    for chat_id in CHAT_IDS:
+        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+        payload = {'chat_id': chat_id, 'text': message, 'parse_mode': 'Markdown'}
+        try:
+            response = requests.post(url, json=payload, timeout=5)
+            if not response.ok:
+                log_print(f"Telegram HTTP-Fehler {response.status_code} bei {chat_id}: {response.text}")
+        except requests.exceptions.Timeout:
+            log_print(f"Telegram-Timeout bei {chat_id} – Nachricht nicht gesendet.")
+        except requests.exceptions.RequestException as e:
+            log_print(f"Telegram-Request-Fehler bei {chat_id}: {e}")
+
 
 def get_klines(symbol, interval="5m", limit=75):
     url = f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}"
