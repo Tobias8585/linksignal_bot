@@ -110,6 +110,12 @@ def analyze_combined(symbol):
     macd_cross = macd_line > macd_signal if signal_1m == "LONG" else macd_line < macd_signal
     price = df['close'].iloc[-1]
 
+    # Fibonacci-Retracement basierend auf letzten 50 Kerzen
+    recent_high = df['high'].iloc[-50:].max()
+    recent_low = df['low'].iloc[-50:].min()
+    fib_618 = recent_low + 0.618 * (recent_high - recent_low)
+    fib_signal = (signal_1m == "LONG" and price > fib_618) or (signal_1m == "SHORT" and price < fib_618)
+
     # Bollinger Bänder
     bb = BollingerBands(close=df['close'], window=20, window_dev=2)
     bb_upper = bb.bollinger_hband().iloc[-1]
@@ -147,7 +153,7 @@ def analyze_combined(symbol):
             log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
             return None
 
-    criteria_count = count_1m + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross) + int(bollinger_signal)
+    criteria_count = count_1m + int(strong_volume) + int(breakout) + int(macd_cross) + int(ema_cross) + int(bollinger_signal) + int(fib_signal)
 
     if criteria_count >= 6:
         stars = "⭐⭐⭐"
@@ -175,6 +181,7 @@ def analyze_combined(symbol):
 
     macd_text = "MACD-Cross: ✅" if macd_cross else "MACD-Cross: ❌"
     bollinger_text = "Bollinger-Rebound: ✅" if bollinger_signal else "Bollinger-Rebound: ❌"
+    fib_text = "Fibonacci-Bestätigung: ✅" if fib_signal else "Fibonacci-Bestätigung: ❌"
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
     msg = (
@@ -184,7 +191,7 @@ def analyze_combined(symbol):
         f"🧠 Grund: {count_1m} von 3 {signal_1m}-Kriterien erfüllt\n"
         f"🧠 Hauptsignal aus 1m | 5m: {signal_5m or 'kein'}\n"
         f"📈 Trend: {trend_text} | RSI-Zone: {rsi_zone} | Volatilität: {volatility_pct:.2f} %\n"
-        f"{macd_text} | EMA-Cross: {'✅' if ema_cross else '❌'} | {bollinger_text}\n"
+        f"{macd_text} | EMA-Cross: {'✅' if ema_cross else '❌'} | {bollinger_text} | {fib_text}\n"
         f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
         f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
         f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
