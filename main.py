@@ -57,19 +57,31 @@ def get_klines(symbol, interval="5m", limit=75):
 
 def get_simple_signal(df):
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
+    cci = CCIIndicator(high=df['high'], low=df['low'], close=df['close'], window=20).cci().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     ema50 = df['close'].ewm(span=50).mean().iloc[-1]
     macd_line = MACD(df['close']).macd().iloc[-1]
     price = df['close'].iloc[-1]
 
-    long_signals = sum([rsi < 35, macd_line > 0, price > ema * 1.005 and price > ema50])
-    short_signals = sum([rsi > 70, macd_line < 0, price < ema * 0.995 and price < ema50])
+    long_signals = sum([
+        rsi < 35,
+        macd_line > 0,
+        price > ema * 1.005 and price > ema50,
+        cci < -100
+    ])
+    short_signals = sum([
+        rsi > 70,
+        macd_line < 0,
+        price < ema * 0.995 and price < ema50,
+        cci > 100
+    ])
 
     if long_signals >= 2:
         return "LONG", long_signals
     elif short_signals >= 2:
         return "SHORT", short_signals
     return None, 0
+
 
 def analyze_combined(symbol):
     df_1m = get_klines(symbol, interval="1m", limit=50)
