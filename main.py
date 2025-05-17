@@ -2,7 +2,8 @@ import requests
 import time
 import threading
 from flask import Flask
-from flask import Flask, request
+from bs4 import BeautifulSoup
+import pytz
 import pandas as pd
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD, CCIIndicator, IchimokuIndicator
