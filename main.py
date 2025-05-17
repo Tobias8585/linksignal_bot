@@ -9,7 +9,7 @@ from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD, CCIIndicator, IchimokuIndicator
 from ta.volatility import BollingerBands
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from binance.um_futures import UMFutures
 
 api_key = os.getenv("BINANCE_API_KEY")
