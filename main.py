@@ -370,7 +370,7 @@ def analyze_combined(symbol):
     tp2 = price + tp2_factor * atr if signal_1m == "LONG" else price - tp2_factor * atr
     sl = price - sl_factor * atr if signal_1m == "LONG" else price + sl_factor * atr
 
-    trend_text = "Seitwärts"
+      trend_text = "Seitwärts"
     if price > ema and price > ema50:
         trend_text = "Aufwärts"
     elif price < ema and price < ema50:
@@ -387,6 +387,8 @@ def analyze_combined(symbol):
     fib_text = "Fibonacci-Bestätigung: ✅" if fib_signal else "Fibonacci-Bestätigung: ❌"
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
+    from pytz import timezone
+    zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
 
     msg = (
         f"🔔 *{symbol}* Signal: *{signal_1m}* {stars}\n"
@@ -399,10 +401,11 @@ def analyze_combined(symbol):
         f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
         f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
         f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
-        f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+        f"🕒 *Zeit:* {zurich_time}"
     )
 
     return msg
+
 
 
 def get_top_volume_symbols(limit=100):
