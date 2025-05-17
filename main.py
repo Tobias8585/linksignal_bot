@@ -399,6 +399,20 @@ def analyze_combined(symbol):
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
 
+    msg = (
+        f"🔔 *{symbol}* Signal: *{signal_1m}* {stars}\n"
+        f"{signal_strength}\n"
+        f"{breakout_text}\n"
+        f"🧠 Grund: {count_1m} von 3 {signal_1m}-Kriterien erfüllt\n"
+        f"🧠 Hauptsignal aus 1m | 5m: {signal_5m or 'kein'}\n"
+        f"📈 Trend: {trend_text} | RSI-Zone: {rsi_zone} | Volatilität: {volatility_pct:.2f} %\n"
+        f"{macd_text} | EMA-Cross: {'✅' if ema_cross else '❌'} | {bollinger_text} | {fib_text}\n"
+        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
+        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
+        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
+        f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+    )
+
     return msg
 
 
@@ -604,71 +618,6 @@ def check_market_events():
 
     send_telegram(message)
 
-
-
-# ⬇️ Erst jetzt darfst du aufrufen:
-if __name__ == "__main__":
-    send_telegram("🚀 Bot wurde mit Doppelanalyse gestartet.")
-    check_market_events()
-    log_print("Telegram-Startnachricht wurde gesendet.")
-    threading.Thread(target=run_bot).start()
-    app.run(host='0.0.0.0', port=8080)
-
-def format_signal_message(
-    symbol, signal_1m, signal_5m, stars, signal_strength,
-    count_criteria, trend_text,
-    rsi, volatility_pct, macd_cross, ema_cross,
-    bollinger_text, fib_text, ichimoku_text,
-    price, volume, avg_volume,
-    tp1, tp2, sl
-):
-    if signal_1m == "LONG":
-        if rsi < 35:
-            rsi_zone = f"🟢 {rsi:.2f} *(überverkauft – günstiger Einstieg möglich)*"
-        elif rsi <= 70:
-            rsi_zone = f"🟠 {rsi:.2f} *(neutral – mittleres Risiko)*"
-        else:
-            rsi_zone = f"🔴 {rsi:.2f} *(überkauft – hohes Rückschlagsrisiko)*"
-    else:
-        if rsi > 70:
-            rsi_zone = f"🟢 {rsi:.2f} *(überkauft – günstiger Einstieg möglich)*"
-        elif rsi >= 35:
-            rsi_zone = f"🟠 {rsi:.2f} *(neutral – mittleres Risiko)*"
-        else:
-            rsi_zone = f"🔴 {rsi:.2f} *(überverkauft – hohes Rückschlagsrisiko)*"
-
-    if volatility_pct < 0.5:
-        volatility_zone = f"🟢 {volatility_pct:.2f} % *(ruhig – geringes Risiko)*"
-    elif volatility_pct < 1.5:
-        volatility_zone = f"🟠 {volatility_pct:.2f} % *(mittel – normales Risiko/Chance)*"
-    else:
-        volatility_zone = f"🔴 {volatility_pct:.2f} % *(hoch – erhöhtes Risiko/Chancenpotenzial)*"
-
-    message = (
-        f"🔔 *Signal für: {symbol}* | *{signal_1m}* ({signal_strength})\n"
-        f"🟢 *Signalqualität:* {signal_strength} erfüllt ({count_criteria} von 6 Hauptkriterien)\n\n"
-        f"📊 *Analyse-Zeitrahmen:*\n"
-        f"• Hauptsignal: 1m *(50 Minuten Analyse)*\n"
-        f"• Bestätigung: 5m *(6 Stunden Analyse)* → {signal_5m or 'kein Signal'}\n"
-        f"• Trend: {trend_text}\n"
-        f"• RSI-Zone: {rsi_zone}\n"
-        f"• Volatilität: {volatility_zone}\n\n"
-        f"📉 *Indikatoren:*\n"
-        f"• MACD-Cross: {'✅' if macd_cross else '❌'}\n"
-        f"• EMA-Cross: {'✅' if ema_cross else '❌'}\n"
-        f"• Bollinger Rebound: {bollinger_text}\n"
-        f"• Fibonacci-Bestätigung: {fib_text}\n"
-        f"• Ichimoku: {ichimoku_text}\n\n"
-        f"📈 *Preisdaten:*\n"
-        f"• Preis: {price:.4f}\n"
-        f"• Volumen: {volume:,.0f} vs Ø{avg_volume:,.0f}\n\n"
-        f"🎯 *Zielbereiche:*\n"
-        f"• TP1: {tp1:.4f}\n"
-        f"• TP2: {tp2:.4f}\n"
-        f"• SL: {sl:.4f}\n\n"
-        f"🕒 *Zeit:* {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
-    )
-    return message
 
 
 # ⬇️ Erst jetzt darfst du aufrufen:
