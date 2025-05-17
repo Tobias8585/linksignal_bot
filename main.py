@@ -100,13 +100,15 @@ def is_breakout_in_preparation(df, direction="LONG"):
 
 
 def run_bot():
-    global last_status_time, last_breakout_check, low_coins_24h, low_coins_12h
+    global last_status_time, last_breakout_check, low_coins, low_coins_24h, low_coins_12h, pre_breakout_coins
+
     schedule.every().day.at("07:00").do(check_market_events)
 
     while True:
         check_all_symbols()
         schedule.run_pending()
 
+        # Marktstatus-Update stündlich
         if time.time() - last_status_time > 3600:
             market_status = classify_market_sentiment()
             long_count = market_sentiment.get("long", 0)
@@ -147,6 +149,7 @@ def run_bot():
             last_breakout_check = time.time()
 
         time.sleep(600)
+
 
 
 
