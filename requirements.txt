@@ -5,3 +5,5 @@ flask
 binance-futures-connector
 beautifulsoup4
 pytz
+schedule
+
