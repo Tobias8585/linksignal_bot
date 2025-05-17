@@ -370,7 +370,7 @@ def analyze_combined(symbol):
     tp2 = price + tp2_factor * atr if signal_1m == "LONG" else price - tp2_factor * atr
     sl = price - sl_factor * atr if signal_1m == "LONG" else price + sl_factor * atr
 
-      trend_text = "Seitwärts"
+          trend_text = "Seitwärts"
     if price > ema and price > ema50:
         trend_text = "Aufwärts"
     elif price < ema and price < ema50:
@@ -387,7 +387,7 @@ def analyze_combined(symbol):
     fib_text = "Fibonacci-Bestätigung: ✅" if fib_signal else "Fibonacci-Bestätigung: ❌"
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
-       from pytz import timezone
+    from pytz import timezone
     zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
 
     msg = (
