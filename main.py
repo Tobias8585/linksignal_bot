@@ -418,6 +418,73 @@ def webhook():
 
 if __name__ == "__main__":
     send_telegram("🚀 Bot wurde mit Doppelanalyse gestartet.")
+    check_market_events()  # Wirtschaftsdaten bei Start prüfen
     log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
+
+def convert_time_ny_to_ch(text_time):
+    try:
+        ny_tz = pytz.timezone('America/New_York')
+        ch_tz = pytz.timezone('Europe/Zurich')
+        today = datetime.now(ny_tz).date()
+        dt = datetime.strptime(text_time, '%I:%M%p')
+        dt = ny_tz.localize(datetime.combine(today, dt.time()))
+        dt_ch = dt.astimezone(ch_tz)
+        return dt_ch.strftime('%H:%M')
+    except Exception:
+        return text_time + " (ungültig)"
+
+
+def check_market_events():
+    url = 'https://www.forexfactory.com/calendar'
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    response = requests.get(url, headers=headers)
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+    rows = soup.find_all('tr', class_='calendar__row')
+
+    today = datetime.utcnow().date()
+    tomorrow = today + timedelta(days=1)
+    valid_days = [today.strftime('%b %d'), tomorrow.strftime('%b %d')]
+
+    events_today = []
+
+    for row in rows:
+        date_td = row.find('td', class_='calendar__date')
+        impact_td = row.find('td', class_='calendar__impact')
+        event_td = row.find('td', class_='calendar__event')
+        time_td = row.find('td', class_='calendar__time')
+        country_td = row.find('td', class_='calendar__country')
+
+        if not all([date_td, impact_td, event_td, time_td, country_td]):
+            continue
+
+        date_text = date_td.text.strip()
+        if date_text not in valid_days:
+            continue
+
+        impact_level = impact_td.find('span')
+        if not impact_level or 'High' not in impact_level.get('title', ''):
+            continue
+
+        time_text = time_td.text.strip()
+        if time_text.lower() in ['all day', 'tentative', '']:
+            continue
+
+        time_ch = convert_time_ny_to_ch(time_text)
+        country = country_td.text.strip()
+        event = event_td.text.strip()
+
+        events_today.append(f"{country} {time_ch} – {event}")
+
+    if events_today:
+        message = "📅 Wirtschaftskalender heute/morgen:\n\n"
+        for e in events_today:
+            message += f"🔺 {e}\n"
+        message += "\n⚠️ Achtung: hohe Volatilität möglich!"
+    else:
+        message = "📅 Keine hochrelevanten Wirtschaftsevents heute oder morgen."
+
+    send_telegram(message)
