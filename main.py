@@ -416,14 +416,6 @@ def webhook():
 
 
 
-if __name__ == "__main__":
-    send_telegram("🚀 Bot wurde mit Doppelanalyse gestartet.")
-    check_market_events()  # Wirtschaftsdaten bei Start prüfen
-    log_print("Telegram-Startnachricht wurde gesendet.")
-    threading.Thread(target=run_bot).start()
-    app.run(host='0.0.0.0', port=8080)
-
-
 def convert_time_ny_to_ch(text_time):
     try:
         ny_tz = pytz.timezone('America/New_York')
