@@ -237,6 +237,13 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Divergenz 1m/5m erkannt – kein klares Setup")
         return None
 
+    breakout = False  # Erstmal sicher initialisieren
+
+    if signal_1m == "LONG":
+        breakout = price > df_5m['high'].iloc[-21:-1].max()
+    elif signal_1m == "SHORT":
+        breakout = price < df_5m['low'].iloc[-21:-1].min()
+
     if signal_1m == "LONG":
         market_sentiment["long"] += 1
     elif signal_1m == "SHORT":
@@ -275,6 +282,7 @@ def analyze_combined(symbol):
     if signal_1m == "SHORT" and price > kijun_sen:
         log_print(f"{symbol}: SHORT aber über Ichimoku-Kijun")
         return None
+
 
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
     volatility_pct = atr / price * 100
