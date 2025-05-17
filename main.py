@@ -235,6 +235,8 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Divergenz 1m/5m erkannt – kein klares Setup")
         return None
 
+    price = df_5m['close'].iloc[-1]  # ✅ Richtig platziert
+
     breakout = False  # Erstmal sicher initialisieren
 
     if signal_1m == "LONG":
@@ -260,7 +262,6 @@ def analyze_combined(symbol):
     macd_line = macd.macd().iloc[-1]
     macd_signal = macd.macd_signal().iloc[-1]
     macd_cross = macd_line > macd_signal if signal_1m == "LONG" else macd_line < macd_signal
-    price = df['close'].iloc[-1]
 
     recent_high = df['high'].iloc[-50:].max()
     recent_low = df['low'].iloc[-50:].min()
@@ -280,6 +281,7 @@ def analyze_combined(symbol):
     if signal_1m == "SHORT" and price > kijun_sen:
         log_print(f"{symbol}: SHORT aber über Ichimoku-Kijun")
         return None
+
 
 
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
