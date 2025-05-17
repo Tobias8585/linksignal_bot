@@ -111,7 +111,7 @@ def run_bot():
             low_coins = []
 
         # Breakout-Vorbereitung alle 15 Minuten
-               if time.time() - last_breakout_check > 900:
+        if time.time() - last_breakout_check > 900:
             if pre_breakout_coins:
                 breakout_list = ", ".join(pre_breakout_coins)
                 send_telegram(
@@ -122,26 +122,8 @@ def run_bot():
                 pre_breakout_coins = []
             last_breakout_check = time.time()
 
-
         time.sleep(600)
 
-
-
-
-        # Breakout-Vorbereitung alle 15 Minuten
-        if time.time() - last_breakout_check > 900:
-            if pre_breakout_coins:
-                breakout_list = ", ".join(pre_breakout_coins)
-                send_telegram(
-                    f"🚀 *Breakout-Vorbereitung*\n"
-                    f"{len(pre_breakout_coins)} Coins zeigen frühe Breakout-Signale:\n"
-                    f"🔍 {breakout_list}"
-                )
-                pre_breakout_coins = []
-
-            last_breakout_check = time.time()
-
-        time.sleep(600)
 
 
 
