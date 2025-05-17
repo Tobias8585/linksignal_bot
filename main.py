@@ -95,22 +95,33 @@ def run_bot():
         check_all_symbols()
         schedule.run_pending()
 
-        if time.time() - last_status_time > 3600:
-            market_status = classify_market_sentiment()
-            long_count = market_sentiment.get("long", 0)
-            short_count = market_sentiment.get("short", 0)
-            low_list_text = ", ".join(low_coins) if low_coins else "-"
+       if time.time() - last_status_time > 3600:
+    market_status = classify_market_sentiment()
+    long_count = market_sentiment.get("long", 0)
+    short_count = market_sentiment.get("short", 0)
+    low_list_text = ", ".join(low_coins) if low_coins else "-"
 
-            send_telegram(
-                f"📊 *Marktstatus-Update*\n"
-                f"{market_status}\n"
-                f"📈 LONG: {long_count}x | 📉 SHORT: {short_count}x\n"
-                f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
-                f"🔍 Kandidaten: {low_list_text}"
-            )
+    send_telegram(
+        f"📊 *Marktstatus-Update*\n"
+        f"{market_status}\n"
+        f"📈 LONG: {long_count}x | 📉 SHORT: {short_count}x\n"
+        f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
+        f"🔍 Kandidaten: {low_list_text}"
+    )
 
-            last_status_time = time.time()
-            low_coins = []
+    send_telegram(
+        f"📉 *Coin-Tiefstände*\n"
+        f"🔻 24h: {len(low_coins_24h)} Coins\n"
+        f"🔻 12h: {len(low_coins_12h)} Coins\n"
+        f"🔍 24h: {', '.join(low_coins_24h) or '-'}\n"
+        f"🔍 12h: {', '.join(low_coins_12h) or '-'}"
+    )
+
+    last_status_time = time.time()
+    low_coins = []
+    low_coins_24h = []
+    low_coins_12h = []
+
 
         # Breakout-Vorbereitung alle 15 Minuten
         if time.time() - last_breakout_check > 900:
