@@ -78,11 +78,23 @@ def is_breakout_in_preparation(df, direction="LONG"):
     price = df['close'].iloc[-1]
     recent_high = df['high'].iloc[-21:-1].max()
     recent_low = df['low'].iloc[-21:-1].min()
+
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
-    
-    rsi = RSIIndicator(df['close'], window=14).rsi()
-    cci = CCIIndicator(high=df['high'], low=df['low'], close=df['close'], window=20).cci()
+
+    rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
+    cci = CCIIndicator(high=df['high'], low=df['low'], close=df['close'], window=20).cci().iloc[-1]
+
+    near_high = price >= recent_high * 0.985
+    near_low = price <= recent_low * 1.015
+    rising_volume = volume > avg_volume * 0.9
+
+    if direction == "LONG":
+        return near_high and rising_volume and rsi > 50 and cci > 0
+    elif direction == "SHORT":
+        return near_low and rising_volume and rsi < 50 and cci < 0
+    return False
+
 
     # BOT STARTEN UND MARKTSTATUS SENDEN
 
