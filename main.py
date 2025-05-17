@@ -384,21 +384,18 @@ def analyze_combined(symbol):
     macd_text = "MACD-Cross: ✅" if macd_cross else "MACD-Cross: ❌"
     bollinger_text = "Bollinger-Rebound: ✅" if bollinger_signal else "Bollinger-Rebound: ❌"
     fib_text = "Fibonacci-Bestätigung: ✅" if fib_signal else "Fibonacci-Bestätigung: ❌"
-    breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
 
-    msg = (
-        f"🔔 *{symbol}* Signal: *{signal_1m}* {stars}\n"
-        f"{signal_strength}\n"
-        f"{breakout_text}\n"
-        f"🧠 Grund: {count_1m} von 3 {signal_1m}-Kriterien erfüllt\n"
-        f"🧠 Hauptsignal aus 1m | 5m: {signal_5m or 'kein'}\n"
-        f"📈 Trend: {trend_text} | RSI-Zone: {rsi_zone} | Volatilität: {volatility_pct:.2f} %\n"
-        f"{macd_text} | EMA-Cross: {'✅' if ema_cross else '❌'} | {bollinger_text} | {fib_text}\n"
-        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
-        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
-        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
-        f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+   
+        msg = format_signal_message(
+    symbol, signal_1m, signal_5m, stars, signal_strength,
+    criteria_count, trend_text,
+    rsi, volatility_pct, macd_cross, ema_cross,
+    "✅" if bollinger_signal else "❌",
+    "✅" if fib_signal else "❌",
+    "OK",
+    price, volume, avg_volume,
+    tp1, tp2, sl
     )
 
     return msg
