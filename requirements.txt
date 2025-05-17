@@ -3,3 +3,5 @@ pandas
 ta==0.11.0
 flask
 binance-futures-connector
+beautifulsoup4
+pytz
