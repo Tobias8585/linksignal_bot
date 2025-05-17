@@ -263,7 +263,8 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Kein Signal – ATR zu niedrig")
         return None
 
-    breakout = (signal_1m == "LONG" and price > df['high'].iloc[-21:-1].max()) or                (signal_1m == "SHORT" and price < df['low'].iloc[-21:-1].min())
+        breakout = (signal_1m == "LONG" and price > df['high'].iloc[-21:-1].max()) or \
+               (signal_1m == "SHORT" and price < df['low'].iloc[-21:-1].min())
     strong_volume = volume > avg_volume * 1.3
     ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
 
@@ -282,10 +283,17 @@ def analyze_combined(symbol):
     if is_near_recent_low(df, window=50, tolerance=0.02):
         low_coins.append(symbol)
 
-       # 📉 Reversal-Check
+    # 📉 Reversal-Check
     if is_reversal_candidate(df):
         send_telegram(f"🔄 *Reversal-Kandidat erkannt*: {symbol}\n"
                       f"Coin zeigt starke Umkehrsignale (RSI/CCI/MACD/Volumen).")
+
+    # 📉 Tiefstand-Checks für 24h und 12h
+    if is_near_recent_low(df, window=288, tolerance=0.02):  # 24h bei 5m-Kerzen
+        low_coins_24h.append(symbol)
+
+    if is_near_recent_low(df, window=144, tolerance=0.02):  # 12h bei 5m-Kerzen
+        low_coins_12h.append(symbol)
 
     criteria_count = (
         count_1m +
@@ -309,6 +317,7 @@ def analyze_combined(symbol):
         signal_strength = "🔸 Mögliches Signal"
     else:
         return None
+
 
     if volatility_pct < 0.5:
         tp1_factor, tp2_factor, sl_factor = 1.2, 1.8, 1.0
