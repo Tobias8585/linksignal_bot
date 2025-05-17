@@ -359,7 +359,7 @@ def analyze_combined(symbol):
         return None
 
 
-    if volatility_pct < 0.5:
+        if volatility_pct < 0.5:
         tp1_factor, tp2_factor, sl_factor = 1.2, 1.8, 1.0
     elif volatility_pct < 1.5:
         tp1_factor, tp2_factor, sl_factor = 1.5, 2.5, 1.2
@@ -370,7 +370,7 @@ def analyze_combined(symbol):
     tp2 = price + tp2_factor * atr if signal_1m == "LONG" else price - tp2_factor * atr
     sl = price - sl_factor * atr if signal_1m == "LONG" else price + sl_factor * atr
 
-          trend_text = "Seitwärts"
+    trend_text = "Seitwärts"
     if price > ema and price > ema50:
         trend_text = "Aufwärts"
     elif price < ema and price < ema50:
@@ -405,6 +405,7 @@ def analyze_combined(symbol):
     )
 
     return msg
+
 
 
 
