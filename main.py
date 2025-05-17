@@ -396,6 +396,8 @@ def analyze_combined(symbol):
         "OK",
         price, volume, avg_volume,
         tp1, tp2, sl
+    breakout_text = "🚀 Breakout erkannt!" if breakout else ""
+
 
     return msg
 
@@ -665,6 +667,8 @@ def format_signal_message(
         f"• TP2: {tp2:.4f}\n"
         f"• SL: {sl:.4f}\n\n"
         f"🕒 *Zeit:* {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+    )
+    return message
 
 
 # ⬇️ Erst jetzt darfst du aufrufen:
