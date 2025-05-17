@@ -291,6 +291,7 @@ def analyze_combined(symbol):
         return None
 
 
+
    
 
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
@@ -346,28 +347,6 @@ def analyze_combined(symbol):
         int(fib_signal)
     )
 
-            criteria_count = (
-        count_1m +
-        int(strong_volume) +
-        int(breakout) +
-        int(pre_breakout is True) +
-        int(macd_cross) +
-        int(ema_cross) +
-        int(bollinger_signal) +
-        int(fib_signal)
-    )
-
-        criteria_count = (
-        count_1m +
-        int(strong_volume) +
-        int(breakout) +
-        int(pre_breakout is True) +
-        int(macd_cross) +
-        int(ema_cross) +
-        int(bollinger_signal) +
-        int(fib_signal)
-    )
-
     if criteria_count >= 7:
         stars = "⭐⭐⭐"
         signal_strength = "🟢 Sehr starkes Signal"
@@ -380,6 +359,8 @@ def analyze_combined(symbol):
     else:
         return None
 
+
+        if volatility_pct < 0.5:
     if volatility_pct < 0.5:
         tp1_factor, tp2_factor, sl_factor = 1.2, 1.8, 1.0
     elif volatility_pct < 1.5:
@@ -406,10 +387,18 @@ def analyze_combined(symbol):
     macd_text = "MACD-Cross: ✅" if macd_cross else "MACD-Cross: ❌"
     bollinger_text = "Bollinger-Rebound: ✅" if bollinger_signal else "Bollinger-Rebound: ❌"
     fib_text = "Fibonacci-Bestätigung: ✅" if fib_signal else "Fibonacci-Bestätigung: ❌"
+
+    msg = format_signal_message(
+        symbol, signal_1m, signal_5m, stars, signal_strength,
+        criteria_count, trend_text,
+        rsi, volatility_pct, macd_cross, ema_cross,
+        "✅" if bollinger_signal else "❌",
+        "✅" if fib_signal else "❌",
+        "OK",
+        price, volume, avg_volume,
+        tp1, tp2, sl
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
-    from pytz import timezone
-    zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
 
     msg = (
         f"🔔 *{symbol}* Signal: *{signal_1m}* {stars}\n"
@@ -422,13 +411,10 @@ def analyze_combined(symbol):
         f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
         f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
         f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
-        f"🕒 *Zeit:* {zurich_time}"
+        f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
     )
 
     return msg
-
-
-
 
 
 
