@@ -36,6 +36,8 @@ last_breakout_check = 0
 low_coins = []
 pre_breakout_coins = []
 market_sentiment = {"long": 0, "short": 0}
+low_coins_24h = []
+low_coins_12h = []
 
 
 def send_telegram(message):
