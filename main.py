@@ -88,7 +88,7 @@ def is_breakout_in_preparation(df, direction="LONG"):
 
 
 def run_bot():
-    global last_status_time, last_breakout_check, low_coins, pre_breakout_coins
+    global last_status_time, last_breakout_check, low_coins_24h, low_coins_12h
     schedule.every().day.at("07:00").do(check_market_events)
 
     while True:
