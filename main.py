@@ -359,7 +359,7 @@ def analyze_combined(symbol):
         return None
 
 
-    if volatility_pct < 0.5:
+        if volatility_pct < 0.5:
         tp1_factor, tp2_factor, sl_factor = 1.2, 1.8, 1.0
     elif volatility_pct < 1.5:
         tp1_factor, tp2_factor, sl_factor = 1.5, 2.5, 1.2
@@ -387,38 +387,18 @@ def analyze_combined(symbol):
     fib_text = "Fibonacci-Bestätigung: ✅" if fib_signal else "Fibonacci-Bestätigung: ❌"
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
-
-    msg = (
-        f"🔔 *{symbol}* Signal: *{signal_1m}* {stars}\n"
-        f"{signal_strength}\n"
-        f"{breakout_text}\n"
-        f"🧠 Grund: {count_1m} von 3 {signal_1m}-Kriterien erfüllt\n"
-        f"🧠 Hauptsignal aus 1m | 5m: {signal_5m or 'kein'}\n"
-        f"📈 Trend: {trend_text} | RSI-Zone: {rsi_zone} | Volatilität: {volatility_pct:.2f} %\n"
-        f"{macd_text} | EMA-Cross: {'✅' if ema_cross else '❌'} | {bollinger_text} | {fib_text}\n"
-        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
-        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
-        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
-        f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+    msg = format_signal_message(
+        symbol, signal_1m, signal_5m, stars, signal_strength,
+        criteria_count, trend_text,
+        rsi, volatility_pct, macd_cross, ema_cross,
+        "✅" if bollinger_signal else "❌",
+        "✅" if fib_signal else "❌",
+        "OK",
+        price, volume, avg_volume,
+        tp1, tp2, sl
     )
 
     return msg
-
-
-def get_top_volume_symbols(limit=100):
-    try:
-        url = "https://fapi.binance.com/fapi/v1/ticker/24hr"
-        response = requests.get(url, timeout=5)
-        data = response.json()
-        sorted_data = sorted(
-            [s for s in data if s['symbol'].endswith('USDT')],
-            key=lambda x: float(x['quoteVolume']),
-            reverse=True
-        )
-        return [s['symbol'] for s in sorted_data[:limit]]
-    except Exception as e:
-        log_print(f"Fehler beim Laden der Volume-Daten: {e}")
-        return []
 
 
 def check_all_symbols():
