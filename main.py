@@ -346,7 +346,7 @@ def analyze_combined(symbol):
         int(fib_signal)
     )
 
-    if criteria_count >= 7:
+        if criteria_count >= 7:
         stars = "⭐⭐⭐"
         signal_strength = "🟢 Sehr starkes Signal"
     elif criteria_count >= 5:
@@ -358,14 +358,12 @@ def analyze_combined(symbol):
     else:
         return None
 
-
-            if volatility_pct < 0.5:
+    if volatility_pct < 0.5:
         tp1_factor, tp2_factor, sl_factor = 1.2, 1.8, 1.0
     elif volatility_pct < 1.5:
         tp1_factor, tp2_factor, sl_factor = 1.5, 2.5, 1.2
     else:
         tp1_factor, tp2_factor, sl_factor = 1.8, 3.0, 1.4
-
 
     tp1 = price + tp1_factor * atr if signal_1m == "LONG" else price - tp1_factor * atr
     tp2 = price + tp2_factor * atr if signal_1m == "LONG" else price - tp2_factor * atr
