@@ -291,7 +291,6 @@ def analyze_combined(symbol):
         return None
 
 
-
    
 
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
@@ -360,7 +359,6 @@ def analyze_combined(symbol):
         return None
 
 
-        if volatility_pct < 0.5:
     if volatility_pct < 0.5:
         tp1_factor, tp2_factor, sl_factor = 1.2, 1.8, 1.0
     elif volatility_pct < 1.5:
@@ -387,16 +385,6 @@ def analyze_combined(symbol):
     macd_text = "MACD-Cross: ✅" if macd_cross else "MACD-Cross: ❌"
     bollinger_text = "Bollinger-Rebound: ✅" if bollinger_signal else "Bollinger-Rebound: ❌"
     fib_text = "Fibonacci-Bestätigung: ✅" if fib_signal else "Fibonacci-Bestätigung: ❌"
-
-    msg = format_signal_message(
-        symbol, signal_1m, signal_5m, stars, signal_strength,
-        criteria_count, trend_text,
-        rsi, volatility_pct, macd_cross, ema_cross,
-        "✅" if bollinger_signal else "❌",
-        "✅" if fib_signal else "❌",
-        "OK",
-        price, volume, avg_volume,
-        tp1, tp2, sl
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
 
@@ -415,7 +403,6 @@ def analyze_combined(symbol):
     )
 
     return msg
-
 
 
 def get_top_volume_symbols(limit=100):
