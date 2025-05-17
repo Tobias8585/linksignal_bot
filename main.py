@@ -346,7 +346,18 @@ def analyze_combined(symbol):
         int(fib_signal)
     )
 
-        if criteria_count >= 7:
+            criteria_count = (
+        count_1m +
+        int(strong_volume) +
+        int(breakout) +
+        int(pre_breakout is True) +
+        int(macd_cross) +
+        int(ema_cross) +
+        int(bollinger_signal) +
+        int(fib_signal)
+    )
+
+    if criteria_count >= 7:
         stars = "⭐⭐⭐"
         signal_strength = "🟢 Sehr starkes Signal"
     elif criteria_count >= 5:
@@ -404,6 +415,7 @@ def analyze_combined(symbol):
     )
 
     return msg
+
 
 
 
