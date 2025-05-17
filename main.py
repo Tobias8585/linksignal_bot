@@ -108,7 +108,6 @@ def run_bot():
         check_all_symbols()
         schedule.run_pending()
 
-        # Marktstatus-Update stündlich
         if time.time() - last_status_time > 3600:
             market_status = classify_market_sentiment()
             long_count = market_sentiment.get("long", 0)
@@ -136,7 +135,6 @@ def run_bot():
             low_coins_24h = []
             low_coins_12h = []
 
-        # Breakout-Vorbereitung alle 15 Minuten
         if time.time() - last_breakout_check > 900:
             if pre_breakout_coins:
                 breakout_list = ", ".join(pre_breakout_coins)
