@@ -291,7 +291,7 @@ def analyze_combined(symbol):
         return None
 
 
-   
+
 
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
     volatility_pct = atr / price * 100
@@ -360,6 +360,7 @@ def analyze_combined(symbol):
 
 
         if volatility_pct < 0.5:
+    if volatility_pct < 0.5:
         tp1_factor, tp2_factor, sl_factor = 1.2, 1.8, 1.0
     elif volatility_pct < 1.5:
         tp1_factor, tp2_factor, sl_factor = 1.5, 2.5, 1.2
@@ -385,7 +386,6 @@ def analyze_combined(symbol):
     macd_text = "MACD-Cross: ✅" if macd_cross else "MACD-Cross: ❌"
     bollinger_text = "Bollinger-Rebound: ✅" if bollinger_signal else "Bollinger-Rebound: ❌"
     fib_text = "Fibonacci-Bestätigung: ✅" if fib_signal else "Fibonacci-Bestätigung: ❌"
-    breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
     msg = format_signal_message(
         symbol, signal_1m, signal_5m, stars, signal_strength,
@@ -396,9 +396,25 @@ def analyze_combined(symbol):
         "OK",
         price, volume, avg_volume,
         tp1, tp2, sl
-    )
 
     return msg
+
+
+
+def get_top_volume_symbols(limit=100):
+    try:
+        url = "https://fapi.binance.com/fapi/v1/ticker/24hr"
+        response = requests.get(url, timeout=5)
+        data = response.json()
+        sorted_data = sorted(
+            [s for s in data if s['symbol'].endswith('USDT')],
+            key=lambda x: float(x['quoteVolume']),
+            reverse=True
+        )
+        return [s['symbol'] for s in sorted_data[:limit]]
+    except Exception as e:
+        log_print(f"Fehler beim Laden der Volume-Daten: {e}")
+        return []
 
 
 def check_all_symbols():
@@ -587,6 +603,15 @@ def check_market_events():
     send_telegram(message)
 
 
+
+# ⬇️ Erst jetzt darfst du aufrufen:
+if __name__ == "__main__":
+    send_telegram("🚀 Bot wurde mit Doppelanalyse gestartet.")
+    check_market_events()
+    log_print("Telegram-Startnachricht wurde gesendet.")
+    threading.Thread(target=run_bot).start()
+    app.run(host='0.0.0.0', port=8080)
+
 def format_signal_message(
     symbol, signal_1m, signal_5m, stars, signal_strength,
     count_criteria, trend_text,
@@ -640,8 +665,6 @@ def format_signal_message(
         f"• TP2: {tp2:.4f}\n"
         f"• SL: {sl:.4f}\n\n"
         f"🕒 *Zeit:* {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
-    )
-    return message
 
 
 # ⬇️ Erst jetzt darfst du aufrufen:
