@@ -88,27 +88,43 @@ def is_breakout_in_preparation(df, direction="LONG"):
 def run_bot():
     schedule.every().day.at("07:00").do(check_market_events)
 
-    global last_status_time, last_breakout_check
+    global last_status_time, last_breakout_check, low_coins
     while True:
         check_all_symbols()
         schedule.run_pending()
 
         if time.time() - last_status_time > 3600:
-    market_status = classify_market_sentiment()
-    long_count = market_sentiment.get("long", 0)
-    short_count = market_sentiment.get("short", 0)
-    low_list_text = ", ".join(low_coins) if low_coins else "-"
+            market_status = classify_market_sentiment()
+            long_count = market_sentiment.get("long", 0)
+            short_count = market_sentiment.get("short", 0)
+            low_list_text = ", ".join(low_coins) if low_coins else "-"
 
-    send_telegram(
-        f"📊 *Marktstatus-Update*\n"
-        f"{market_status}\n"
-        f"📈 LONG: {long_count}x | 📉 SHORT: {short_count}x\n"
-        f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
-        f"🔍 Kandidaten: {low_list_text}"
-    )
+            send_telegram(
+                f"📊 *Marktstatus-Update*\n"
+                f"{market_status}\n"
+                f"📈 LONG: {long_count}x | 📉 SHORT: {short_count}x\n"
+                f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
+                f"🔍 Kandidaten: {low_list_text}"
+            )
 
-    last_status_time = time.time()
-    low_coins = []
+            last_status_time = time.time()
+            low_coins = []
+
+        # Breakout-Vorbereitung alle 15 Minuten
+        if time.time() - last_breakout_check > 900:
+            if pre_breakout_coins:
+                breakout_list = ", ".join(pre_breakout_coins)
+                send_telegram(
+                    f"🚀 *Breakout-Vorbereitung*\n"
+                    f"{len(pre_breakout_coins)} Coins zeigen frühe Breakout-Signale:\n"
+                    f"🔍 {breakout_list}"
+                )
+                pre_breakout_coins = []
+
+            last_breakout_check = time.time()
+
+        time.sleep(600)
+
 
 
 
