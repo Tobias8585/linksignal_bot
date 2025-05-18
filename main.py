@@ -397,11 +397,11 @@ if signal_1m == "LONG":
 
     # Ampelsystem Volatilität
 if volatility_pct < 0.5:
-        volatility_zone = f"🟢 {volatility_pct:.2f} % *(ruhig – geringes Risiko)*"
-    elif volatility_pct < 1.5:
-        volatility_zone = f"🟠 {volatility_pct:.2f} % *(mittel – normales Risiko/Chance)*"
-    else:
-        volatility_zone = f"🔴 {volatility_pct:.2f} % *(hoch – erhöhtes Risiko/Chancenpotenzial)*"
+    volatility_zone = f"🟢 {volatility_pct:.2f} % *(ruhig – geringes Risiko)*"
+elif volatility_pct < 1.5:
+    volatility_zone = f"🟠 {volatility_pct:.2f} % *(mittel – normales Risiko/Chance)*"
+else:
+    volatility_zone = f"🔴 {volatility_pct:.2f} % *(hoch – erhöhtes Risiko/Chancenpotenzial)*"
 
     # Prozentangabe Signalqualität
     max_criteria = 6
