@@ -118,13 +118,17 @@ def run_bot():
             log_print(f"{len(all_signal_results)} Coins ausgewertet für Marktstatus")
             low_list_text = ", ".join(low_coins) if low_coins else "-"
 
-            send_telegram(
-                f"📊 *Marktstatus-Update*\n"
-                f"{market_status}\n"
-                f"📈 LONG: {long_count}x | 📉 SHORT: {short_count}x\n"
-                f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
-                f"🔍 Kandidaten: {low_list_text}"
-            )
+            status_btc = "🟢 stark" if btc_strength_ok else "🔴 schwach"
+
+send_telegram(
+    f"📊 *Marktstatus-Update*\n"
+    f"{market_status}\n"
+    f"📈 LONG: {long_count}x | 📉 SHORT: {short_count}x\n"
+    f"🪙 *BTC-Stärke:* {status_btc}\n"
+    f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
+    f"🔍 Kandidaten: {low_list_text}"
+)
+
 
             send_telegram(
                 f"📉 *Coin-Tiefstände*\n"
@@ -257,10 +261,6 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Kein 1m-Signal")
         return None, None
         
-        # BTC-Stärke prüfen – schwacher BTC blockiert Long-Signale
-    if not btc_strength_ok and signal_1m == "LONG":
-        log_print(f"{symbol}: BTC schwach – LONG-Signal blockiert")
-        return None, None
 
 
     if (signal_1m == "LONG" and signal_5m == "SHORT") or (signal_1m == "SHORT" and signal_5m == "LONG"):
@@ -357,17 +357,19 @@ def analyze_combined(symbol):
         low_coins_12h.append(symbol)
 
     criteria_count = (
-        count_1m +
-        int(strong_volume) +
-        int(breakout) +
-        int(pre_breakout is True) +
-        int(macd_cross) +
-        int(ema_cross) +
-        int(bollinger_signal) +
-        int(fib_signal)
-    )
+    count_1m +
+    int(strong_volume) +
+    int(breakout) +
+    int(pre_breakout is True) +
+    int(macd_cross) +
+    int(ema_cross) +
+    int(bollinger_signal) +
+    int(fib_signal) +
+    int(btc_strength_ok)  # ✅ neu
+)
+max_criteria = 8  # ✅ erhöht um 1
 
-    max_criteria = 7
+
     percentage = int(min(100, (criteria_count / max_criteria) * 100))
 
     if criteria_count >= 7:
