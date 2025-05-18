@@ -403,41 +403,40 @@ def analyze_combined(symbol):
     tp1 = price + 1.5 * atr if signal_1m == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal_1m == "LONG" else price - 2.5 * atr
     sl = price - 1.2 * atr if signal_1m == "LONG" else price + 1.2 * atr
-
     zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
 
     msg = (
-    f"🔔 *Signal für: {symbol}* | *{signal_1m}* ({signal_strength})\n"
-    f"🟢 *Signalqualität:* {percentage} % erfüllt ({criteria_count} von {max_criteria} Hauptkriterien)\n\n"
-    f"📊 *Analyse-Zeitrahmen:*\n"
-    f"• Hauptsignal: 1m *(50 Minuten Analyse)*\n"
-    f"• Bestätigung: 5m *(6 Stunden Analyse)* → {signal_5m or 'kein Signal'}\n"
-    f"• Trend: {'Aufwärts' if price > ema and price > ema50 else 'Abwärts' if price < ema and price < ema50 else 'Seitwärts'}\n"
-    f"• RSI-Zone: {rsi:.2f}\n"
-    f"• Volatilität: {volatility_pct:.2f} %\n\n"
-    f"📉 *Indikatoren:*\n"
-    f"• MACD-Cross: {'✅' if macd_cross else '❌'}\n"
-    f"• EMA-Cross: {'✅' if ema_cross else '❌'}\n"
-    f"• Bollinger Rebound: {'✅' if bollinger_signal else '❌'}\n"
-    f"• Fibonacci-Bestätigung: {'✅' if fib_signal else '❌'}\n"
-    f"• Ichimoku: OK\n\n"
-    f"💴 *Preisdaten:*\n"
-    f"• Preis: {price:.4f}\n"
-    f"• Volumen: {volume:,.0f} vs Ø{avg_volume:,.0f}\n\n"
-    f"🎯 *Zielbereiche:*\n"
-    f"• TP1: {tp1:.4f}\n"
-    f"• TP2: {tp2:.4f}\n"
-    f"• SL: {sl:.4f}\n\n"
-    f"🕒 *Zeit:* {zurich_time}"
-)
+        f"🔔 *Signal für: {symbol}* | *{signal_1m}* ({signal_strength})\n"
+        f"🟢 *Signalqualität:* {percentage} % erfüllt ({criteria_count} von {max_criteria} Hauptkriterien)\n\n"
+        f"📊 *Analyse-Zeitrahmen:*\n"
+        f"• Hauptsignal: 1m *(50 Minuten Analyse)*\n"
+        f"• Bestätigung: 5m *(6 Stunden Analyse)* → {signal_5m or 'kein Signal'}\n"
+        f"• Trend: {'Aufwärts' if price > ema and price > ema50 else 'Abwärts' if price < ema and price < ema50 else 'Seitwärts'}\n"
+        f"• RSI-Zone: {rsi:.2f}\n"
+        f"• Volatilität: {volatility_pct:.2f} %\n\n"
+        f"📉 *Indikatoren:*\n"
+        f"• MACD-Cross: {'✅' if macd_cross else '❌'}\n"
+        f"• EMA-Cross: {'✅' if ema_cross else '❌'}\n"
+        f"• Bollinger Rebound: {'✅' if bollinger_signal else '❌'}\n"
+        f"• Fibonacci-Bestätigung: {'✅' if fib_signal else '❌'}\n"
+        f"• Ichimoku: OK\n\n"
+        f"💴 *Preisdaten:*\n"
+        f"• Preis: {price:.4f}\n"
+        f"• Volumen: {volume:,.0f} vs Ø{avg_volume:,.0f}\n\n"
+        f"🎯 *Zielbereiche:*\n"
+        f"• TP1: {tp1:.4f}\n"
+        f"• TP2: {tp2:.4f}\n"
+        f"• SL: {sl:.4f}\n\n"
+        f"🕒 *Zeit:* {zurich_time}"
+    )
 
-# BTC-Stärkehinweis ergänzen
-if signal_1m == "LONG" and not btc_strength_ok:
-    msg += "\n⚠️ *BTC schwach*: Long-Signal mit Vorsicht bewerten."
-elif signal_1m == "LONG" and btc_strength_ok:
-    msg += "\n🟢 *BTC stark*: zusätzliche Unterstützung vorhanden."
+    # BTC-Stärkehinweis ergänzen
+    if signal_1m == "LONG" and not btc_strength_ok:
+        msg += "\n⚠️ *BTC schwach*: Long-Signal mit Vorsicht bewerten."
+    elif signal_1m == "LONG" and btc_strength_ok:
+        msg += "\n🟢 *BTC stark*: zusätzliche Unterstützung vorhanden."
 
-return signal_1m, msg
+    return signal_1m, msg
 
 
 
