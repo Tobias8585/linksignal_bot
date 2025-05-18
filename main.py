@@ -2,7 +2,7 @@ import requests
 import time
 import threading
 import schedule
-from flask import Flask, request
+from flask import Flask
 from bs4 import BeautifulSoup
 import pytz
 from pytz import timezone
@@ -118,44 +118,39 @@ def run_bot():
             log_print(f"{len(all_signal_results)} Coins ausgewertet für Marktstatus")
             low_list_text = ", ".join(low_coins) if low_coins else "-"
 
-            status_btc = "🟢 stark" if btc_strength_ok else "🔴 schwach"
+            send_telegram(
+                f"📊 *Marktstatus-Update*\n"
+                f"{market_status}\n"
+                f"📈 LONG: {long_count}x | 📉 SHORT: {short_count}x\n"
+                f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
+                f"🔍 Kandidaten: {low_list_text}"
+            )
 
-    send_telegram(
-        f"📊 *Marktstatus-Update*\n"
-        f"{market_status}\n"
-        f"📈 LONG: {long_count}x | 📉 SHORT: {short_count}x\n"
-        f"🪙 *BTC-Stärke:* {status_btc}\n"
-        f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
-        f"🔍 Kandidaten: {low_list_text}"
-    )
+            send_telegram(
+                f"📉 *Coin-Tiefstände*\n"
+                f"🔻 24h: {len(low_coins_24h)} Coins\n"
+                f"🔻 12h: {len(low_coins_12h)} Coins\n"
+                f"🔍 24h: {', '.join(low_coins_24h) or '-'}\n"
+                f"🔍 12h: {', '.join(low_coins_12h) or '-'}"
+            )
 
-    send_telegram(
-        f"📉 *Coin-Tiefstände*\n"
-        f"🔻 24h: {len(low_coins_24h)} Coins\n"
-        f"🔻 12h: {len(low_coins_12h)} Coins\n"
-        f"🔍 24h: {', '.join(low_coins_24h) or '-'}\n"
-        f"🔍 12h: {', '.join(low_coins_12h) or '-'}"
-    )
+            last_status_time = time.time()
+            low_coins = []
+            low_coins_24h = []
+            low_coins_12h = []
 
-    last_status_time = time.time()
-    low_coins = []
-    low_coins_24h = []
-    low_coins_12h = []
+        if time.time() - last_breakout_check > 900:
+            if pre_breakout_coins:
+                breakout_list = ", ".join(pre_breakout_coins)
+                send_telegram(
+                    f"🚀 *Breakout-Vorbereitung erkannt*\n"
+                    f"{len(pre_breakout_coins)} Coins zeigen Anzeichen für einen bevorstehenden Ausbruch:\n"
+                    f"🔍 {breakout_list}"
+                )
+                pre_breakout_coins = []
+            last_breakout_check = time.time()
 
-
-if time.time() - last_breakout_check > 900:
-    if pre_breakout_coins:
-        breakout_list = ", ".join(pre_breakout_coins)
-        send_telegram(
-            f"🚀 *Breakout-Vorbereitung erkannt*\n"
-            f"{len(pre_breakout_coins)} Coins zeigen Anzeichen für einen bevorstehenden Ausbruch:\n"
-            f"🔍 {breakout_list}"
-        )
-        pre_breakout_coins = []
-    last_breakout_check = time.time()
-
-time.sleep(600)
-
+        time.sleep(600)
 
 
 
@@ -189,6 +184,7 @@ def check_btc_strength():
     df = get_klines('BTCUSDT', interval='5m', limit=50)
     if df is None:
         log_print("BTC-Daten konnten nicht geladen werden")
+        btc_strength_ok = True  # besser handeln als blockieren
         return
 
 
@@ -260,6 +256,12 @@ def analyze_combined(symbol):
     if not signal_1m:
         log_print(f"{symbol}: Kein 1m-Signal")
         return None, None
+        
+        # BTC-Stärke prüfen – schwacher BTC blockiert Long-Signale
+    if not btc_strength_ok and signal_1m == "LONG":
+        log_print(f"{symbol}: BTC schwach – LONG-Signal blockiert")
+        return None, None
+
 
     if (signal_1m == "LONG" and signal_5m == "SHORT") or (signal_1m == "SHORT" and signal_5m == "LONG"):
         log_print(f"{symbol}: Divergenz 1m/5m erkannt – kein klares Setup")
@@ -362,11 +364,10 @@ def analyze_combined(symbol):
         int(macd_cross) +
         int(ema_cross) +
         int(bollinger_signal) +
-        int(fib_signal) +
-        int(btc_strength_ok)
+        int(fib_signal)
     )
 
-    max_criteria = 8
+    max_criteria = 7
     percentage = int(min(100, (criteria_count / max_criteria) * 100))
 
     if criteria_count >= 7:
@@ -410,7 +411,6 @@ def analyze_combined(symbol):
     )
 
     return signal_1m, msg
-
 
 
 
@@ -529,7 +529,6 @@ def check_market_events():
 
         if not all([date_td, impact_td, event_td, time_td, country_td]):
             continue
-
         date_text = date_td.text.strip()
         if date_text not in valid_days:
             continue
@@ -544,11 +543,10 @@ def check_market_events():
 
         time_ch = convert_time_ny_to_ch(time_text)
         country = country_td.text.strip()
-        event = event_td.text.strip()
-
         if country not in ['USD', 'EUR', 'CHF']:
             continue
 
+        event = event_td.text.strip()
         events_today.append(f"{country} {time_ch} – {event}")
 
     if events_today:
@@ -560,7 +558,6 @@ def check_market_events():
         message = "📅 Keine hochrelevanten Wirtschaftsevents heute oder morgen."
 
     send_telegram(message)
-
 
 
 def convert_time_ny_to_ch(text_time):
@@ -629,14 +626,11 @@ def check_market_events():
     send_telegram(message)
 
 
-if __name__ == "__main__":
-    def start_flask():
-        app.run(host="0.0.0.0", port=8080)
 
+# ⬇️ Erst jetzt darfst du aufrufen:
+if __name__ == "__main__":
     send_telegram("🚀 Bot wurde mit Doppelanalyse gestartet.")
     check_market_events()
     log_print("Telegram-Startnachricht wurde gesendet.")
-
     threading.Thread(target=run_bot).start()
-    start_flask()
-
+    app.run(host='0.0.0.0', port=8080)
