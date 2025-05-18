@@ -389,7 +389,8 @@ if signal_1m == "LONG":
         rsi_zone = f"🟠 {rsi:.2f} *(neutral – mittleres Risiko)*"
     else:
         rsi_zone = f"🔴 {rsi:.2f} *(überkauft – hohes Rückschlagsrisiko)*"
-    else:
+
+elif signal_1m == "SHORT":
     if rsi > 70:
         rsi_zone = f"🟢 {rsi:.2f} *(überkauft – günstiger Einstieg möglich)*"
     elif rsi >= 35:
