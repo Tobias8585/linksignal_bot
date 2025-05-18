@@ -243,7 +243,7 @@ def is_reversal_candidate(df):
 
 
 def analyze_combined(symbol):
-    global market_sentiment, low_coins, pre_breakout_coins
+    global market_sentiment, low_coins, pre_breakout_coins, btc_strength_ok
 
     df_1m = get_klines(symbol, interval="1m", limit=50)
     df_5m = get_klines(symbol, interval="5m", limit=75)
