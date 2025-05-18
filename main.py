@@ -186,6 +186,7 @@ def check_btc_strength():
         btc_strength_ok = True  # besser handeln als blockieren
         return
 
+
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     ema50 = df['close'].ewm(span=50).mean().iloc[-1]
