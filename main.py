@@ -372,44 +372,43 @@ def analyze_combined(symbol):
     elif rsi > 70:
         rsi_zone = "überkauft"
 
+        # Bewertungstexte vorbereiten
     macd_text = "MACD-Cross: ✅" if macd_cross else "MACD-Cross: ❌"
     bollinger_text = "Bollinger-Rebound: ✅" if bollinger_signal else "Bollinger-Rebound: ❌"
     fib_text = "Fibonacci-Bestätigung: ✅" if fib_signal else "Fibonacci-Bestätigung: ❌"
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
-from pytz import timezone
-zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
+    from pytz import timezone
+    zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
 
     # Ampelsystem RSI
-# Ampelsystem RSI
-if signal_1m == "LONG":
-    if rsi < 35:
-        rsi_zone = f"🟢 {rsi:.2f} *(überverkauft – günstiger Einstieg möglich)*"
-    elif rsi <= 70:
-        rsi_zone = f"🟠 {rsi:.2f} *(neutral – mittleres Risiko)*"
+    if signal_1m == "LONG":
+        if rsi < 35:
+            rsi_zone = f"🟢 {rsi:.2f} *(überverkauft – günstiger Einstieg möglich)*"
+        elif rsi <= 70:
+            rsi_zone = f"🟠 {rsi:.2f} *(neutral – mittleres Risiko)*"
+        else:
+            rsi_zone = f"🔴 {rsi:.2f} *(überkauft – hohes Rückschlagsrisiko)*"
+    elif signal_1m == "SHORT":
+        if rsi > 70:
+            rsi_zone = f"🟢 {rsi:.2f} *(überkauft – günstiger Einstieg möglich)*"
+        elif rsi >= 35:
+            rsi_zone = f"🟠 {rsi:.2f} *(neutral – mittleres Risiko)*"
+        else:
+            rsi_zone = f"🔴 {rsi:.2f} *(überverkauft – hohes Rückschlagsrisiko)*"
+
+    # Ampelsystem Volatilität
+    if volatility_pct < 0.5:
+        volatility_zone = f"🟢 {volatility_pct:.2f} % *(ruhig – geringes Risiko)*"
+    elif volatility_pct < 1.5:
+        volatility_zone = f"🟠 {volatility_pct:.2f} % *(mittel – normales Risiko/Chance)*"
     else:
-        rsi_zone = f"🔴 {rsi:.2f} *(überkauft – hohes Rückschlagsrisiko)*"
-
-elif signal_1m == "SHORT":
-    if rsi > 70:
-        rsi_zone = f"🟢 {rsi:.2f} *(überkauft – günstiger Einstieg möglich)*"
-    elif rsi >= 35:
-        rsi_zone = f"🟠 {rsi:.2f} *(neutral – mittleres Risiko)*"
-    else:
-        rsi_zone = f"🔴 {rsi:.2f} *(überverkauft – hohes Rückschlagsrisiko)*"
-
-# Ampelsystem Volatilität
-if volatility_pct < 0.5:
-    volatility_zone = f"🟢 {volatility_pct:.2f} % *(ruhig – geringes Risiko)*"
-elif volatility_pct < 1.5:
-    volatility_zone = f"🟠 {volatility_pct:.2f} % *(mittel – normales Risiko/Chance)*"
-else:
-    volatility_zone = f"🔴 {volatility_pct:.2f} % *(hoch – erhöhtes Risiko/Chancenpotenzial)*"
-
+        volatility_zone = f"🔴 {volatility_pct:.2f} % *(hoch – erhöhtes Risiko/Chancenpotenzial)*"
 
     # Prozentangabe Signalqualität
     max_criteria = 6
     percentage = int((criteria_count / max_criteria) * 100)
+
 
     msg = (
         f"🔔 *Signal für: {symbol}* | *{signal_1m}* ({signal_strength})\n"
