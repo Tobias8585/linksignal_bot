@@ -236,16 +236,14 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Divergenz 1m/5m erkannt – kein klares Setup")
         return None
 
-    price = df_5m['close'].iloc[-1]  # ✅ Richtig platziert
+    price = df_5m['close'].iloc[-1]
 
-    breakout = False  # Erstmal sicher initialisieren
-
+    breakout = False
     if signal_1m == "LONG":
         breakout = price > df_5m['high'].iloc[-21:-1].max()
     elif signal_1m == "SHORT":
         breakout = price < df_5m['low'].iloc[-21:-1].min()
 
-    # Falls Breakout schon stark und Preis weit über Schwelle => kein Signal
     if breakout and signal_1m == "LONG" and price > df_5m['high'].iloc[-21:-1].max() * 1.01:
         log_print(f"{symbol}: Breakout bereits weit gelaufen – kein Einstieg")
         return None
@@ -291,12 +289,8 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: SHORT aber über Ichimoku-Kijun")
         return None
 
-
-   
-
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
     volatility_pct = atr / price * 100
-
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
 
@@ -304,8 +298,6 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Kein Signal – ATR zu niedrig")
         return None
 
-        breakout = (signal_1m == "LONG" and price > df['high'].iloc[-21:-1].max()) or \
-               (signal_1m == "SHORT" and price < df['low'].iloc[-21:-1].min())
     strong_volume = volume > avg_volume * 1.3
     ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
 
@@ -324,16 +316,14 @@ def analyze_combined(symbol):
     if is_near_recent_low(df, window=50, tolerance=0.02):
         low_coins.append(symbol)
 
-    # 📉 Reversal-Check
     if is_reversal_candidate(df):
         send_telegram(f"🔄 *Reversal-Kandidat erkannt*: {symbol}\n"
                       f"Coin zeigt starke Umkehrsignale (RSI/CCI/MACD/Volumen).")
 
-    # 📉 Tiefstand-Checks für 24h und 12h
-    if is_near_recent_low(df, window=288, tolerance=0.02):  # 24h bei 5m-Kerzen
+    if is_near_recent_low(df, window=288, tolerance=0.02):
         low_coins_24h.append(symbol)
 
-    if is_near_recent_low(df, window=144, tolerance=0.02):  # 12h bei 5m-Kerzen
+    if is_near_recent_low(df, window=144, tolerance=0.02):
         low_coins_12h.append(symbol)
 
     criteria_count = (
@@ -358,7 +348,6 @@ def analyze_combined(symbol):
         signal_strength = "🔸 Mögliches Signal"
     else:
         return None
-
 
     if volatility_pct < 0.5:
         tp1_factor, tp2_factor, sl_factor = 1.2, 1.8, 1.0
@@ -388,23 +377,24 @@ def analyze_combined(symbol):
     fib_text = "Fibonacci-Bestätigung: ✅" if fib_signal else "Fibonacci-Bestätigung: ❌"
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
-
     from pytz import timezone
-zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
+    zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
 
-msg = (
-    f"🔔 *{symbol}* Signal: *{signal_1m}* {stars}\n"
-    f"{signal_strength}\n"
-    f"{breakout_text}\n"
-    f"🧠 Grund: {count_1m} von 3 {signal_1m}-Kriterien erfüllt\n"
-    f"🧠 Hauptsignal aus 1m | 5m: {signal_5m or 'kein'}\n"
-    f"📈 Trend: {trend_text} | RSI-Zone: {rsi_zone} | Volatilität: {volatility_pct:.2f} %\n"
-    f"{macd_text} | EMA-Cross: {'✅' if ema_cross else '❌'} | {bollinger_text} | {fib_text}\n"
-    f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
-    f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
-    f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
-    f"🕒 *Zeit:* {zurich_time}"
-)
+    msg = (
+        f"🔔 *{symbol}* Signal: *{signal_1m}* {stars}\n"
+        f"{signal_strength}\n"
+        f"{breakout_text}\n"
+        f"🧠 Grund: {count_1m} von 3 {signal_1m}-Kriterien erfüllt\n"
+        f"🧠 Hauptsignal aus 1m | 5m: {signal_5m or 'kein'}\n"
+        f"📈 Trend: {trend_text} | RSI-Zone: {rsi_zone} | Volatilität: {volatility_pct:.2f} %\n"
+        f"{macd_text} | EMA-Cross: {'✅' if ema_cross else '❌'} | {bollinger_text} | {fib_text}\n"
+        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
+        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
+        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
+        f"🕒 *Zeit:* {zurich_time}"
+    )
+
+    return msg
 
 
 
@@ -618,3 +608,4 @@ if __name__ == "__main__":
     log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
