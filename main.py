@@ -481,13 +481,18 @@ def check_all_symbols():
         return
 
     for symbol in symbols:
-        signal = analyze_combined(symbol)
-        if signal:
-            send_telegram(signal)
-            log_print(f"{symbol}: Signal gesendet\n{signal}")
-        else:
-            log_print(f"{symbol}: Kein Signal")
-        time.sleep(1)
+    signal_direction, signal_msg = analyze_combined(symbol)
+
+    if signal_direction:
+        all_signal_results.append(signal_direction)
+        send_telegram(signal_msg)
+        log_print(f"{symbol}: Signal gesendet\n{signal_msg}")
+    else:
+        all_signal_results.append("NONE")
+        log_print(f"{symbol}: Kein Signal")
+
+    time.sleep(1)
+
 
     log_print(f"📊 Marktbreite: {market_sentiment['long']}x LONG | {market_sentiment['short']}x SHORT")
 
