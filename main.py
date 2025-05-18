@@ -459,6 +459,8 @@ def get_top_volume_symbols(limit=100):
 
 def check_all_symbols():
     global market_sentiment
+    global all_signal_results
+    all_signal_results = []
     market_sentiment["long"] = 0
     market_sentiment["short"] = 0
 
