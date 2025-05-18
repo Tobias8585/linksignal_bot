@@ -629,11 +629,14 @@ def check_market_events():
     send_telegram(message)
 
 
-
-# ⬇️ Erst jetzt darfst du aufrufen:
 if __name__ == "__main__":
+    def start_flask():
+        app.run(host="0.0.0.0", port=8080)
+
     send_telegram("🚀 Bot wurde mit Doppelanalyse gestartet.")
     check_market_events()
     log_print("Telegram-Startnachricht wurde gesendet.")
+
     threading.Thread(target=run_bot).start()
-    app.run(host='0.0.0.0', port=8080)
+    start_flask()
+
