@@ -2,7 +2,7 @@ import requests
 import time
 import threading
 import schedule
-from flask import Flask
+from flask import Flask, request
 from bs4 import BeautifulSoup
 import pytz
 from pytz import timezone
