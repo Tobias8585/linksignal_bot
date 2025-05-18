@@ -106,10 +106,12 @@ def is_breakout_in_preparation(df, direction="LONG"):
 def run_bot():
     global last_status_time, last_breakout_check, low_coins, low_coins_24h, low_coins_12h, pre_breakout_coins, all_signal_results
 
-
     schedule.every().day.at("07:00").do(check_market_events)
 
     while True:
+        # 👉 BTC-Stärkeprüfung vor Symbolanalyse einbauen
+        check_btc_strength()
+
         check_all_symbols()
         schedule.run_pending()
 
@@ -118,10 +120,13 @@ def run_bot():
             log_print(f"{len(all_signal_results)} Coins ausgewertet für Marktstatus")
             low_list_text = ", ".join(low_coins) if low_coins else "-"
 
+            status_btc = "🟢 stark" if btc_strength_ok else "🔴 schwach"
+
             send_telegram(
                 f"📊 *Marktstatus-Update*\n"
                 f"{market_status}\n"
                 f"📈 LONG: {long_count}x | 📉 SHORT: {short_count}x\n"
+                f"🪙 *BTC-Stärke:* {status_btc}\n"
                 f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
                 f"🔍 Kandidaten: {low_list_text}"
             )
@@ -151,6 +156,7 @@ def run_bot():
             last_breakout_check = time.time()
 
         time.sleep(600)
+
 
 
 
