@@ -354,23 +354,24 @@ def analyze_combined(symbol):
         low_coins_24h.append(symbol)
 
     if is_near_recent_low(df, window=144, tolerance=0.02):
-        low_coins_12h.append(symbol)
+    low_coins_12h.append(symbol)
 
- criteria_count = (
-    count_1m +
-    int(strong_volume) +
-    int(breakout) +
-    int(pre_breakout is True) +
-    int(macd_cross) +
-    int(ema_cross) +
-    int(bollinger_signal) +
-    int(fib_signal) +
-    int(btc_strength_ok)  # ✅ neu
-)
+    criteria_count = (
+        count_1m +
+        int(strong_volume) +
+        int(breakout) +
+        int(pre_breakout is True) +
+        int(macd_cross) +
+        int(ema_cross) +
+        int(bollinger_signal) +
+        int(fib_signal) +
+        int(btc_strength_ok)  # ✅ neu
+    )
 
-max_criteria = 8  # ✅ erhöht um 1
+    max_criteria = 8  # ✅ erhöht um 1
 
-percentage = int(min(100, (criteria_count / max_criteria) * 100))
+    percentage = int(min(100, (criteria_count / max_criteria) * 100))
+
 
 if criteria_count >= 7:
     signal_strength = "🟢 Sehr starkes Signal"
