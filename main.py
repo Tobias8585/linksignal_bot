@@ -529,6 +529,7 @@ def check_market_events():
 
         if not all([date_td, impact_td, event_td, time_td, country_td]):
             continue
+
         date_text = date_td.text.strip()
         if date_text not in valid_days:
             continue
@@ -543,10 +544,11 @@ def check_market_events():
 
         time_ch = convert_time_ny_to_ch(time_text)
         country = country_td.text.strip()
+        event = event_td.text.strip()
+
         if country not in ['USD', 'EUR', 'CHF']:
             continue
 
-        event = event_td.text.strip()
         events_today.append(f"{country} {time_ch} – {event}")
 
     if events_today:
@@ -558,6 +560,7 @@ def check_market_events():
         message = "📅 Keine hochrelevanten Wirtschaftsevents heute oder morgen."
 
     send_telegram(message)
+
 
 
 def convert_time_ny_to_ch(text_time):
