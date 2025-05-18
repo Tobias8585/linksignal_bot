@@ -183,15 +183,30 @@ def get_klines(symbol, interval="5m", limit=75):
             log_print(f"{symbol} {interval}: Fehler (Versuch {attempt + 1}/3): {e}")
         time.sleep(2)
     return None
-    btc_strength_ok = True  # global initialisiert
+
 
 def check_btc_strength():
     global btc_strength_ok
+
+    # Versuche BTC-Daten zu laden
     df = get_klines('BTCUSDT', interval='5m', limit=50)
     if df is None:
         log_print("BTC-Daten konnten nicht geladen werden")
-        btc_strength_ok = True  # besser handeln als blockieren
-        return
+        btc_strength_ok = True  # Annahme: lieber 'stark', um keine Signale zu blockieren
+        return  # Funktion hier abbrechen – sonst würde df == None zu Fehlern führen
+
+    # Berechne technische Indikatoren für BTC
+    rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
+    ema = df['close'].ewm(span=20).mean().iloc[-1]
+    ema50 = df['close'].ewm(span=50).mean().iloc[-1]
+    macd = MACD(df['close']).macd().iloc[-1]
+    price = df['close'].iloc[-1]
+
+    # BTC wird als "stark" gewertet, wenn RSI > 50, MACD positiv und Preis über beiden EMAs liegt
+    btc_strength_ok = (rsi > 50) and (macd > 0) and (price > ema and price > ema50)
+    status = "🟢 stark" if btc_strength_ok else "🔴 schwach"
+    log_print(f"BTC-Marktstärke: {status}")
+
 
 
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
