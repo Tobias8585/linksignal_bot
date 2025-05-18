@@ -436,7 +436,10 @@ def analyze_combined(symbol):
         f"• TP2: {tp2:.4f}\n"
         f"• SL: {sl:.4f}\n\n"
         f"🕒 *Zeit:* {zurich_time}"
-    )
+)
+
+return f"{signal_1m}", msg
+
 
 
 
