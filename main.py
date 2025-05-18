@@ -227,17 +227,17 @@ def analyze_combined(symbol):
     df_1m = get_klines(symbol, interval="1m", limit=50)
     df_5m = get_klines(symbol, interval="5m", limit=75)
     if df_1m is None or df_5m is None:
-        return None
+        return None, None
 
     signal_1m, count_1m = get_simple_signal(df_1m)
     signal_5m, count_5m = get_simple_signal(df_5m)
     if not signal_1m:
         log_print(f"{symbol}: Kein 1m-Signal")
-        return None
+        return None, None
 
     if (signal_1m == "LONG" and signal_5m == "SHORT") or (signal_1m == "SHORT" and signal_5m == "LONG"):
         log_print(f"{symbol}: Divergenz 1m/5m erkannt – kein klares Setup")
-        return None
+        return None, None
 
     price = df_5m['close'].iloc[-1]
 
@@ -249,10 +249,10 @@ def analyze_combined(symbol):
 
     if breakout and signal_1m == "LONG" and price > df_5m['high'].iloc[-21:-1].max() * 1.01:
         log_print(f"{symbol}: Breakout bereits weit gelaufen – kein Einstieg")
-        return None
+        return None, None
     if breakout and signal_1m == "SHORT" and price < df_5m['low'].iloc[-21:-1].min() * 0.99:
         log_print(f"{symbol}: Breakdown bereits weit gelaufen – kein Einstieg")
-        return None
+        return None, None
 
     if signal_1m == "LONG":
         market_sentiment["long"] += 1
@@ -287,10 +287,10 @@ def analyze_combined(symbol):
     kijun_sen = ichimoku.ichimoku_base_line().iloc[-1]
     if signal_1m == "LONG" and price < kijun_sen:
         log_print(f"{symbol}: LONG aber unter Ichimoku-Kijun")
-        return None
+        return None, None
     if signal_1m == "SHORT" and price > kijun_sen:
         log_print(f"{symbol}: SHORT aber über Ichimoku-Kijun")
-        return None
+        return None, None
 
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
     volatility_pct = atr / price * 100
@@ -299,7 +299,7 @@ def analyze_combined(symbol):
 
     if atr < price * 0.003:
         log_print(f"{symbol}: Kein Signal – ATR zu niedrig")
-        return None
+        return None, None
 
     strong_volume = volume > avg_volume * 1.3
     ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
@@ -307,10 +307,10 @@ def analyze_combined(symbol):
     if count_1m == 2:
         if not (strong_volume and breakout):
             log_print(f"{symbol}: 2/3 aber kein Breakout oder Volumen")
-            return None
+            return None, None
         if signal_1m == "SHORT" and not (ema_trend_down and ema50_trend_down):
             log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
-            return None
+            return None, None
 
     pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
     if pre_breakout:
@@ -350,7 +350,7 @@ def analyze_combined(symbol):
         stars = "⭐"
         signal_strength = "🔸 Mögliches Signal"
     else:
-        return None
+        return None, None
 
     if volatility_pct < 0.5:
         tp1_factor, tp2_factor, sl_factor = 1.2, 1.8, 1.0
@@ -375,7 +375,6 @@ def analyze_combined(symbol):
     elif rsi > 70:
         rsi_zone = "überkauft"
 
-        # Bewertungstexte vorbereiten
     macd_text = "MACD-Cross: ✅" if macd_cross else "MACD-Cross: ❌"
     bollinger_text = "Bollinger-Rebound: ✅" if bollinger_signal else "Bollinger-Rebound: ❌"
     fib_text = "Fibonacci-Bestätigung: ✅" if fib_signal else "Fibonacci-Bestätigung: ❌"
@@ -384,7 +383,6 @@ def analyze_combined(symbol):
     from pytz import timezone
     zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
 
-    # Ampelsystem RSI
     if signal_1m == "LONG":
         if rsi < 35:
             rsi_zone = f"🟢 {rsi:.2f} *(überverkauft – günstiger Einstieg möglich)*"
@@ -400,7 +398,6 @@ def analyze_combined(symbol):
         else:
             rsi_zone = f"🔴 {rsi:.2f} *(überverkauft – hohes Rückschlagsrisiko)*"
 
-    # Ampelsystem Volatilität
     if volatility_pct < 0.5:
         volatility_zone = f"🟢 {volatility_pct:.2f} % *(ruhig – geringes Risiko)*"
     elif volatility_pct < 1.5:
@@ -408,13 +405,12 @@ def analyze_combined(symbol):
     else:
         volatility_zone = f"🔴 {volatility_pct:.2f} % *(hoch – erhöhtes Risiko/Chancenpotenzial)*"
 
-    # Prozentangabe Signalqualität
     max_criteria = 6
     percentage = int((criteria_count / max_criteria) * 100)
 
     msg = (
         f"🔔 *Signal für: {symbol}* | *{signal_1m}* ({signal_strength})\n"
-        f"🟢 *Signalqualität:* {percentage} % erfüllt ({criteria_count} von {max_criteria} Hauptkriterien)\n\n"
+        f"🟢 *Signalqualität:* {percentage}\u202f% erfüllt ({criteria_count} von {max_criteria} Hauptkriterien)\n\n"
         f"📊 *Analyse-Zeitrahmen:*\n"
         f"• Hauptsignal: 1m *(50 Minuten Analyse)*\n"
         f"• Bestätigung: 5m *(6 Stunden Analyse)* → {signal_5m or 'kein Signal'}\n"
@@ -438,7 +434,6 @@ def analyze_combined(symbol):
     )
 
     return f"{signal_1m}", msg
-
 
 
 
