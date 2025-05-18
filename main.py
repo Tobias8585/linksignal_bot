@@ -388,21 +388,23 @@ def analyze_combined(symbol):
     breakout_text = "🚀 Breakout erkannt!" if breakout else ""
 
 
-    msg = (
-        f"🔔 *{symbol}* Signal: *{signal_1m}* {stars}\n"
-        f"{signal_strength}\n"
-        f"{breakout_text}\n"
-        f"🧠 Grund: {count_1m} von 3 {signal_1m}-Kriterien erfüllt\n"
-        f"🧠 Hauptsignal aus 1m | 5m: {signal_5m or 'kein'}\n"
-        f"📈 Trend: {trend_text} | RSI-Zone: {rsi_zone} | Volatilität: {volatility_pct:.2f} %\n"
-        f"{macd_text} | EMA-Cross: {'✅' if ema_cross else '❌'} | {bollinger_text} | {fib_text}\n"
-        f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
-        f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
-        f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
-        f"🕒 {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
-    )
+    from pytz import timezone
+zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
 
-    return msg
+msg = (
+    f"🔔 *{symbol}* Signal: *{signal_1m}* {stars}\n"
+    f"{signal_strength}\n"
+    f"{breakout_text}\n"
+    f"🧠 Grund: {count_1m} von 3 {signal_1m}-Kriterien erfüllt\n"
+    f"🧠 Hauptsignal aus 1m | 5m: {signal_5m or 'kein'}\n"
+    f"📈 Trend: {trend_text} | RSI-Zone: {rsi_zone} | Volatilität: {volatility_pct:.2f} %\n"
+    f"{macd_text} | EMA-Cross: {'✅' if ema_cross else '❌'} | {bollinger_text} | {fib_text}\n"
+    f"📊 RSI: {rsi:.2f} | MACD: {macd_line:.4f} | EMA20: {ema:.2f} | EMA50: {ema50:.2f}\n"
+    f"🔥 Preis: {price:.4f} | Vol: {volume:.0f} vs Ø{avg_volume:.0f}\n"
+    f"🎯 TP1: {tp1:.4f} | TP2: {tp2:.4f} | SL: {sl:.4f}\n"
+    f"🕒 *Zeit:* {zurich_time}"
+)
+
 
 
 def get_top_volume_symbols(limit=100):
@@ -615,3 +617,4 @@ if __name__ == "__main__":
     log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
