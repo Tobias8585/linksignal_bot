@@ -381,27 +381,30 @@ from pytz import timezone
 zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
 
     # Ampelsystem RSI
+# Ampelsystem RSI
 if signal_1m == "LONG":
-        if rsi < 35:
-            rsi_zone = f"🟢 {rsi:.2f} *(überverkauft – günstiger Einstieg möglich)*"
-        elif rsi <= 70:
-            rsi_zone = f"🟠 {rsi:.2f} *(neutral – mittleres Risiko)*"
-        else:
-            rsi_zone = f"🔴 {rsi:.2f} *(überkauft – hohes Rückschlagsrisiko)*"
-        if rsi > 70:
-            rsi_zone = f"🟢 {rsi:.2f} *(überkauft – günstiger Einstieg möglich)*"
-        elif rsi >= 35:
-            rsi_zone = f"🟠 {rsi:.2f} *(neutral – mittleres Risiko)*"
-        else:
-            rsi_zone = f"🔴 {rsi:.2f} *(überverkauft – hohes Rückschlagsrisiko)*"
+    if rsi < 35:
+        rsi_zone = f"🟢 {rsi:.2f} *(überverkauft – günstiger Einstieg möglich)*"
+    elif rsi <= 70:
+        rsi_zone = f"🟠 {rsi:.2f} *(neutral – mittleres Risiko)*"
+    else:
+        rsi_zone = f"🔴 {rsi:.2f} *(überkauft – hohes Rückschlagsrisiko)*"
+    else:
+    if rsi > 70:
+        rsi_zone = f"🟢 {rsi:.2f} *(überkauft – günstiger Einstieg möglich)*"
+    elif rsi >= 35:
+        rsi_zone = f"🟠 {rsi:.2f} *(neutral – mittleres Risiko)*"
+    else:
+        rsi_zone = f"🔴 {rsi:.2f} *(überverkauft – hohes Rückschlagsrisiko)*"
 
-    # Ampelsystem Volatilität
+# Ampelsystem Volatilität
 if volatility_pct < 0.5:
-    volatility_zone = f"🟢 {volatility_pct:.2f} % *(ruhig – geringes Risiko)*"
+    volatility_zone = f"🟢 {volatility_pct:.2f} % *(ruhig – geringes Risiko)*"
 elif volatility_pct < 1.5:
-    volatility_zone = f"🟠 {volatility_pct:.2f} % *(mittel – normales Risiko/Chance)*"
+    volatility_zone = f"🟠 {volatility_pct:.2f} % *(mittel – normales Risiko/Chance)*"
 else:
-    volatility_zone = f"🔴 {volatility_pct:.2f} % *(hoch – erhöhtes Risiko/Chancenpotenzial)*"
+    volatility_zone = f"🔴 {volatility_pct:.2f} % *(hoch – erhöhtes Risiko/Chancenpotenzial)*"
+
 
     # Prozentangabe Signalqualität
     max_criteria = 6
