@@ -58,15 +58,17 @@ def send_telegram(message):
 last_status_time = 0
 
 # MARKTFILTER-HILFSFUNKTION
-def classify_market_sentiment():
-    long_count = market_sentiment["long"]
-    short_count = market_sentiment["short"]
+def classify_market_sentiment_from_results(results):
+    long_count = sum(1 for r in results if r == "LONG")
+    short_count = sum(1 for r in results if r == "SHORT")
+
     if long_count > short_count * 1.5:
-        return "📈 Markt bullisch"
+        return "📈 Markt bullisch", long_count, short_count
     elif short_count > long_count * 1.5:
-        return "📉 Markt bärisch"
+        return "📉 Markt bärisch", long_count, short_count
     else:
-        return "🔄 Markt neutral"
+        return "🔄 Markt neutral", long_count, short_count
+
 
 # FUNKTION FÜR TIEFSTANDSANALYSE
 def is_near_recent_low(df, window=50, tolerance=0.02):
