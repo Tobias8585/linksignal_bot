@@ -129,32 +129,32 @@ send_telegram(
     f"🔍 Kandidaten: {low_list_text}"
 )
 
+send_telegram(
+    f"📉 *Coin-Tiefstände*\n"
+    f"🔻 24h: {len(low_coins_24h)} Coins\n"
+    f"🔻 12h: {len(low_coins_12h)} Coins\n"
+    f"🔍 24h: {', '.join(low_coins_24h) or '-'}\n"
+    f"🔍 12h: {', '.join(low_coins_12h) or '-'}"
+)
 
-            send_telegram(
-                f"📉 *Coin-Tiefstände*\n"
-                f"🔻 24h: {len(low_coins_24h)} Coins\n"
-                f"🔻 12h: {len(low_coins_12h)} Coins\n"
-                f"🔍 24h: {', '.join(low_coins_24h) or '-'}\n"
-                f"🔍 12h: {', '.join(low_coins_12h) or '-'}"
-            )
+last_status_time = time.time()
+low_coins = []
+low_coins_24h = []
+low_coins_12h = []
 
-            last_status_time = time.time()
-            low_coins = []
-            low_coins_24h = []
-            low_coins_12h = []
+if time.time() - last_breakout_check > 900:
+    if pre_breakout_coins:
+        breakout_list = ", ".join(pre_breakout_coins)
+        send_telegram(
+            f"🚀 *Breakout-Vorbereitung erkannt*\n"
+            f"{len(pre_breakout_coins)} Coins zeigen Anzeichen für einen bevorstehenden Ausbruch:\n"
+            f"🔍 {breakout_list}"
+        )
+        pre_breakout_coins = []
+    last_breakout_check = time.time()
 
-        if time.time() - last_breakout_check > 900:
-            if pre_breakout_coins:
-                breakout_list = ", ".join(pre_breakout_coins)
-                send_telegram(
-                    f"🚀 *Breakout-Vorbereitung erkannt*\n"
-                    f"{len(pre_breakout_coins)} Coins zeigen Anzeichen für einen bevorstehenden Ausbruch:\n"
-                    f"🔍 {breakout_list}"
-                )
-                pre_breakout_coins = []
-            last_breakout_check = time.time()
+time.sleep(600)
 
-        time.sleep(600)
 
 
 
