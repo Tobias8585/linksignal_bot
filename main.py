@@ -404,8 +404,9 @@ def analyze_combined(symbol):
         volatility_zone = f"🟠 {volatility_pct:.2f} % *(mittel – normales Risiko/Chance)*"
     else:
         volatility_zone = f"🔴 {volatility_pct:.2f} % *(hoch – erhöhtes Risiko/Chancenpotenzial)*"
- max_criteria = 7
-    percentage = int(min(100, (criteria_count / max_criteria) * 100))
+        
+    max_criteria = 7
+    percentage = int((criteria_count / max_criteria) * 100))
 
     msg = (
         f"🔔 *Signal für: {symbol}* | *{signal_1m}* ({signal_strength})\n"
