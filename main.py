@@ -5,6 +5,7 @@ import schedule
 from flask import Flask
 from bs4 import BeautifulSoup
 import pytz
+from pytz import timezone
 import pandas as pd
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD, CCIIndicator, IchimokuIndicator
@@ -617,4 +618,3 @@ if __name__ == "__main__":
     log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
-
