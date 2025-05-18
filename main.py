@@ -39,6 +39,7 @@ pre_breakout_coins = []
 market_sentiment = {"long": 0, "short": 0}
 low_coins_24h = []
 low_coins_12h = []
+btc_strength_ok = True  # BTC-Stärke-Standardwert, wird beim Start als "stark" angenommen
 
 
 def send_telegram(message):
