@@ -412,7 +412,6 @@ def analyze_combined(symbol):
     max_criteria = 6
     percentage = int((criteria_count / max_criteria) * 100)
 
-
     msg = (
         f"🔔 *Signal für: {symbol}* | *{signal_1m}* ({signal_strength})\n"
         f"🟢 *Signalqualität:* {percentage} % erfüllt ({criteria_count} von {max_criteria} Hauptkriterien)\n\n"
@@ -436,9 +435,10 @@ def analyze_combined(symbol):
         f"• TP2: {tp2:.4f}\n"
         f"• SL: {sl:.4f}\n\n"
         f"🕒 *Zeit:* {zurich_time}"
-)
+    )
 
-return f"{signal_1m}", msg
+    return f"{signal_1m}", msg
+
 
 
 
