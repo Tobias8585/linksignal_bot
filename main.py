@@ -471,7 +471,7 @@ def check_all_symbols():
         log_print(f"Fehler beim Laden der Symbolliste: {e}")
         return
 
-    symbols = get_top_volume_symbols(limit=100)  # ✅ richtig eingerückt
+    symbols = get_top_volume_symbols(limit=200)  # ✅ richtig eingerückt
 
     if not symbols:
         log_print("Keine Symbole zum Prüfen verfügbar.")
