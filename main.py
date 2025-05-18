@@ -277,12 +277,10 @@ def analyze_combined(symbol):
     if not signal_1m:
         log_print(f"{symbol}: Kein 1m-Signal")
         return None, None
-        
-        # BTC-Stärke prüfen – schwacher BTC blockiert Long-Signale
-    if not btc_strength_ok and signal_1m == "LONG":
-        log_print(f"{symbol}: BTC schwach – LONG-Signal blockiert")
-        return None, None
 
+    # BTC-Stärke prüfen – bei schwachem BTC nur Mahnung, kein Block
+    if not btc_strength_ok and signal_1m == "LONG":
+        log_print(f"{symbol}: ⚠️ BTC schwach – Vorsicht bei LONG-Signal")
 
     if (signal_1m == "LONG" and signal_5m == "SHORT") or (signal_1m == "SHORT" and signal_5m == "LONG"):
         log_print(f"{symbol}: Divergenz 1m/5m erkannt – kein klares Setup")
