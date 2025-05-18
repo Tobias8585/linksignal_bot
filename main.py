@@ -470,7 +470,7 @@ def check_all_symbols():
             s['symbol'] for s in exchange_info['symbols']
             if s['contractType'] == 'PERPETUAL' and s['symbol'].endswith("USDT")
         ]
-  except Exception as e:
+    except Exception as e:
         log_print(f"Fehler beim Laden der Symbolliste: {e}")
         return
 
@@ -494,6 +494,7 @@ def check_all_symbols():
         time.sleep(1)
 
     log_print(f"📊 Marktbreite: {market_sentiment['long']}x LONG | {market_sentiment['short']}x SHORT")
+
 
 
 @app.route('/')
