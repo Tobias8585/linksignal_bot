@@ -356,7 +356,7 @@ def analyze_combined(symbol):
     if is_near_recent_low(df, window=144, tolerance=0.02):
         low_coins_12h.append(symbol)
 
-    criteria_count = (
+ criteria_count = (
     count_1m +
     int(strong_volume) +
     int(breakout) +
@@ -367,52 +367,52 @@ def analyze_combined(symbol):
     int(fib_signal) +
     int(btc_strength_ok)  # ✅ neu
 )
-max_criteria = 8  # ✅ erhöht um 1
 
+max_criteria = 8  # ✅ erhöht um 1
 
 percentage = int(min(100, (criteria_count / max_criteria) * 100))
 
-    if criteria_count >= 7:
-        signal_strength = "🟢 Sehr starkes Signal"
-    elif criteria_count >= 5:
-        signal_strength = "🟡 Gutes Signal"
-    elif criteria_count >= 3:
-        signal_strength = "🔸 Mögliches Signal"
-    else:
-        return None, None
+if criteria_count >= 7:
+    signal_strength = "🟢 Sehr starkes Signal"
+elif criteria_count >= 5:
+    signal_strength = "🟡 Gutes Signal"
+elif criteria_count >= 3:
+    signal_strength = "🔸 Mögliches Signal"
+else:
+    return None, None
 
-    tp1 = price + 1.5 * atr if signal_1m == "LONG" else price - 1.5 * atr
-    tp2 = price + 2.5 * atr if signal_1m == "LONG" else price - 2.5 * atr
-    sl = price - 1.2 * atr if signal_1m == "LONG" else price + 1.2 * atr
+tp1 = price + 1.5 * atr if signal_1m == "LONG" else price - 1.5 * atr
+tp2 = price + 2.5 * atr if signal_1m == "LONG" else price - 2.5 * atr
+sl = price - 1.2 * atr if signal_1m == "LONG" else price + 1.2 * atr
 
-    zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
+zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
 
-    msg = (
-        f"🔔 *Signal für: {symbol}* | *{signal_1m}* ({signal_strength})\n"
-        f"🟢 *Signalqualität:* {percentage} % erfüllt ({criteria_count} von {max_criteria} Hauptkriterien)\n\n"
-        f"📊 *Analyse-Zeitrahmen:*\n"
-        f"• Hauptsignal: 1m *(50 Minuten Analyse)*\n"
-        f"• Bestätigung: 5m *(6 Stunden Analyse)* → {signal_5m or 'kein Signal'}\n"
-        f"• Trend: {'Aufwärts' if price > ema and price > ema50 else 'Abwärts' if price < ema and price < ema50 else 'Seitwärts'}\n"
-        f"• RSI-Zone: {rsi:.2f}\n"
-        f"• Volatilität: {volatility_pct:.2f} %\n\n"
-        f"📉 *Indikatoren:*\n"
-        f"• MACD-Cross: {'✅' if macd_cross else '❌'}\n"
-        f"• EMA-Cross: {'✅' if ema_cross else '❌'}\n"
-        f"• Bollinger Rebound: {'✅' if bollinger_signal else '❌'}\n"
-        f"• Fibonacci-Bestätigung: {'✅' if fib_signal else '❌'}\n"
-        f"• Ichimoku: OK\n\n"
-        f"💴 *Preisdaten:*\n"
-        f"• Preis: {price:.4f}\n"
-        f"• Volumen: {volume:,.0f} vs Ø{avg_volume:,.0f}\n\n"
-        f"🎯 *Zielbereiche:*\n"
-        f"• TP1: {tp1:.4f}\n"
-        f"• TP2: {tp2:.4f}\n"
-        f"• SL: {sl:.4f}\n\n"
-        f"🕒 *Zeit:* {zurich_time}"
-    )
+msg = (
+    f"🔔 *Signal für: {symbol}* | *{signal_1m}* ({signal_strength})\n"
+    f"🟢 *Signalqualität:* {percentage} % erfüllt ({criteria_count} von {max_criteria} Hauptkriterien)\n\n"
+    f"📊 *Analyse-Zeitrahmen:*\n"
+    f"• Hauptsignal: 1m *(50 Minuten Analyse)*\n"
+    f"• Bestätigung: 5m *(6 Stunden Analyse)* → {signal_5m or 'kein Signal'}\n"
+    f"• Trend: {'Aufwärts' if price > ema and price > ema50 else 'Abwärts' if price < ema and price < ema50 else 'Seitwärts'}\n"
+    f"• RSI-Zone: {rsi:.2f}\n"
+    f"• Volatilität: {volatility_pct:.2f} %\n\n"
+    f"📉 *Indikatoren:*\n"
+    f"• MACD-Cross: {'✅' if macd_cross else '❌'}\n"
+    f"• EMA-Cross: {'✅' if ema_cross else '❌'}\n"
+    f"• Bollinger Rebound: {'✅' if bollinger_signal else '❌'}\n"
+    f"• Fibonacci-Bestätigung: {'✅' if fib_signal else '❌'}\n"
+    f"• Ichimoku: OK\n\n"
+    f"💴 *Preisdaten:*\n"
+    f"• Preis: {price:.4f}\n"
+    f"• Volumen: {volume:,.0f} vs Ø{avg_volume:,.0f}\n\n"
+    f"🎯 *Zielbereiche:*\n"
+    f"• TP1: {tp1:.4f}\n"
+    f"• TP2: {tp2:.4f}\n"
+    f"• SL: {sl:.4f}\n\n"
+    f"🕒 *Zeit:* {zurich_time}"
+)
 
-    return signal_1m, msg
+return signal_1m, msg
 
 
 
