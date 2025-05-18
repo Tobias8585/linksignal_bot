@@ -381,14 +381,14 @@ from pytz import timezone
 zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
 
     # Ampelsystem RSI
-    if signal_1m == "LONG":
+if signal_1m == "LONG":
         if rsi < 35:
             rsi_zone = f"🟢 {rsi:.2f} *(überverkauft – günstiger Einstieg möglich)*"
         elif rsi <= 70:
             rsi_zone = f"🟠 {rsi:.2f} *(neutral – mittleres Risiko)*"
         else:
             rsi_zone = f"🔴 {rsi:.2f} *(überkauft – hohes Rückschlagsrisiko)*"
-    else:
+        else:
         if rsi > 70:
             rsi_zone = f"🟢 {rsi:.2f} *(überkauft – günstiger Einstieg möglich)*"
         elif rsi >= 35:
