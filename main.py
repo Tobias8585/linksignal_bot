@@ -244,10 +244,10 @@ def analyze_combined(symbol):
     elif signal_1m == "SHORT":
         breakout = price < df_5m['low'].iloc[-21:-1].min()
 
-    if breakout and signal_1m == "LONG" and price > df_5m['high'].iloc[-21:-1].max() * 1.01:
+    if breakout and signal_1m == "LONG" and price > df_5m['high'].iloc[-21:-1].max() * 1.005:
         log_print(f"{symbol}: Breakout bereits weit gelaufen – kein Einstieg")
         return None
-    if breakout and signal_1m == "SHORT" and price < df_5m['low'].iloc[-21:-1].min() * 0.99:
+    if breakout and signal_1m == "SHORT" and price < df_5m['low'].iloc[-21:-1].min() * 0.995:
         log_print(f"{symbol}: Breakdown bereits weit gelaufen – kein Einstieg")
         return None
 
