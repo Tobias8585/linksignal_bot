@@ -405,12 +405,12 @@ def analyze_combined(symbol):
     else:
         volatility_zone = f"🔴 {volatility_pct:.2f} % *(hoch – erhöhtes Risiko/Chancenpotenzial)*"
 
-    max_criteria = 6
-    percentage = int((criteria_count / max_criteria) * 100)
+       max_criteria = 7
+    percentage = min(100, int((min(criteria_count, max_criteria) / max_criteria) * 100))
 
     msg = (
         f"🔔 *Signal für: {symbol}* | *{signal_1m}* ({signal_strength})\n"
-        f"🟢 *Signalqualität:* {percentage}\u202f% erfüllt ({criteria_count} von {max_criteria} Hauptkriterien)\n\n"
+        f"🟢 *Signalqualität:* {percentage}% erfüllt ({min(criteria_count, max_criteria)} von {max_criteria} Hauptkriterien)\n\n"
         f"📊 *Analyse-Zeitrahmen:*\n"
         f"• Hauptsignal: 1m *(50 Minuten Analyse)*\n"
         f"• Bestätigung: 5m *(6 Stunden Analyse)* → {signal_5m or 'kein Signal'}\n"
@@ -432,6 +432,7 @@ def analyze_combined(symbol):
         f"• SL: {sl:.4f}\n\n"
         f"🕒 *Zeit:* {zurich_time}"
     )
+
 
     return f"{signal_1m}", msg
 
