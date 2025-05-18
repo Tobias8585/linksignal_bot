@@ -111,10 +111,10 @@ def run_bot():
         check_all_symbols()
         schedule.run_pending()
 
-   if time.time() - last_status_time > 3600:
-market_status, long_count, short_count = classify_market_sentiment_from_results(all_signal_results)
-low_list_text = ", ".join(low_coins) if low_coins else "-"
-
+        if time.time() - last_status_time > 3600:
+            market_status, long_count, short_count = classify_market_sentiment_from_results(all_signal_results)
+            log_print(f"{len(all_signal_results)} Coins ausgewertet für Marktstatus")
+            low_list_text = ", ".join(low_coins) if low_coins else "-"
 
             send_telegram(
                 f"📊 *Marktstatus-Update*\n"
@@ -149,6 +149,7 @@ low_list_text = ", ".join(low_coins) if low_coins else "-"
             last_breakout_check = time.time()
 
         time.sleep(600)
+
 
 
 
