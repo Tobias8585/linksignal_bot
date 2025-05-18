@@ -189,7 +189,6 @@ def check_btc_strength():
     df = get_klines('BTCUSDT', interval='5m', limit=50)
     if df is None:
         log_print("BTC-Daten konnten nicht geladen werden")
-        btc_strength_ok = True  # besser handeln als blockieren
         return
 
 
