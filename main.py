@@ -320,8 +320,7 @@ def analyze_combined(symbol):
         low_coins.append(symbol)
 
     if is_reversal_candidate(df):
-        send_telegram(f"🔄 *Reversal-Kandidat erkannt*: {symbol}\n"
-                      f"Coin zeigt starke Umkehrsignale (RSI/CCI/MACD/Volumen).")
+        send_telegram(f"🔄 *Reversal-Kandidat erkannt*: {symbol}\nCoin zeigt starke Umkehrsignale (RSI/CCI/MACD/Volumen).")
 
     if is_near_recent_low(df, window=288, tolerance=0.02):
         low_coins_24h.append(symbol)
@@ -340,73 +339,23 @@ def analyze_combined(symbol):
         int(fib_signal)
     )
 
+    max_criteria = 7
+    percentage = int(min(100, (criteria_count / max_criteria) * 100))
+
     if criteria_count >= 7:
-        stars = "⭐⭐⭐"
         signal_strength = "🟢 Sehr starkes Signal"
     elif criteria_count >= 5:
-        stars = "⭐⭐"
         signal_strength = "🟡 Gutes Signal"
     elif criteria_count >= 3:
-        stars = "⭐"
         signal_strength = "🔸 Mögliches Signal"
     else:
         return None, None
 
-    if volatility_pct < 0.5:
-        tp1_factor, tp2_factor, sl_factor = 1.2, 1.8, 1.0
-    elif volatility_pct < 1.5:
-        tp1_factor, tp2_factor, sl_factor = 1.5, 2.5, 1.2
-    else:
-        tp1_factor, tp2_factor, sl_factor = 1.8, 3.0, 1.4
+    tp1 = price + 1.5 * atr if signal_1m == "LONG" else price - 1.5 * atr
+    tp2 = price + 2.5 * atr if signal_1m == "LONG" else price - 2.5 * atr
+    sl = price - 1.2 * atr if signal_1m == "LONG" else price + 1.2 * atr
 
-    tp1 = price + tp1_factor * atr if signal_1m == "LONG" else price - tp1_factor * atr
-    tp2 = price + tp2_factor * atr if signal_1m == "LONG" else price - tp2_factor * atr
-    sl = price - sl_factor * atr if signal_1m == "LONG" else price + sl_factor * atr
-
-    trend_text = "Seitwärts"
-    if price > ema and price > ema50:
-        trend_text = "Aufwärts"
-    elif price < ema and price < ema50:
-        trend_text = "Abwärts"
-
-    rsi_zone = "neutral"
-    if rsi < 30:
-        rsi_zone = "überverkauft"
-    elif rsi > 70:
-        rsi_zone = "überkauft"
-
-    macd_text = "MACD-Cross: ✅" if macd_cross else "MACD-Cross: ❌"
-    bollinger_text = "Bollinger-Rebound: ✅" if bollinger_signal else "Bollinger-Rebound: ❌"
-    fib_text = "Fibonacci-Bestätigung: ✅" if fib_signal else "Fibonacci-Bestätigung: ❌"
-    breakout_text = "🚀 Breakout erkannt!" if breakout else ""
-
-    from pytz import timezone
     zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
-
-    if signal_1m == "LONG":
-        if rsi < 35:
-            rsi_zone = f"🟢 {rsi:.2f} *(überverkauft – günstiger Einstieg möglich)*"
-        elif rsi <= 70:
-            rsi_zone = f"🟠 {rsi:.2f} *(neutral – mittleres Risiko)*"
-        else:
-            rsi_zone = f"🔴 {rsi:.2f} *(überkauft – hohes Rückschlagsrisiko)*"
-    elif signal_1m == "SHORT":
-        if rsi > 70:
-            rsi_zone = f"🟢 {rsi:.2f} *(überkauft – günstiger Einstieg möglich)*"
-        elif rsi >= 35:
-            rsi_zone = f"🟠 {rsi:.2f} *(neutral – mittleres Risiko)*"
-        else:
-            rsi_zone = f"🔴 {rsi:.2f} *(überverkauft – hohes Rückschlagsrisiko)*"
-
-    if volatility_pct < 0.5:
-        volatility_zone = f"🟢 {volatility_pct:.2f} % *(ruhig – geringes Risiko)*"
-    elif volatility_pct < 1.5:
-        volatility_zone = f"🟠 {volatility_pct:.2f} % *(mittel – normales Risiko/Chance)*"
-    else:
-        volatility_zone = f"🔴 {volatility_pct:.2f} % *(hoch – erhöhtes Risiko/Chancenpotenzial)*"
-        
-    max_criteria = 7
-    percentage = int((criteria_count / max_criteria) * 100))
 
     msg = (
         f"🔔 *Signal für: {symbol}* | *{signal_1m}* ({signal_strength})\n"
@@ -414,16 +363,16 @@ def analyze_combined(symbol):
         f"📊 *Analyse-Zeitrahmen:*\n"
         f"• Hauptsignal: 1m *(50 Minuten Analyse)*\n"
         f"• Bestätigung: 5m *(6 Stunden Analyse)* → {signal_5m or 'kein Signal'}\n"
-        f"• Trend: {trend_text}\n"
-        f"• RSI-Zone: {rsi_zone}\n"
-        f"• Volatilität: {volatility_zone}\n\n"
+        f"• Trend: {'Aufwärts' if price > ema and price > ema50 else 'Abwärts' if price < ema and price < ema50 else 'Seitwärts'}\n"
+        f"• RSI-Zone: {rsi:.2f}\n"
+        f"• Volatilität: {volatility_pct:.2f} %\n\n"
         f"📉 *Indikatoren:*\n"
         f"• MACD-Cross: {'✅' if macd_cross else '❌'}\n"
         f"• EMA-Cross: {'✅' if ema_cross else '❌'}\n"
-        f"• Bollinger Rebound: {bollinger_text}\n"
-        f"• Fibonacci-Bestätigung: {fib_text}\n"
+        f"• Bollinger Rebound: {'✅' if bollinger_signal else '❌'}\n"
+        f"• Fibonacci-Bestätigung: {'✅' if fib_signal else '❌'}\n"
         f"• Ichimoku: OK\n\n"
-        f"📈 *Preisdaten:*\n"
+        f"💴 *Preisdaten:*\n"
         f"• Preis: {price:.4f}\n"
         f"• Volumen: {volume:,.0f} vs Ø{avg_volume:,.0f}\n\n"
         f"🎯 *Zielbereiche:*\n"
@@ -433,9 +382,7 @@ def analyze_combined(symbol):
         f"🕒 *Zeit:* {zurich_time}"
     )
 
-
-    return f"{signal_1m}", msg
-
+    return signal_1m, msg
 
 
 
