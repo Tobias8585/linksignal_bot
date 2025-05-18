@@ -370,7 +370,7 @@ def analyze_combined(symbol):
 max_criteria = 8  # ✅ erhöht um 1
 
 
-    percentage = int(min(100, (criteria_count / max_criteria) * 100))
+percentage = int(min(100, (criteria_count / max_criteria) * 100))
 
     if criteria_count >= 7:
         signal_strength = "🟢 Sehr starkes Signal"
