@@ -396,7 +396,7 @@ if signal_1m == "LONG":
             rsi_zone = f"🔴 {rsi:.2f} *(überverkauft – hohes Rückschlagsrisiko)*"
 
     # Ampelsystem Volatilität
-    if volatility_pct < 0.5:
+if volatility_pct < 0.5:
         volatility_zone = f"🟢 {volatility_pct:.2f} % *(ruhig – geringes Risiko)*"
     elif volatility_pct < 1.5:
         volatility_zone = f"🟠 {volatility_pct:.2f} % *(mittel – normales Risiko/Chance)*"
