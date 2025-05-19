@@ -509,6 +509,11 @@ def analyze_combined(symbol):
         f"• SL: {sl:.4f}\n\n"
         f"🕒 *Zeit:* {zurich_time}"
     )
+    
+    # Hinweis zur Marktstimmung (wenn vorhanden)
+    if market_bias_warning:
+        msg += f"\n{market_bias_warning}"
+
 
     # BTC-Stärkehinweis ergänzen
     if signal_1m == "LONG" and not btc_strength_ok:
