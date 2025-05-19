@@ -530,9 +530,14 @@ def get_top_volume_symbols(limit=100):
 def check_all_symbols():
     global market_sentiment
     global all_signal_results
+    global total_long_signals, total_short_signals  # ⬅️ NEU HINZUFÜGEN
+
     all_signal_results = []
     market_sentiment["long"] = 0
     market_sentiment["short"] = 0
+    total_long_signals = 0  # ⬅️ NEU HINZUFÜGEN
+    total_short_signals = 0  # ⬅️ NEU HINZUFÜGEN
+
 
     try:
         exchange_info = client.exchange_info()
