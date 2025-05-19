@@ -21,6 +21,11 @@ client = UMFutures(key=api_key, secret=api_secret)
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
+# 🌍 Globale Zähler für Marktbreite
+total_long_signals = 0
+total_short_signals = 0
+
+
 app = Flask(__name__)
 log_file = open("log.txt", "a", encoding="utf-8")
 
