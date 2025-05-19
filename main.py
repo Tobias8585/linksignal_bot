@@ -273,7 +273,7 @@ def analyze_combined(symbol):
     market_bias_warning = ""  # Hinweis zur Marktstimmung vorbereiten
 
     df_1m = get_klines(symbol, interval="1m", limit=50)
-    df_5m = get_klines(symbol, interval="5m", limit=75)
+    df_5m = get_klines(symbol, interval="5m", limit=300)
     if df_1m is None or df_5m is None:
         return None, None
 
@@ -426,10 +426,10 @@ def analyze_combined(symbol):
     if is_reversal_candidate(df):
         send_telegram(f"🔄 *Reversal-Kandidat erkannt*: {symbol}\nCoin zeigt starke Umkehrsignale (RSI/CCI/MACD/Volumen).")
 
-    if is_near_recent_low(df, window=288, tolerance=0.02):
+    if is_near_recent_low(df, window=288, tolerance=0.03):
         low_coins_24h.append(symbol)
 
-    if is_near_recent_low(df, window=144, tolerance=0.02):
+    if is_near_recent_low(df, window=144, tolerance=0.03):
         low_coins_12h.append(symbol)
 
 
