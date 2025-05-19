@@ -423,7 +423,7 @@ def analyze_combined(symbol):
         low_coins_12h.append(symbol)
 
 
-    # 🔢 Neue gewichtete Signalqualität
+       # 🔢 Neue gewichtete Signalqualität
     score = 0
     max_score = 11  # Summe aller Gewichtungen
 
@@ -437,7 +437,9 @@ def analyze_combined(symbol):
     score += 1 if pre_breakout else 0
 
     percentage = int(min(100, (score / max_score) * 100))
+    percentage = max(0, percentage)  # Sicherheitsgrenze
 
+    # 🟢 Signalstärke-Titel
     if score >= 8:
         signal_strength = "🟢 Sehr starkes Signal"
     elif score >= 5:
@@ -447,13 +449,24 @@ def analyze_combined(symbol):
     else:
         return None, None
 
-       # 🔴 Vorschlag 5: Aktuelle Candle prüfen – kein LONG bei fallender Bewegung
+    # 📉 Marktstimmung widerspricht Signal → Qualität abwerten
+    if signal_1m == "LONG" and total_short_signals > total_long_signals * 1.5:
+        percentage -= 10
+        percentage = max(0, percentage)
+        signal_strength += " ⚠️"
+    elif signal_1m == "SHORT" and total_long_signals > total_short_signals * 1.5:
+        percentage -= 10
+        percentage = max(0, percentage)
+        signal_strength += " ⚠️"
+
+    # 🔴 Vorschlag 5: Aktuelle Candle prüfen – kein LONG bei fallender Bewegung
     if signal_1m == "LONG":
         current_open = df_1m['open'].iloc[-1]
         current_close = df_1m['close'].iloc[-1]
         if current_close <= current_open:
             log_print(f"{symbol}: Kein Signal – aktuelle Candle fällt (Close <= Open)")
             return None, None
+
 
     # 🔴 Vorschlag 7: Kein LONG bei roter letzter abgeschlossener Candle
     if signal_1m == "LONG":
