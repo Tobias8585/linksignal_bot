@@ -599,7 +599,7 @@ if total_signals > 0:
 else:
     sentiment_text = "Keine Signale erkannt"
 
-log_print(f"📊 Marktbreite: {total_long_signals}x LONG | {total_short_signals}x SHORT → Stimmung: {sentiment_text}", flush=True)
+log_print(f"📊 Marktbreite: {total_long_signals}x LONG | {total_short_signals}x SHORT → Stimmung: {sentiment_text}")
 
 
 @app.route('/')
