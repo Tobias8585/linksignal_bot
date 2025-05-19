@@ -286,14 +286,20 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Divergenz 1m/5m erkannt – kein klares Setup")
         return None, None
 
-    price = df_5m['close'].iloc[-1]
+        price = df_5m['close'].iloc[-1]
+    candle_close = df_5m['close'].iloc[-1]
+    candle_open = df_5m['open'].iloc[-1]
+    volume = df_5m['volume'].iloc[-1]
+    avg_volume = df_5m['volume'].rolling(window=20).mean().iloc[-1]
+    prev_resistance = df_5m['high'].iloc[-21:-1].max()
+
     breakout = False
     if signal_1m == "LONG":
-        breakout = price > df_5m['high'].iloc[-21:-1].max()
+        breakout = price > prev_resistance
     elif signal_1m == "SHORT":
         breakout = price < df_5m['low'].iloc[-21:-1].min()
 
-    if breakout and signal_1m == "LONG" and price > df_5m['high'].iloc[-21:-1].max() * 1.01:
+    if breakout and signal_1m == "LONG" and price > prev_resistance * 1.01:
         log_print(f"{symbol}: Breakout bereits weit gelaufen – kein Einstieg")
         return None, None
     if breakout and signal_1m == "SHORT" and price < df_5m['low'].iloc[-21:-1].min() * 0.99:
@@ -302,19 +308,13 @@ def analyze_combined(symbol):
 
     # 🔍 Vorschlag 3: Breakout-Bestätigung (Candle-Body + Volumen)
     if breakout and signal_1m == "LONG":
-        candle_close = df_5m['close'].iloc[-1]
-        candle_open = df_5m['open'].iloc[-1]
-        prev_resistance = df_5m['high'].iloc[-21:-1].max()
-        volume = df_5m['volume'].iloc[-1]
-        avg_volume = df_5m['volume'].rolling(window=20).mean().iloc[-1]
-        
-    if candle_close < prev_resistance or candle_close < candle_open:
-        log_print(f"{symbol}: Breakout, aber Candle nicht über Widerstand geschlossen")
-        return None, None
+        if candle_close < prev_resistance or candle_close < candle_open:
+            log_print(f"{symbol}: Breakout, aber Candle nicht über Widerstand geschlossen")
+            return None, None
+        if volume < avg_volume * 1.1:
+            log_print(f"{symbol}: Breakout, aber kein signifikantes Volumen")
+            return None, None
 
-    if volume < avg_volume * 1.1:
-        log_print(f"{symbol}: Breakout, aber kein signifikantes Volumen")
-        return None, None
 
 
     if signal_1m == "LONG":
