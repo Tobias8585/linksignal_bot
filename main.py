@@ -567,8 +567,7 @@ def get_top_volume_symbols(limit=100):
 
 
 def check_all_symbols():
-    global market_sentiment
-    global all_signal_results
+    global market_sentiment, all_signal_results
     global total_long_signals, total_short_signals
     global market_bullish_count, market_bearish_count, market_neutral_count
 
@@ -592,49 +591,47 @@ def check_all_symbols():
         log_print(f"Fehler beim Laden der Symbolliste: {e}")
         return
 
-    # symbols = get_top_volume_symbols(limit=200)
-
     if not symbols:
         log_print("Keine Symbole zum Prüfen verfügbar.")
         return
-for symbol in symbols:
-    # 📊 Marktstruktur zuerst bewerten – unabhängig vom Signal
-    try:
-        df = get_klines(symbol, interval="5m", limit=50)
-        if df is not None:
-            rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
-            ema20 = EMAIndicator(df['close'], window=20).ema_indicator().iloc[-1]
-            ema50 = EMAIndicator(df['close'], window=50).ema_indicator().iloc[-1]
 
-            if rsi > 55 and ema20 > ema50:
-                market_bullish_count += 1
-            elif rsi < 45 and ema20 < ema50:
-                market_bearish_count += 1
+    for symbol in symbols:
+        # 📊 Marktstruktur zuerst bewerten – unabhängig vom Signal
+        try:
+            df = get_klines(symbol, interval="5m", limit=50)
+            if df is not None:
+                rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
+                ema20 = EMAIndicator(df['close'], window=20).ema_indicator().iloc[-1]
+                ema50 = EMAIndicator(df['close'], window=50).ema_indicator().iloc[-1]
+
+                if rsi > 55 and ema20 > ema50:
+                    market_bullish_count += 1
+                elif rsi < 45 and ema20 < ema50:
+                    market_bearish_count += 1
+                else:
+                    market_neutral_count += 1
             else:
-                market_neutral_count += 1
+                log_print(f"{symbol}: Keine Daten für Marktstruktur.")
+        except Exception as e:
+            log_print(f"{symbol}: Marktstruktur-Bewertung fehlgeschlagen: {e}")
+
+        # 🧠 Jetzt Signalanalyse
+        signal_direction, signal_msg = analyze_combined(symbol)
+
+        if signal_direction:
+            all_signal_results.append(signal_direction)
+            if signal_direction == "LONG":
+                total_long_signals += 1
+            elif signal_direction == "SHORT":
+                total_short_signals += 1
+
+            send_telegram(signal_msg)
+            log_print(f"{symbol}: Signal gesendet\n{signal_msg}")
         else:
-            log_print(f"{symbol}: Keine Daten für Marktstruktur.")
-    except Exception as e:
-        log_print(f"{symbol}: Marktstruktur-Bewertung fehlgeschlagen: {e}")
+            all_signal_results.append("NONE")
+            log_print(f"{symbol}: Kein Signal")
 
-
-    # 🧠 Jetzt Signalanalyse (kann abkürzen – stört nicht)
-    signal_direction, signal_msg = analyze_combined(symbol)
-
-    if signal_direction:
-        all_signal_results.append(signal_direction)
-        if signal_direction == "LONG":
-            total_long_signals += 1
-        elif signal_direction == "SHORT":
-            total_short_signals += 1
-
-        send_telegram(signal_msg)
-        log_print(f"{symbol}: Signal gesendet\n{signal_msg}")
-    else:
-        all_signal_results.append("NONE")
-        log_print(f"{symbol}: Kein Signal")
-
-    # ✅ Block nach dem for-Loop
+    # ✅ Nach dem for-Loop: Gesamtstatus berechnen
     if market_sentiment["long"] == 0 and market_sentiment["short"] == 0:
         market_sentiment["status"] = "neutral"
 
@@ -666,8 +663,6 @@ for symbol in symbols:
         )
     except Exception as e:
         log_print(f"❌ Fehler beim Senden der Marktbreiten-Telegram-Nachricht: {e}")
-
-
 
 
 @app.route('/')
