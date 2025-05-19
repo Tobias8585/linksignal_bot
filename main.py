@@ -539,15 +539,16 @@ def check_all_symbols():
     total_short_signals = 0  # ⬅️ NEU HINZUFÜGEN
 
 
-    try:
+        try:
         exchange_info = client.exchange_info()
         symbols = [
             s['symbol'] for s in exchange_info['symbols']
             if s['contractType'] == 'PERPETUAL' and s['symbol'].endswith("USDT")
         ]
-   except Exception as e:
-    log_print(f"Fehler beim Laden der Symbolliste: {e}")
-    return
+    except Exception as e:  # ✅ gleiche Ebene wie try
+        log_print(f"Fehler beim Laden der Symbolliste: {e}")
+        return
+
 
 symbols = get_top_volume_symbols(limit=200)  # ✅ richtig eingerückt
 
