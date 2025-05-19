@@ -384,7 +384,7 @@ def analyze_combined(symbol):
             log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
             return None, None
 
-    pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
+        pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
     if pre_breakout:
         pre_breakout_coins.append(symbol)
 
@@ -400,25 +400,26 @@ def analyze_combined(symbol):
     if is_near_recent_low(df, window=144, tolerance=0.02):
         low_coins_12h.append(symbol)
 
-    criteria_count = (
-        count_1m +
-        int(strong_volume) +
-        int(breakout) +
-        int(pre_breakout is True) +
-        int(macd_cross) +
-        int(ema_cross) +
-        int(bollinger_signal) +
-        int(fib_signal)
-    )
+    # 🔢 Neue gewichtete Signalqualität
+    score = 0
+    max_score = 11  # Summe aller Gewichtungen
 
-    max_criteria = 7
-    percentage = int(min(100, (criteria_count / max_criteria) * 100))
+    score += 2 if (signal_1m == "LONG" and rsi < 35) or (signal_1m == "SHORT" and rsi > 70) else 0
+    score += 2 if breakout else 0
+    score += 1.5 if ema_cross else 0
+    score += 1.5 if strong_volume else 0
+    score += 1 if macd_cross else 0
+    score += 1 if bollinger_signal else 0
+    score += 1 if fib_signal else 0
+    score += 1 if pre_breakout else 0
 
-    if criteria_count >= 7:
+    percentage = int(min(100, (score / max_score) * 100))
+
+    if score >= 8:
         signal_strength = "🟢 Sehr starkes Signal"
-    elif criteria_count >= 5:
+    elif score >= 5:
         signal_strength = "🟡 Gutes Signal"
-    elif criteria_count >= 3:
+    elif score >= 3:
         signal_strength = "🔸 Mögliches Signal"
     else:
         return None, None
