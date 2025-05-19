@@ -598,12 +598,11 @@ def check_all_symbols():
         log_print("Keine Symbole zum Prüfen verfügbar.")
         return
 
-    for symbol in symbols:
-        signal_direction, signal_msg = analyze_combined(symbol)
-
-        # 📊 Marktstruktur pro Coin klassifizieren
-        try:
-            df = get_klines(symbol, interval="5m", limit=50)
+   for symbol in symbols:
+    # 📊 Marktstruktur zuerst bewerten – unabhängig vom Signal
+    try:
+        df = get_klines(symbol, interval="5m", limit=50)
+        if df is not None:
             rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
             ema20 = EMAIndicator(df['close'], window=20).ema_indicator().iloc[-1]
             ema50 = EMAIndicator(df['close'], window=50).ema_indicator().iloc[-1]
@@ -614,21 +613,26 @@ def check_all_symbols():
                 market_bearish_count += 1
             else:
                 market_neutral_count += 1
-        except Exception as e:
-            log_print(f"{symbol}: Marktstruktur-Bewertung fehlgeschlagen: {e}")
-
-        if signal_direction:
-            all_signal_results.append(signal_direction)
-            if signal_direction == "LONG":
-                total_long_signals += 1
-            elif signal_direction == "SHORT":
-                total_short_signals += 1
-
-            send_telegram(signal_msg)
-            log_print(f"{symbol}: Signal gesendet\n{signal_msg}")
         else:
-            all_signal_results.append("NONE")
-            log_print(f"{symbol}: Kein Signal")
+            log_print(f"{symbol}: Keine Daten für Marktstruktur.")
+    except Exception as e:
+        log_print(f"{symbol}: Marktstruktur-Bewertung fehlgeschlagen: {e}")
+
+    # 🧠 Jetzt Signalanalyse (kann abkürzen – stört nicht)
+    signal_direction, signal_msg = analyze_combined(symbol)
+
+    if signal_direction:
+        all_signal_results.append(signal_direction)
+        if signal_direction == "LONG":
+            total_long_signals += 1
+        elif signal_direction == "SHORT":
+            total_short_signals += 1
+
+        send_telegram(signal_msg)
+        log_print(f"{symbol}: Signal gesendet\n{signal_msg}")
+    else:
+        all_signal_results.append("NONE")
+        log_print(f"{symbol}: Kein Signal")
 
     # ✅ Block nach dem for-Loop
     if market_sentiment["long"] == 0 and market_sentiment["short"] == 0:
