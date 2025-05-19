@@ -415,7 +415,7 @@ def analyze_combined(symbol):
 
     percentage = int(min(100, (score / max_score) * 100))
 
-    if score >= 8:
+       if score >= 8:
         signal_strength = "🟢 Sehr starkes Signal"
     elif score >= 5:
         signal_strength = "🟡 Gutes Signal"
@@ -423,6 +423,14 @@ def analyze_combined(symbol):
         signal_strength = "🔸 Mögliches Signal"
     else:
         return None, None
+
+    # 🔴 Vorschlag 5: Aktuelle Candle prüfen – kein LONG bei fallender Bewegung
+    if signal_1m == "LONG":
+        current_open = df_1m['open'].iloc[-1]
+        current_close = df_1m['close'].iloc[-1]
+        if current_close <= current_open:
+            log_print(f"{symbol}: Kein Signal – aktuelle Candle fällt (Close <= Open)")
+            return None, None
 
     tp1 = price + 1.5 * atr if signal_1m == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal_1m == "LONG" else price - 2.5 * atr
