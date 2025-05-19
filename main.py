@@ -292,18 +292,17 @@ def analyze_combined(symbol):
     df['low'] = df['low'].astype(float)
     df['close'] = df['close'].astype(float)
 
-
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
-    prev_resistance = df['high'].iloc[-21:-1].max()  # ✅ hinzugefügt!
-    
-          breakout = False
+    prev_resistance = df['high'].iloc[-21:-1].max()
+
+    breakout = False
     if signal_1m == "LONG":
         breakout = price > prev_resistance
     elif signal_1m == "SHORT":
         breakout = price < df['low'].iloc[-21:-1].min()
 
-       if breakout and signal_1m == "LONG" and price > prev_resistance * 1.01:
+    if breakout and signal_1m == "LONG" and price > prev_resistance * 1.01:
         log_print(f"{symbol}: Breakout bereits weit gelaufen – kein Einstieg")
         return None, None
 
@@ -325,22 +324,22 @@ def analyze_combined(symbol):
     elif signal_1m == "SHORT" and total_long_signals > total_short_signals * 1.5:
         market_bias_warning = "⚠️ *Markt bullish – SHORT mit Vorsicht bewerten*"
 
+    # 🔸 Heikin-Ashi Trendfilter (Step 8)
+    ha_close = (df['open'] + df['high'] + df['low'] + df['close']) / 4
+    ha_open = ha_close.shift(1)
+    if ha_open.isna().any():
+        ha_open = df['open']  # Fallback
 
-# 🔸 Heikin-Ashi Trendfilter (Step 8)
-ha_close = (df['open'] + df['high'] + df['low'] + df['close']) / 4
-ha_open = ha_close.shift(1)
-if ha_open.isna().any():
-    ha_open = df['open']  # Fallback
+    last_ha_open = ha_open.iloc[-1]
+    last_ha_close = ha_close.iloc[-1]
 
-last_ha_open = ha_open.iloc[-1]
-last_ha_close = ha_close.iloc[-1]
+    if signal_1m == "LONG" and last_ha_close < last_ha_open:
+        log_print(f"{symbol}: Kein LONG – Heikin-Ashi zeigt Abwärtstrend")
+        return None, None
+    if signal_1m == "SHORT" and last_ha_close > last_ha_open:
+        log_print(f"{symbol}: Kein SHORT – Heikin-Ashi zeigt Aufwärtstrend")
+        return None, None
 
-if signal_1m == "LONG" and last_ha_close < last_ha_open:
-    log_print(f"{symbol}: Kein LONG – Heikin-Ashi zeigt Abwärtstrend")
-    return None, None
-if signal_1m == "SHORT" and last_ha_close > last_ha_open:
-    log_print(f"{symbol}: Kein SHORT – Heikin-Ashi zeigt Aufwärtstrend")
-    return None, None
 
 
 
