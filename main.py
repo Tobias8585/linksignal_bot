@@ -601,6 +601,18 @@ else:
 
 log_print(f"📊 Marktbreite: {total_long_signals}x LONG | {total_short_signals}x SHORT → Stimmung: {sentiment_text}")
 
+# ✅ Telegram-Nachricht zur Marktbreite senden
+try:
+    send_telegram(
+        f"📊 *Marktbreite-Analyse*\n\n"
+        f"📈 LONG: {total_long_signals}\n"
+        f"📉 SHORT: {total_short_signals}\n"
+        f"🧭 Stimmung: {sentiment_text}"
+    )
+except Exception as e:
+    log_print(f"❌ Fehler beim Senden der Marktbreiten-Telegram-Nachricht: {e}")
+
+
 
 @app.route('/')
 def home():
