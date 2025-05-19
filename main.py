@@ -597,15 +597,14 @@ def check_all_symbols():
     if not symbols:
         log_print("Keine Symbole zum Prüfen verfügbar.")
         return
-
-   for symbol in symbols:
-    # 📊 Marktstruktur zuerst bewerten – unabhängig vom Signal
-    try:
-        df = get_klines(symbol, interval="5m", limit=50)
-        if df is not None:
-            rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
-            ema20 = EMAIndicator(df['close'], window=20).ema_indicator().iloc[-1]
-            ema50 = EMAIndicator(df['close'], window=50).ema_indicator().iloc[-1]
+for symbol in symbols:
+        # 📊 Marktstruktur zuerst bewerten – unabhängig vom Signal
+        try:
+            df = get_klines(symbol, interval="5m", limit=50)
+            if df is not None:
+                rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
+                ema20 = EMAIndicator(df['close'], window=20).ema_indicator().iloc[-1]
+                ema50 = EMAIndicator(df['close'], window=50).ema_indicator().iloc[-1]
 
             if rsi > 55 and ema20 > ema50:
                 market_bullish_count += 1
