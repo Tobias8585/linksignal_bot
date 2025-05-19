@@ -260,6 +260,8 @@ def is_reversal_candidate(df):
 def analyze_combined(symbol):
     global market_sentiment, low_coins, pre_breakout_coins, btc_strength_ok
 
+    market_bias_warning = ""  # Hinweis zur Marktstimmung vorbereiten
+
     df_1m = get_klines(symbol, interval="1m", limit=50)
     df_5m = get_klines(symbol, interval="5m", limit=75)
     if df_1m is None or df_5m is None:
@@ -301,41 +303,44 @@ def analyze_combined(symbol):
     elif signal_1m == "SHORT":
         breakout = price < df['low'].iloc[-21:-1].min()
 
-    if breakout and signal_1m == "LONG" and price > prev_resistance * 1.01:
-        log_print(f"{symbol}: Breakout bereits weit gelaufen – kein Einstieg")
+   if breakout and signal_1m == "LONG" and price > prev_resistance * 1.01:
+    log_print(f"{symbol}: Breakout bereits weit gelaufen – kein Einstieg")
+    return None, None
+
+if breakout and signal_1m == "SHORT" and price < df['low'].iloc[-21:-1].min() * 0.99:
+    log_print(f"{symbol}: Breakdown bereits weit gelaufen – kein Einstieg")
+    return None, None
+
+if breakout and signal_1m == "LONG":
+    if candle_close < prev_resistance or candle_close < candle_open:
+        log_print(f"{symbol}: Breakout, aber Candle nicht über Widerstand geschlossen")
         return None, None
-    if breakout and signal_1m == "SHORT" and price < df['low'].iloc[-21:-1].min() * 0.99:
-        log_print(f"{symbol}: Breakdown bereits weit gelaufen – kein Einstieg")
+    if volume < avg_volume * 1.1:
+        log_print(f"{symbol}: Breakout, aber kein signifikantes Volumen")
         return None, None
 
-    if breakout and signal_1m == "LONG":
-        if candle_close < prev_resistance or candle_close < candle_open:
-            log_print(f"{symbol}: Breakout, aber Candle nicht über Widerstand geschlossen")
-            return None, None
-        if volume < avg_volume * 1.1:
-            log_print(f"{symbol}: Breakout, aber kein signifikantes Volumen")
-            return None, None
+# 🧭 Marktstimmungs-Warnung setzen, wenn Signal gegen Mehrheit läuft
+if signal_1m == "LONG" and total_short_signals > total_long_signals * 1.5:
+    market_bias_warning = "⚠️ *Markt bearish – LONG mit Vorsicht bewerten*"
+elif signal_1m == "SHORT" and total_long_signals > total_short_signals * 1.5:
+    market_bias_warning = "⚠️ *Markt bullish – SHORT mit Vorsicht bewerten*"
 
-    if signal_1m == "LONG":
-        market_sentiment["long"] += 1
-    elif signal_1m == "SHORT":
-        market_sentiment["short"] += 1
+# 🔸 Heikin-Ashi Trendfilter (Step 8)
+ha_close = (df['open'] + df['high'] + df['low'] + df['close']) / 4
+ha_open = ha_close.shift(1)
+if ha_open.isna().any():
+    ha_open = df['open']  # Fallback
 
-    # 🔸 Heikin-Ashi Trendfilter (Step 8)
-    ha_close = (df['open'] + df['high'] + df['low'] + df['close']) / 4
-    ha_open = ha_close.shift(1)
-    if ha_open.isna().any():
-        ha_open = df['open']  # Fallback
+last_ha_open = ha_open.iloc[-1]
+last_ha_close = ha_close.iloc[-1]
 
-    last_ha_open = ha_open.iloc[-1]
-    last_ha_close = ha_close.iloc[-1]
+if signal_1m == "LONG" and last_ha_close < last_ha_open:
+    log_print(f"{symbol}: Kein LONG – Heikin-Ashi zeigt Abwärtstrend")
+    return None, None
+if signal_1m == "SHORT" and last_ha_close > last_ha_open:
+    log_print(f"{symbol}: Kein SHORT – Heikin-Ashi zeigt Aufwärtstrend")
+    return None, None
 
-    if signal_1m == "LONG" and last_ha_close < last_ha_open:
-        log_print(f"{symbol}: Kein LONG – Heikin-Ashi zeigt Abwärtstrend")
-        return None, None
-    if signal_1m == "SHORT" and last_ha_close > last_ha_open:
-        log_print(f"{symbol}: Kein SHORT – Heikin-Ashi zeigt Aufwärtstrend")
-        return None, None
 
 
 
