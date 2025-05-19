@@ -424,7 +424,7 @@ def analyze_combined(symbol):
     else:
         return None, None
 
-    # 🔴 Vorschlag 5: Aktuelle Candle prüfen – kein LONG bei fallender Bewegung
+       # 🔴 Vorschlag 5: Aktuelle Candle prüfen – kein LONG bei fallender Bewegung
     if signal_1m == "LONG":
         current_open = df_1m['open'].iloc[-1]
         current_close = df_1m['close'].iloc[-1]
@@ -432,8 +432,17 @@ def analyze_combined(symbol):
             log_print(f"{symbol}: Kein Signal – aktuelle Candle fällt (Close <= Open)")
             return None, None
 
+    # 🔴 Vorschlag 7: Kein LONG bei roter letzter abgeschlossener Candle
+    if signal_1m == "LONG":
+        last_close = df_1m['close'].iloc[-2]
+        last_open = df_1m['open'].iloc[-2]
+        if last_close < last_open:
+            log_print(f"{symbol}: Kein LONG – letzte abgeschlossene Kerze war rot")
+            return None, None
+
     # ⏳ Vorschlag 6: Verzögerung zur Validierung
     time.sleep(60)
+
 
     # Nochmals prüfen: Ist das Signal stabil geblieben?
     latest_close = df_1m['close'].iloc[-1]
