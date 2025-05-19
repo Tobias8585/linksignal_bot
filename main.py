@@ -208,16 +208,30 @@ def check_btc_strength():
     log_print(f"BTC-Marktstärke: {status}")
 
 
+def get_simple_signal(df):
+    signal_direction = None
+    count = 0
 
+    # RSI prüfen
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
-    ema = df['close'].ewm(span=20).mean().iloc[-1]
-    ema50 = df['close'].ewm(span=50).mean().iloc[-1]
-    macd = MACD(df['close']).macd().iloc[-1]
-    price = df['close'].iloc[-1]
+    if rsi < 35:
+        signal_direction = "LONG"
+        count += 1
+    elif rsi > 70:
+        signal_direction = "SHORT"
+        count += 1
 
-    btc_strength_ok = (rsi > 50) and (macd > 0) and (price > ema and price > ema50)
-    status = "🟢 stark" if btc_strength_ok else "🔴 schwach"
-    log_print(f"BTC-Marktstärke: {status}")
+    # MACD prüfen
+    macd = MACD(df['close'])
+    macd_line = macd.macd().iloc[-1]
+    macd_signal = macd.macd_signal().iloc[-1]
+    if signal_direction == "LONG" and macd_line > macd_signal:
+        count += 1
+    elif signal_direction == "SHORT" and macd_line < macd_signal:
+        count += 1
+
+    return signal_direction, count
+
 
 
 def analyze_combined(symbol):
