@@ -602,7 +602,7 @@ def check_all_symbols():
         signal_direction, signal_msg = analyze_combined(symbol)
 
         # 📊 Marktstruktur pro Coin klassifizieren
-        try
+        try:
 
 
 
