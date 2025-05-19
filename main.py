@@ -288,7 +288,7 @@ def analyze_combined(symbol):
     elif signal_1m == "SHORT":
         breakout = price < df['low'].iloc[-21:-1].min()
 
-        if breakout and signal_1m == "LONG" and price > prev_resistance * 1.01:
+    if breakout and signal_1m == "LONG" and price > prev_resistance * 1.01:
         log_print(f"{symbol}: Breakout bereits weit gelaufen – kein Einstieg")
         return None, None
     if breakout and signal_1m == "SHORT" and price < df['low'].iloc[-21:-1].min() * 0.99:
