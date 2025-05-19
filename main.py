@@ -407,18 +407,18 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Kein Signal – ATR zu niedrig")
         return None, None
 
-    strong_volume = volume > avg_volume * 1.3
-    ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
+   strong_volume = volume > avg_volume * 1.3
+ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
 
-    if count_1m == 2:
-        if not (strong_volume and breakout):
-            log_print(f"{symbol}: 2/3 aber kein Breakout oder Volumen")
-            return None, None
-        if signal_1m == "SHORT" and not (ema_trend_down and ema50_trend_down):
-            log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
-            return None, None
+if count_1m == 2:
+    if not (strong_volume and breakout):
+        log_print(f"{symbol}: 2/3 aber kein Breakout oder Volumen")
+        return None, None
+    if signal_1m == "SHORT" and not (ema_trend_down and ema50_trend_down):
+        log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
+        return None, None
 
-   pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
+pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
 if pre_breakout:
     pre_breakout_coins.append(symbol)
 
@@ -434,10 +434,9 @@ if is_near_recent_low(df, window=288, tolerance=0.03):
 if is_near_recent_low(df, window=144, tolerance=0.03):
     low_coins_12h.append(symbol)
 
-
-       # 🔢 Neue gewichtete Signalqualität
-    score = 0
-    max_score = 11  # Summe aller Gewichtungen
+# 🔢 Neue gewichtete Signalqualität
+score = 0
+max_score = 11
 
     score += 2 if (signal_1m == "LONG" and rsi < 35) or (signal_1m == "SHORT" and rsi > 70) else 0
     score += 2 if breakout else 0
