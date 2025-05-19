@@ -146,6 +146,7 @@ def run_bot():
                 f"🔻 24h: {len(low_coins_24h)} Coins | 🔻 12h: {len(low_coins_12h)} Coins\n"
                 f"🔍 Kandidaten (5m): {low_list_text}\n\n"
                 f"🪙 *BTC-Stärke:* {status_btc}"
+                f"🔍 *Anzahl analysierter Coins:* {len(symbols)}"
             )
 
             try:
@@ -654,16 +655,16 @@ def check_all_symbols():
 
     log_print(f"📊 Marktbreite: {total_long_signals}x LONG | {total_short_signals}x SHORT → Stimmung: {sentiment_text}")
 
-    try:
-        send_telegram(
-            f"📊 *Marktbreite-Analyse*\n\n"
-            f"📈 LONG: {total_long_signals}\n"
-            f"📉 SHORT: {total_short_signals}\n"
-            f"🧭 Stimmung: {sentiment_text}"
-            f"🔍 *Anzahl analysierter Coins:* {len(symbols)}"
-        )
-    except Exception as e:
-        log_print(f"❌ Fehler beim Senden der Marktbreiten-Telegram-Nachricht: {e}")
+    # try:
+#     send_telegram(
+#         f"📊 *Marktbreite-Analyse*\n\n"
+#         f"📈 LONG: {total_long_signals}\n"
+#         f"📉 SHORT: {total_short_signals}\n"
+#         f"🧭 Stimmung: {sentiment_text}"
+#         f"🔍 *Anzahl analysierter Coins:* {len(symbols)}"
+#     )
+# except Exception as e:
+#     log_print(f"❌ Fehler beim Senden der Marktbreiten-Telegram-Nachricht: {e}")
 
 
 @app.route('/')
