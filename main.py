@@ -314,10 +314,14 @@ def analyze_combined(symbol):
     ema_trend_down = ema < ema_prev
     ema50_trend_down = ema50 < ema50_prev
 
-    macd = MACD(df['close'])
+      macd = MACD(df['close'])
     macd_line = macd.macd().iloc[-1]
     macd_signal = macd.macd_signal().iloc[-1]
     macd_cross = macd_line > macd_signal if signal_1m == "LONG" else macd_line < macd_signal
+
+    if len(df) < 20:
+        log_print(f"{symbol}: Zu wenig Daten für ADX-Berechnung (nur {len(df)} Kerzen)")
+        return None, None
 
     adx_value = ADXIndicator(high=df['high'], low=df['low'], close=df['close'], window=14).adx().iloc[-1]
     if adx_value < 25:
@@ -328,7 +332,6 @@ def analyze_combined(symbol):
     recent_low = df['low'].iloc[-50:].min()
     fib_618 = recent_low + 0.618 * (recent_high - recent_low)
     fib_signal = (signal_1m == "LONG" and price > fib_618) or (signal_1m == "SHORT" and price < fib_618)
-
 
     bb = BollingerBands(close=df['close'], window=20, window_dev=2)
     bb_upper = bb.bollinger_hband().iloc[-1]
