@@ -307,14 +307,15 @@ def analyze_combined(symbol):
         prev_resistance = df_5m['high'].iloc[-21:-1].max()
         volume = df_5m['volume'].iloc[-1]
         avg_volume = df_5m['volume'].rolling(window=20).mean().iloc[-1]
+        
+    if candle_close < prev_resistance or candle_close < candle_open:
+        log_print(f"{symbol}: Breakout, aber Candle nicht über Widerstand geschlossen")
+        return None, None
 
-       if candle_close < prev_resistance or candle_close < candle_open:
-            log_print(f"{symbol}: Breakout, aber Candle nicht über Widerstand geschlossen")
-            return None, None
+    if volume < avg_volume * 1.1:
+        log_print(f"{symbol}: Breakout, aber kein signifikantes Volumen")
+        return None, None
 
-        if volume < avg_volume * 1.1:
-            log_print(f"{symbol}: Breakout, aber kein signifikantes Volumen")
-            return None, None
 
     if signal_1m == "LONG":
         market_sentiment["long"] += 1
