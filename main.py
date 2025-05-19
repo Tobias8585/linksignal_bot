@@ -555,27 +555,46 @@ def check_all_symbols():
         return
 
     for symbol in symbols:
-        signal_direction, signal_msg = analyze_combined(symbol)
+    signal_direction, signal_msg = analyze_combined(symbol)
 
-        if signal_direction:
-            all_signal_results.append(signal_direction)
+    if signal_direction:
+        all_signal_results.append(signal_direction)
 
-            # 🔢 Marktbreiten-Zähler erhöhen
-            if signal_direction == "LONG":
-                total_long_signals += 1
-            elif signal_direction == "SHORT":
-                total_short_signals += 1
+        # 🔢 Marktbreiten-Zähler erhöhen
+        if signal_direction == "LONG":
+            total_long_signals += 1
+        elif signal_direction == "SHORT":
+            total_short_signals += 1
 
-            send_telegram(signal_msg)
-            log_print(f"{symbol}: Signal gesendet\n{signal_msg}")
-        else:
-            all_signal_results.append("NONE")
-            log_print(f"{symbol}: Kein Signal")
+        send_telegram(signal_msg)
+        log_print(f"{symbol}: Signal gesendet\n{signal_msg}")
+    else:
+        all_signal_results.append("NONE")
+        log_print(f"{symbol}: Kein Signal")
 
-    if market_sentiment["long"] == 0 and market_sentiment["short"] == 0:
-        market_sentiment["status"] = "neutral"
+# ✅ Block ist **nach** dem for-Loop, korrekt eingerückt
+if market_sentiment["long"] == 0 and market_sentiment["short"] == 0:
+    market_sentiment["status"] = "neutral"
 
-    log_print(f"📊 Marktbreite: {total_long_signals}x LONG | {total_short_signals}x SHORT")
+log_print(f"📊 Marktbreite: {total_long_signals}x LONG | {total_short_signals}x SHORT")
+
+# 📈📉 Marktstimmung berechnen
+total_signals = total_long_signals + total_short_signals
+
+if total_signals > 0:
+    long_ratio = total_long_signals / total_signals
+    short_ratio = total_short_signals / total_signals
+
+    if long_ratio > 0.6:
+        sentiment_text = "📈 Bullish"
+    elif short_ratio > 0.6:
+        sentiment_text = "📉 Bearish"
+    else:
+        sentiment_text = "⚖️ Neutral"
+else:
+    sentiment_text = "Keine Signale erkannt"
+
+log_print(f"📊 Marktbreite: {total_long_signals}x LONG | {total_short_signals}x SHORT → Stimmung: {sentiment_text}", flush=True)
 
 
 @app.route('/')
