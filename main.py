@@ -296,7 +296,8 @@ def analyze_combined(symbol):
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
     prev_resistance = df['high'].iloc[-21:-1].max()  # ✅ hinzugefügt!
-         breakout = False
+    
+          breakout = False
     if signal_1m == "LONG":
         breakout = price > prev_resistance
     elif signal_1m == "SHORT":
