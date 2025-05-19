@@ -231,6 +231,23 @@ def get_simple_signal(df):
         count += 1
 
     return signal_direction, count
+    
+def is_reversal_candidate(df):
+    rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
+    cci = CCIIndicator(high=df['high'], low=df['low'], close=df['close'], window=20).cci().iloc[-1]
+    macd = MACD(df['close'])
+    macd_line = macd.macd().iloc[-1]
+    macd_signal = macd.macd_signal().iloc[-1]
+    volume = df['volume'].iloc[-1]
+    avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
+
+    is_macd_cross = macd_line > macd_signal or macd_line < macd_signal
+    is_rsi_extreme = rsi < 30 or rsi > 70
+    is_cci_extreme = cci < -100 or cci > 100
+    is_volume_spike = volume > avg_volume * 1.5
+
+    return is_macd_cross and is_rsi_extreme and is_cci_extreme and is_volume_spike
+
 
 
 
