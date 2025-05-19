@@ -545,34 +545,40 @@ def check_all_symbols():
             s['symbol'] for s in exchange_info['symbols']
             if s['contractType'] == 'PERPETUAL' and s['symbol'].endswith("USDT")
         ]
-    except Exception as e:
-        log_print(f"Fehler beim Laden der Symbolliste: {e}")
-        return
+   except Exception as e:
+    log_print(f"Fehler beim Laden der Symbolliste: {e}")
+    return
 
-    symbols = get_top_volume_symbols(limit=200)  # ✅ richtig eingerückt
+symbols = get_top_volume_symbols(limit=200)  # ✅ richtig eingerückt
 
-    if not symbols:
-        log_print("Keine Symbole zum Prüfen verfügbar.")
-        return
+if not symbols:
+    log_print("Keine Symbole zum Prüfen verfügbar.")
+    return
 
-    for symbol in symbols:
-        signal_direction, signal_msg = analyze_combined(symbol)
+for symbol in symbols:
+    signal_direction, signal_msg = analyze_combined(symbol)
 
-        if signal_direction:
-            all_signal_results.append(signal_direction)
-            send_telegram(signal_msg)
-            log_print(f"{symbol}: Signal gesendet\n{signal_msg}")
-        else:
-            all_signal_results.append("NONE")
-            log_print(f"{symbol}: Kein Signal")
+    if signal_direction:
+        all_signal_results.append(signal_direction)
 
+        # 🔢 Marktbreiten-Zähler erhöhen
+        if signal_direction == "LONG":
+            total_long_signals += 1
+        elif signal_direction == "SHORT":
+            total_short_signals += 1
 
+        send_telegram(signal_msg)
+        log_print(f"{symbol}: Signal gesendet\n{signal_msg}")
+    else:
+        all_signal_results.append("NONE")
+        log_print(f"{symbol}: Kein Signal")
+
+# 🧮 Marktstimmung vorläufig neutral setzen, falls keine Signale
 if market_sentiment["long"] == 0 and market_sentiment["short"] == 0:
     market_sentiment["status"] = "neutral"
 
-log_print(f"📊 Marktbreite: {market_sentiment['long']}x LONG | {market_sentiment['short']}x SHORT")
-
-
+# ✅ Neue Marktbreiten-Ausgabe
+log_print(f"📊 Marktbreite: {total_long_signals}x LONG | {total_short_signals}x SHORT")
 
 @app.route('/')
 def home():
