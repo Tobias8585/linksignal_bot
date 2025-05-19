@@ -413,7 +413,7 @@ def analyze_combined(symbol):
     score += 1 if fib_signal else 0
     score += 1 if pre_breakout else 0
 
-       percentage = int(min(100, (score / max_score) * 100))
+    percentage = int(min(100, (score / max_score) * 100))
 
     if score >= 8:
         signal_strength = "🟢 Sehr starkes Signal"
