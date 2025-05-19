@@ -287,7 +287,6 @@ def analyze_combined(symbol):
         return None, None
 
     price = df_5m['close'].iloc[-1]
-
     breakout = False
     if signal_1m == "LONG":
         breakout = price > df_5m['high'].iloc[-21:-1].max()
@@ -300,10 +299,28 @@ def analyze_combined(symbol):
     if breakout and signal_1m == "SHORT" and price < df_5m['low'].iloc[-21:-1].min() * 0.99:
         log_print(f"{symbol}: Breakdown bereits weit gelaufen – kein Einstieg")
         return None, None
+
+    # 🔍 Vorschlag 3: Breakout-Bestätigung (Candle-Body + Volumen)
+    if breakout and signal_1m == "LONG":
+        candle_close = df_5m['close'].iloc[-1]
+        candle_open = df_5m['open'].iloc[-1]
+        prev_resistance = df_5m['high'].iloc[-21:-1].max()
+        volume = df_5m['volume'].iloc[-1]
+        avg_volume = df_5m['volume'].rolling(window=20).mean().iloc[-1]
+
+        if candle_close < prev_resistance or candle_close < candle_open:
+            log_print(f"{symbol}: Breakout, aber Candle nicht über Widerstand geschlossen")
+            return None, None
+
+        if volume < avg_volume * 1.1:
+            log_print(f"{symbol}: Breakout, aber kein signifikantes Volumen")
+            return None, None
+
     if signal_1m == "LONG":
         market_sentiment["long"] += 1
     elif signal_1m == "SHORT":
         market_sentiment["short"] += 1
+
 
     df = df_5m
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
