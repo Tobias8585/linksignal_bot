@@ -314,7 +314,7 @@ def analyze_combined(symbol):
     ema_trend_down = ema < ema_prev
     ema50_trend_down = ema50 < ema50_prev
 
-      macd = MACD(df['close'])
+    macd = MACD(df['close'])
     macd_line = macd.macd().iloc[-1]
     macd_signal = macd.macd_signal().iloc[-1]
     macd_cross = macd_line > macd_signal if signal_1m == "LONG" else macd_line < macd_signal
