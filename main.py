@@ -655,7 +655,7 @@ def check_all_symbols():
 
     log_print(f"📊 Marktbreite: {total_long_signals}x LONG | {total_short_signals}x SHORT → Stimmung: {sentiment_text}")
 
-    try:
+try:
     send_telegram(
         f"📊 *Marktbreite-Analyse*\n\n"
         f"📈 LONG: {total_long_signals}\n"
@@ -665,6 +665,7 @@ def check_all_symbols():
     )
 except Exception as e:
     log_print(f"❌ Fehler beim Senden der Marktbreiten-Telegram-Nachricht: {e}")
+
 
 
 
