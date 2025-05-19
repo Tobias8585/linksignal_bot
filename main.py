@@ -220,50 +220,6 @@ def check_btc_strength():
     log_print(f"BTC-Marktstärke: {status}")
 
 
-def get_simple_signal(df):
-    rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
-    cci = CCIIndicator(high=df['high'], low=df['low'], close=df['close'], window=20).cci().iloc[-1]
-    ema = df['close'].ewm(span=20).mean().iloc[-1]
-    ema50 = df['close'].ewm(span=50).mean().iloc[-1]
-    macd_line = MACD(df['close']).macd().iloc[-1]
-    price = df['close'].iloc[-1]
-
-    long_signals = sum([
-        rsi < 35,
-        macd_line > 0,
-        price > ema * 1.005 and price > ema50,
-        cci < -100
-    ])
-    short_signals = sum([
-        rsi > 70,
-        macd_line < 0,
-        price < ema * 0.995 and price < ema50,
-        cci > 100
-    ])
-
-    if long_signals >= 2:
-        return "LONG", long_signals
-    elif short_signals >= 2:
-        return "SHORT", short_signals
-    return None, 0
-
-def is_reversal_candidate(df):
-    rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
-    cci = CCIIndicator(high=df['high'], low=df['low'], close=df['close'], window=20).cci().iloc[-1]
-    macd_line = MACD(df['close']).macd().iloc[-1]
-    volume = df['volume'].iloc[-1]
-    avg_volume = df['volume'].rolling(20).mean().iloc[-1]
-
-    score = sum([
-        rsi < 30,
-        cci < -100,
-        macd_line > 0,
-        volume > avg_volume
-    ])
-    return score >= 3
-
-
-
 def analyze_combined(symbol):
     global market_sentiment, low_coins, pre_breakout_coins, btc_strength_ok
 
@@ -278,7 +234,6 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Kein 1m-Signal")
         return None, None
 
-    # BTC-Stärke prüfen – bei schwachem BTC nur Mahnung, kein Block
     if not btc_strength_ok and signal_1m == "LONG":
         log_print(f"{symbol}: ⚠️ BTC schwach – Vorsicht bei LONG-Signal")
 
@@ -286,7 +241,7 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Divergenz 1m/5m erkannt – kein klares Setup")
         return None, None
 
-        price = df_5m['close'].iloc[-1]
+    price = df_5m['close'].iloc[-1]
     candle_close = df_5m['close'].iloc[-1]
     candle_open = df_5m['open'].iloc[-1]
     volume = df_5m['volume'].iloc[-1]
@@ -306,7 +261,6 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Breakdown bereits weit gelaufen – kein Einstieg")
         return None, None
 
-    # 🔍 Vorschlag 3: Breakout-Bestätigung (Candle-Body + Volumen)
     if breakout and signal_1m == "LONG":
         if candle_close < prev_resistance or candle_close < candle_open:
             log_print(f"{symbol}: Breakout, aber Candle nicht über Widerstand geschlossen")
@@ -315,13 +269,10 @@ def analyze_combined(symbol):
             log_print(f"{symbol}: Breakout, aber kein signifikantes Volumen")
             return None, None
 
-
-
     if signal_1m == "LONG":
         market_sentiment["long"] += 1
     elif signal_1m == "SHORT":
         market_sentiment["short"] += 1
-
 
     df = df_5m
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
@@ -385,7 +336,7 @@ def analyze_combined(symbol):
             log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
             return None, None
 
-        pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
+    pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
     if pre_breakout:
         pre_breakout_coins.append(symbol)
 
@@ -400,6 +351,7 @@ def analyze_combined(symbol):
 
     if is_near_recent_low(df, window=144, tolerance=0.02):
         low_coins_12h.append(symbol)
+
 
     # 🔢 Neue gewichtete Signalqualität
     score = 0
