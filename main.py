@@ -408,7 +408,7 @@ def analyze_combined(symbol):
         return None, None
 
    strong_volume = volume > avg_volume * 1.3
-ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
+    ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
 
 if count_1m == 2:
     if not (strong_volume and breakout):
