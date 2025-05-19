@@ -258,8 +258,8 @@ def analyze_combined(symbol):
     price = df_5m['close'].iloc[-1]
     candle_close = df_5m['close'].iloc[-1]
     candle_open = df_5m['open'].iloc[-1]
-    volume = df_5m['volume'].iloc[-1]
-    avg_volume = df_5m['volume'].rolling(window=20).mean().iloc[-1]
+    volume = df['volume'].iloc[-1]
+    avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
     prev_resistance = df_5m['high'].iloc[-21:-1].max()
 
     breakout = False
@@ -332,8 +332,7 @@ def analyze_combined(symbol):
 
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
     volatility_pct = atr / price * 100
-    volume = df['volume'].iloc[-1]
-    avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
+    
 
     if atr < price * 0.003:
         log_print(f"{symbol}: Kein Signal – ATR zu niedrig")
