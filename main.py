@@ -120,34 +120,44 @@ def run_bot():
         check_all_symbols()
         schedule.run_pending()
 
-        if time.time() - last_status_time > 3600:
+                if time.time() - last_status_time > 3600:
             market_status, long_count, short_count = classify_market_sentiment_from_results(all_signal_results)
             log_print(f"{len(all_signal_results)} Coins ausgewertet für Marktstatus")
             low_list_text = ", ".join(low_coins) if low_coins else "-"
 
+            # 🧠 Tendenz aus Marktstruktur ableiten
+            if market_bullish_count > market_bearish_count * 1.2:
+                market_trend = "📈 *Bullish*"
+            elif market_bearish_count > market_bullish_count * 1.2:
+                market_trend = "📉 *Bearish*"
+            else:
+                market_trend = "⚖️ *Neutral*"
+
+            # BTC-Stärke
             status_btc = "🟢 stark" if btc_strength_ok else "🔴 schwach"
 
-            # ✅ Kompakte BTC/Tiefstand-Zusammenfassung
-            send_telegram(
-                f"🪙 *BTC-Stärke & Tiefstände*\n\n"
-                f"📊 *BTC-Stärke:* {status_btc}\n"
-                f"🟡 *5m-Tiefstände:* {len(low_coins)} Coins\n"
-                f"🔍 Kandidaten: {low_list_text}"
+            # 📦 Kompakte Gesamt-Nachricht
+            summary_message = (
+                f"📊 *Marktanalyse Übersicht*\n\n"
+                f"🧭 *Marktstruktur:*\n"
+                f"🟢 {market_bullish_count} bullish | 🔴 {market_bearish_count} bearish | ⚪️ {market_neutral_count} neutral\n"
+                f"→ Tendenz: {market_trend}\n\n"
+                f"📉 *Tiefstände:*\n"
+                f"🔻 24h: {len(low_coins_24h)} Coins | 🔻 12h: {len(low_coins_12h)} Coins\n"
+                f"🔍 Kandidaten (5m): {low_list_text}\n\n"
+                f"🪙 *BTC-Stärke:* {status_btc}"
             )
 
-            # ✅ Separate Nachricht für 24h / 12h Tiefstände
-            send_telegram(
-                f"📉 *Coin-Tiefstände*\n"
-                f"🔻 24h: {len(low_coins_24h)} Coins\n"
-                f"🔻 12h: {len(low_coins_12h)} Coins\n"
-                f"🔍 24h: {', '.join(low_coins_24h) or '-'}\n"
-                f"🔍 12h: {', '.join(low_coins_12h) or '-'}"
-            )
+            try:
+                send_telegram(summary_message)
+            except Exception as e:
+                log_print(f"❌ Fehler bei Marktanalyse-Telegramnachricht: {e}")
 
             last_status_time = time.time()
             low_coins = []
             low_coins_24h = []
             low_coins_12h = []
+
 
         if time.time() - last_breakout_check > 900:
             if pre_breakout_coins:
