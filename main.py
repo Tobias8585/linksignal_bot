@@ -127,15 +127,15 @@ def run_bot():
 
             status_btc = "🟢 stark" if btc_strength_ok else "🔴 schwach"
 
+            # ✅ Kompakte BTC/Tiefstand-Zusammenfassung
             send_telegram(
-                f"📊 *Marktstatus-Update*\n"
-                f"{market_status}\n"
-                f"📈 LONG: {long_count}x | 📉 SHORT: {short_count}x\n"
-                f"🪙 *BTC-Stärke:* {status_btc}\n"
-                f"🟡 {len(low_coins)} Coins nahe ihrem Tiefstand (5m)\n"
+                f"🪙 *BTC-Stärke & Tiefstände*\n\n"
+                f"📊 *BTC-Stärke:* {status_btc}\n"
+                f"🟡 *5m-Tiefstände:* {len(low_coins)} Coins\n"
                 f"🔍 Kandidaten: {low_list_text}"
             )
 
+            # ✅ Separate Nachricht für 24h / 12h Tiefstände
             send_telegram(
                 f"📉 *Coin-Tiefstände*\n"
                 f"🔻 24h: {len(low_coins_24h)} Coins\n"
@@ -161,6 +161,7 @@ def run_bot():
             last_breakout_check = time.time()
 
         time.sleep(600)
+
 
 
 
