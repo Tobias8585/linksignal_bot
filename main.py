@@ -418,21 +418,21 @@ def analyze_combined(symbol):
             log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
             return None, None
 
-    pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
-    if pre_breakout:
-        pre_breakout_coins.append(symbol)
+   pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
+if pre_breakout:
+    pre_breakout_coins.append(symbol)
 
-    if is_near_recent_low(df, window=50, tolerance=0.02):
-        low_coins.append(symbol)
+if is_near_recent_low(df, window=50, tolerance=0.02):
+    low_coins.append(symbol)
 
-    if is_reversal_candidate(df):
-        send_telegram(f"🔄 *Reversal-Kandidat erkannt*: {symbol}\nCoin zeigt starke Umkehrsignale (RSI/CCI/MACD/Volumen).")
+if is_reversal_candidate(df):
+    reversal_candidates.append(symbol)
 
-    if is_near_recent_low(df, window=288, tolerance=0.03):
-        low_coins_24h.append(symbol)
+if is_near_recent_low(df, window=288, tolerance=0.03):
+    low_coins_24h.append(symbol)
 
-    if is_near_recent_low(df, window=144, tolerance=0.03):
-        low_coins_12h.append(symbol)
+if is_near_recent_low(df, window=144, tolerance=0.03):
+    low_coins_12h.append(symbol)
 
 
        # 🔢 Neue gewichtete Signalqualität
