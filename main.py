@@ -303,9 +303,10 @@ def analyze_combined(symbol):
     elif signal_1m == "SHORT":
         breakout = price < df['low'].iloc[-21:-1].min()
 
-    if breakout and signal_1m == "LONG" and price > prev_resistance * 1.01:
+       if breakout and signal_1m == "LONG" and price > prev_resistance * 1.01:
         log_print(f"{symbol}: Breakout bereits weit gelaufen – kein Einstieg")
         return None, None
+
     if breakout and signal_1m == "SHORT" and price < df['low'].iloc[-21:-1].min() * 0.99:
         log_print(f"{symbol}: Breakdown bereits weit gelaufen – kein Einstieg")
         return None, None
@@ -318,11 +319,12 @@ def analyze_combined(symbol):
             log_print(f"{symbol}: Breakout, aber kein signifikantes Volumen")
             return None, None
 
-# 🧭 Marktstimmungs-Warnung setzen, wenn Signal gegen Mehrheit läuft
-if signal_1m == "LONG" and total_short_signals > total_long_signals * 1.5:
-    market_bias_warning = "⚠️ *Markt bearish – LONG mit Vorsicht bewerten*"
-elif signal_1m == "SHORT" and total_long_signals > total_short_signals * 1.5:
-    market_bias_warning = "⚠️ *Markt bullish – SHORT mit Vorsicht bewerten*"
+    # 🧭 Marktstimmungs-Warnung setzen, wenn Signal gegen Mehrheit läuft
+    if signal_1m == "LONG" and total_short_signals > total_long_signals * 1.5:
+        market_bias_warning = "⚠️ *Markt bearish – LONG mit Vorsicht bewerten*"
+    elif signal_1m == "SHORT" and total_long_signals > total_short_signals * 1.5:
+        market_bias_warning = "⚠️ *Markt bullish – SHORT mit Vorsicht bewerten*"
+
 
 # 🔸 Heikin-Ashi Trendfilter (Step 8)
 ha_close = (df['open'] + df['high'] + df['low'] + df['close']) / 4
