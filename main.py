@@ -41,9 +41,10 @@ last_status_time = 0
 last_breakout_check = 0
 low_coins = []
 pre_breakout_coins = []
-market_sentiment = {"long": 0, "short": 0}
 low_coins_24h = []
 low_coins_12h = []
+reversal_candidates = []  # ⬅️ HIER eingefügt
+market_sentiment = {"long": 0, "short": 0}
 btc_strength_ok = True  # BTC-Stärke-Standardwert, wird beim Start als "stark" angenommen
 
 
