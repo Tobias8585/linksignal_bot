@@ -300,13 +300,12 @@ def analyze_combined(symbol):
     if breakout and signal_1m == "SHORT" and price < df_5m['low'].iloc[-21:-1].min() * 0.99:
         log_print(f"{symbol}: Breakdown bereits weit gelaufen – kein Einstieg")
         return None, None
-
     if signal_1m == "LONG":
         market_sentiment["long"] += 1
     elif signal_1m == "SHORT":
         market_sentiment["short"] += 1
 
-df = df_5m
+    df = df_5m
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     ema50 = df['close'].ewm(span=50).mean().iloc[-1]
@@ -329,6 +328,7 @@ df = df_5m
     recent_low = df['low'].iloc[-50:].min()
     fib_618 = recent_low + 0.618 * (recent_high - recent_low)
     fib_signal = (signal_1m == "LONG" and price > fib_618) or (signal_1m == "SHORT" and price < fib_618)
+
 
     bb = BollingerBands(close=df['close'], window=20, window_dev=2)
     bb_upper = bb.bollinger_hband().iloc[-1]
