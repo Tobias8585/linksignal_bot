@@ -258,20 +258,23 @@ def analyze_combined(symbol):
     price = df_5m['close'].iloc[-1]
     candle_close = df_5m['close'].iloc[-1]
     candle_open = df_5m['open'].iloc[-1]
+
+    df = df_5m  # 🔁 WICHTIG: jetzt korrekt oben gesetzt
+
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
-    prev_resistance = df_5m['high'].iloc[-21:-1].max()
+    prev_resistance = df['high'].iloc[-21:-1].max()  # ✅ hinzugefügt!
 
     breakout = False
     if signal_1m == "LONG":
         breakout = price > prev_resistance
     elif signal_1m == "SHORT":
-        breakout = price < df_5m['low'].iloc[-21:-1].min()
+        breakout = price < df['low'].iloc[-21:-1].min()
 
     if breakout and signal_1m == "LONG" and price > prev_resistance * 1.01:
         log_print(f"{symbol}: Breakout bereits weit gelaufen – kein Einstieg")
         return None, None
-    if breakout and signal_1m == "SHORT" and price < df_5m['low'].iloc[-21:-1].min() * 0.99:
+    if breakout and signal_1m == "SHORT" and price < df['low'].iloc[-21:-1].min() * 0.99:
         log_print(f"{symbol}: Breakdown bereits weit gelaufen – kein Einstieg")
         return None, None
 
@@ -288,7 +291,7 @@ def analyze_combined(symbol):
     elif signal_1m == "SHORT":
         market_sentiment["short"] += 1
 
-    df = df_5m
+    # ⬇️ Der Rest deines Blocks (ab RSI usw.) kann unverändert bleiben
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     ema50 = df['close'].ewm(span=50).mean().iloc[-1]
