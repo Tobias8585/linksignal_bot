@@ -560,12 +560,17 @@ def check_all_symbols():
     global market_sentiment
     global all_signal_results
     global total_long_signals, total_short_signals
+    global market_bullish_count, market_bearish_count, market_neutral_count  # ⬅️ NEU
 
     all_signal_results = []
     market_sentiment["long"] = 0
     market_sentiment["short"] = 0
     total_long_signals = 0
     total_short_signals = 0
+    market_bullish_count = 0   # ⬅️ NEU
+    market_bearish_count = 0   # ⬅️ NEU
+    market_neutral_count = 0   # ⬅️ NEU
+
 
     try:
         exchange_info = client.exchange_info()
