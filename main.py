@@ -8,7 +8,7 @@ import pytz
 from pytz import timezone
 import pandas as pd
 from ta.momentum import RSIIndicator
-from ta.trend import EMAIndicator, MACD, CCIIndicator, IchimokuIndicator
+from ta.trend import EMAIndicator, MACD, CCIIndicator, IchimokuIndicator, ADXIndicator
 from ta.volatility import BollingerBands
 import os
 from datetime import datetime, timedelta
