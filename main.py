@@ -306,7 +306,7 @@ def analyze_combined(symbol):
     elif signal_1m == "SHORT":
         market_sentiment["short"] += 1
 
-    df = df_5m
+       df = df_5m
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     ema50 = df['close'].ewm(span=50).mean().iloc[-1]
@@ -319,6 +319,11 @@ def analyze_combined(symbol):
     macd_line = macd.macd().iloc[-1]
     macd_signal = macd.macd_signal().iloc[-1]
     macd_cross = macd_line > macd_signal if signal_1m == "LONG" else macd_line < macd_signal
+
+    adx_value = ADXIndicator(high=df['high'], low=df['low'], close=df['close'], window=14).adx().iloc[-1]
+    if adx_value < 25:
+        log_print(f"{symbol}: Kein Signal – ADX ({adx_value:.2f}) < 25 → Trend zu schwach")
+        return None, None
 
     recent_high = df['high'].iloc[-50:].max()
     recent_low = df['low'].iloc[-50:].min()
@@ -411,6 +416,7 @@ def analyze_combined(symbol):
         f"• Bestätigung: 5m *(6 Stunden Analyse)* → {signal_5m or 'kein Signal'}\n"
         f"• Trend: {'Aufwärts' if price > ema and price > ema50 else 'Abwärts' if price < ema and price < ema50 else 'Seitwärts'}\n"
         f"• RSI-Zone: {rsi:.2f}\n"
+        f"• ADX (Trendstärke): {adx_value:.2f}\n"
         f"• Volatilität: {volatility_pct:.2f} %\n\n"
         f"📉 *Indikatoren:*\n"
         f"• MACD-Cross: {'✅' if macd_cross else '❌'}\n"
