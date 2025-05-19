@@ -415,7 +415,7 @@ def analyze_combined(symbol):
 
     percentage = int(min(100, (score / max_score) * 100))
 
-       if score >= 8:
+    if score >= 8:
         signal_strength = "🟢 Sehr starkes Signal"
     elif score >= 5:
         signal_strength = "🟡 Gutes Signal"
