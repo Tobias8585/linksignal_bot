@@ -589,7 +589,25 @@ def check_all_symbols():
         return
 
     for symbol in symbols:
-        signal_direction, signal_msg = analyze_combined(symbol)
+    signal_direction, signal_msg = analyze_combined(symbol)
+
+    # 📊 Marktstruktur pro Coin klassifizieren
+    try:
+        df = get_klines(symbol, interval="5m", limit=50)
+        rsi = ta.momentum.RSIIndicator(df['close']).rsi().iloc[-1]
+        ema20 = ta.trend.EMAIndicator(df['close'], window=20).ema_indicator().iloc[-1]
+        ema50 = ta.trend.EMAIndicator(df['close'], window=50).ema_indicator().iloc[-1]
+
+        if rsi > 55 and ema20 > ema50:
+            market_bullish_count += 1
+        elif rsi < 45 and ema20 < ema50:
+            market_bearish_count += 1
+        else:
+            market_neutral_count += 1
+
+    except Exception as e:
+        log_print(f"{symbol}: Marktstruktur-Bewertung fehlgeschlagen: {e}")
+
 
     if signal_direction:
         all_signal_results.append(signal_direction)
