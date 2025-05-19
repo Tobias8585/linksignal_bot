@@ -306,7 +306,7 @@ def analyze_combined(symbol):
     elif signal_1m == "SHORT":
         market_sentiment["short"] += 1
 
-       df = df_5m
+df = df_5m
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     ema50 = df['close'].ewm(span=50).mean().iloc[-1]
