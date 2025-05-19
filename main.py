@@ -451,15 +451,16 @@ percentage = int(min(100, (score / max_score) * 100))
 percentage = max(0, percentage)  # Sicherheitsgrenze
 
 
-    # 🟢 Signalstärke-Titel
-    if score >= 8:
-        signal_strength = "🟢 Sehr starkes Signal"
-    elif score >= 5:
-        signal_strength = "🟡 Gutes Signal"
-    elif score >= 3:
-        signal_strength = "🔸 Mögliches Signal"
-    else:
-        return None, None
+  # 🟢 Signalstärke-Titel
+if score >= 8:
+    signal_strength = "🟢 Sehr starkes Signal"
+elif score >= 5:
+    signal_strength = "🟡 Gutes Signal"
+elif score >= 3:
+    signal_strength = "🔸 Mögliches Signal"
+else:
+    return None, None
+
 
     # 📉 Marktstimmung widerspricht Signal → Qualität abwerten
     if signal_1m == "LONG" and total_short_signals > total_long_signals * 1.5:
