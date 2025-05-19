@@ -660,6 +660,7 @@ def check_all_symbols():
             f"📈 LONG: {total_long_signals}\n"
             f"📉 SHORT: {total_short_signals}\n"
             f"🧭 Stimmung: {sentiment_text}"
+            f"🔍 *Anzahl analysierter Coins:* {len(symbols)}"
         )
     except Exception as e:
         log_print(f"❌ Fehler beim Senden der Marktbreiten-Telegram-Nachricht: {e}")
