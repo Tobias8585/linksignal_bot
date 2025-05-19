@@ -413,7 +413,7 @@ def analyze_combined(symbol):
     score += 1 if fib_signal else 0
     score += 1 if pre_breakout else 0
 
-    percentage = int(min(100, (score / max_score) * 100))
+       percentage = int(min(100, (score / max_score) * 100))
 
     if score >= 8:
         signal_strength = "🟢 Sehr starkes Signal"
@@ -432,6 +432,21 @@ def analyze_combined(symbol):
             log_print(f"{symbol}: Kein Signal – aktuelle Candle fällt (Close <= Open)")
             return None, None
 
+    # ⏳ Vorschlag 6: Verzögerung zur Validierung
+    time.sleep(60)
+
+    # Nochmals prüfen: Ist das Signal stabil geblieben?
+    latest_close = df_1m['close'].iloc[-1]
+    latest_open = df_1m['open'].iloc[-1]
+
+    if signal_1m == "LONG" and latest_close <= latest_open:
+        log_print(f"{symbol}: Signal abgebrochen – Candle ist nach 1 Minute nicht mehr grün")
+        return None, None
+    elif signal_1m == "SHORT" and latest_close >= latest_open:
+        log_print(f"{symbol}: Signal abgebrochen – Candle ist nach 1 Minute nicht mehr rot")
+        return None, None
+
+    # TP/SL & Zeitstempel nach finaler Bestätigung
     tp1 = price + 1.5 * atr if signal_1m == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal_1m == "LONG" else price - 2.5 * atr
     sl = price - 1.2 * atr if signal_1m == "LONG" else price + 1.2 * atr
@@ -439,7 +454,7 @@ def analyze_combined(symbol):
 
     msg = (
         f"🔔 *Signal für: {symbol}* | *{signal_1m}* ({signal_strength})\n"
-        f"🟢 *Signalqualität:* {percentage} % erfüllt ({criteria_count} von {max_criteria} Hauptkriterien)\n\n"
+        f"🟢 *Signalqualität:* {percentage} % erfüllt\n\n"
         f"📊 *Analyse-Zeitrahmen:*\n"
         f"• Hauptsignal: 1m *(50 Minuten Analyse)*\n"
         f"• Bestätigung: 5m *(6 Stunden Analyse)* → {signal_5m or 'kein Signal'}\n"
