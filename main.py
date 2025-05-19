@@ -308,7 +308,7 @@ def analyze_combined(symbol):
         volume = df_5m['volume'].iloc[-1]
         avg_volume = df_5m['volume'].rolling(window=20).mean().iloc[-1]
 
-        if candle_close < prev_resistance or candle_close < candle_open:
+       if candle_close < prev_resistance or candle_close < candle_open:
             log_print(f"{symbol}: Breakout, aber Candle nicht über Widerstand geschlossen")
             return None, None
 
