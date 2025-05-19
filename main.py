@@ -278,6 +278,13 @@ def analyze_combined(symbol):
 
     df = df_5m  # 🔁 WICHTIG: jetzt korrekt oben gesetzt
 
+    # 🔧 Fix: Sicherstellen, dass alle Spalten numerisch sind
+    df['open'] = df['open'].astype(float)
+    df['high'] = df['high'].astype(float)
+    df['low'] = df['low'].astype(float)
+    df['close'] = df['close'].astype(float)
+
+
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
     prev_resistance = df['high'].iloc[-21:-1].max()  # ✅ hinzugefügt!
