@@ -515,7 +515,7 @@ def check_all_symbols():
         else:
             all_signal_results.append("NONE")
             log_print(f"{symbol}: Kein Signal")
-time.sleep(1)
+
 
 if market_sentiment["long"] == 0 and market_sentiment["short"] == 0:
     market_sentiment["status"] = "neutral"
