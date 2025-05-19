@@ -296,28 +296,26 @@ def analyze_combined(symbol):
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
     prev_resistance = df['high'].iloc[-21:-1].max()  # ✅ hinzugefügt!
-
-    breakout = False
+ breakout = False
     if signal_1m == "LONG":
         breakout = price > prev_resistance
     elif signal_1m == "SHORT":
         breakout = price < df['low'].iloc[-21:-1].min()
 
-if breakout and signal_1m == "LONG" and price > prev_resistance * 1.01:
-    log_print(f"{symbol}: Breakout bereits weit gelaufen – kein Einstieg")
-    return None, None
-
-if breakout and signal_1m == "SHORT" and price < df['low'].iloc[-21:-1].min() * 0.99:
-    log_print(f"{symbol}: Breakdown bereits weit gelaufen – kein Einstieg")
-    return None, None
-
-if breakout and signal_1m == "LONG":
-    if candle_close < prev_resistance or candle_close < candle_open:
-        log_print(f"{symbol}: Breakout, aber Candle nicht über Widerstand geschlossen")
+    if breakout and signal_1m == "LONG" and price > prev_resistance * 1.01:
+        log_print(f"{symbol}: Breakout bereits weit gelaufen – kein Einstieg")
         return None, None
-    if volume < avg_volume * 1.1:
-        log_print(f"{symbol}: Breakout, aber kein signifikantes Volumen")
+    if breakout and signal_1m == "SHORT" and price < df['low'].iloc[-21:-1].min() * 0.99:
+        log_print(f"{symbol}: Breakdown bereits weit gelaufen – kein Einstieg")
         return None, None
+
+    if breakout and signal_1m == "LONG":
+        if candle_close < prev_resistance or candle_close < candle_open:
+            log_print(f"{symbol}: Breakout, aber Candle nicht über Widerstand geschlossen")
+            return None, None
+        if volume < avg_volume * 1.1:
+            log_print(f"{symbol}: Breakout, aber kein signifikantes Volumen")
+            return None, None
 
 # 🧭 Marktstimmungs-Warnung setzen, wenn Signal gegen Mehrheit läuft
 if signal_1m == "LONG" and total_short_signals > total_long_signals * 1.5:
