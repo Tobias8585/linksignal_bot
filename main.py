@@ -41,10 +41,9 @@ last_status_time = 0
 last_breakout_check = 0
 low_coins = []
 pre_breakout_coins = []
+market_sentiment = {"long": 0, "short": 0}
 low_coins_24h = []
 low_coins_12h = []
-reversal_candidates = []  # ⬅️ HIER eingefügt
-market_sentiment = {"long": 0, "short": 0}
 btc_strength_ok = True  # BTC-Stärke-Standardwert, wird beim Start als "stark" angenommen
 
 
@@ -407,60 +406,59 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Kein Signal – ATR zu niedrig")
         return None, None
 
-strong_volume = volume > avg_volume * 1.3
-ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
+    strong_volume = volume > avg_volume * 1.3
+    ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
 
-if count_1m == 2:
-    if not (strong_volume and breakout):
-        log_print(f"{symbol}: 2/3 aber kein Breakout oder Volumen")
+    if count_1m == 2:
+        if not (strong_volume and breakout):
+            log_print(f"{symbol}: 2/3 aber kein Breakout oder Volumen")
+            return None, None
+        if signal_1m == "SHORT" and not (ema_trend_down and ema50_trend_down):
+            log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
+            return None, None
+
+    pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
+    if pre_breakout:
+        pre_breakout_coins.append(symbol)
+
+    if is_near_recent_low(df, window=50, tolerance=0.02):
+        low_coins.append(symbol)
+
+    if is_reversal_candidate(df):
+        send_telegram(f"🔄 *Reversal-Kandidat erkannt*: {symbol}\nCoin zeigt starke Umkehrsignale (RSI/CCI/MACD/Volumen).")
+
+    if is_near_recent_low(df, window=288, tolerance=0.03):
+        low_coins_24h.append(symbol)
+
+    if is_near_recent_low(df, window=144, tolerance=0.03):
+        low_coins_12h.append(symbol)
+
+
+       # 🔢 Neue gewichtete Signalqualität
+    score = 0
+    max_score = 11  # Summe aller Gewichtungen
+
+    score += 2 if (signal_1m == "LONG" and rsi < 35) or (signal_1m == "SHORT" and rsi > 70) else 0
+    score += 2 if breakout else 0
+    score += 1.5 if ema_cross else 0
+    score += 1.5 if strong_volume else 0
+    score += 1 if macd_cross else 0
+    score += 1 if bollinger_signal else 0
+    score += 1 if fib_signal else 0
+    score += 1 if pre_breakout else 0
+
+    percentage = int(min(100, (score / max_score) * 100))
+    percentage = max(0, percentage)  # Sicherheitsgrenze
+
+    # 🟢 Signalstärke-Titel
+    if score >= 8:
+        signal_strength = "🟢 Sehr starkes Signal"
+    elif score >= 5:
+        signal_strength = "🟡 Gutes Signal"
+    elif score >= 3:
+        signal_strength = "🔸 Mögliches Signal"
+    else:
         return None, None
-    if signal_1m == "SHORT" and not (ema_trend_down and ema50_trend_down):
-        log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
-        return None, None
-
-
-pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
-if pre_breakout:
-    pre_breakout_coins.append(symbol)
-
-if is_near_recent_low(df, window=50, tolerance=0.02):
-    low_coins.append(symbol)
-
-if is_reversal_candidate(df):
-    reversal_candidates.append(symbol)
-
-if is_near_recent_low(df, window=288, tolerance=0.03):
-    low_coins_24h.append(symbol)
-
-if is_near_recent_low(df, window=144, tolerance=0.03):
-    low_coins_12h.append(symbol)
-# 🔢 Neue gewichtete Signalqualität
-score = 0
-max_score = 11
-
-score += 2 if (signal_1m == "LONG" and rsi < 35) or (signal_1m == "SHORT" and rsi > 70) else 0
-score += 2 if breakout else 0
-score += 1.5 if ema_cross else 0
-score += 1.5 if strong_volume else 0
-score += 1 if macd_cross else 0
-score += 1 if bollinger_signal else 0
-score += 1 if fib_signal else 0
-score += 1 if pre_breakout else 0
-
-percentage = int(min(100, (score / max_score) * 100))
-percentage = max(0, percentage)  # Sicherheitsgrenze
-
-
-  # 🟢 Signalstärke-Titel
-if score >= 8:
-    signal_strength = "🟢 Sehr starkes Signal"
-elif score >= 5:
-    signal_strength = "🟡 Gutes Signal"
-elif score >= 3:
-    signal_strength = "🔸 Mögliches Signal"
-else:
-    return None, None
-
 
     # 📉 Marktstimmung widerspricht Signal → Qualität abwerten
     if signal_1m == "LONG" and total_short_signals > total_long_signals * 1.5:
