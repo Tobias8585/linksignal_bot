@@ -434,22 +434,22 @@ if is_near_recent_low(df, window=288, tolerance=0.03):
 
 if is_near_recent_low(df, window=144, tolerance=0.03):
     low_coins_12h.append(symbol)
-
 # 🔢 Neue gewichtete Signalqualität
 score = 0
 max_score = 11
 
-    score += 2 if (signal_1m == "LONG" and rsi < 35) or (signal_1m == "SHORT" and rsi > 70) else 0
-    score += 2 if breakout else 0
-    score += 1.5 if ema_cross else 0
-    score += 1.5 if strong_volume else 0
-    score += 1 if macd_cross else 0
-    score += 1 if bollinger_signal else 0
-    score += 1 if fib_signal else 0
-    score += 1 if pre_breakout else 0
+score += 2 if (signal_1m == "LONG" and rsi < 35) or (signal_1m == "SHORT" and rsi > 70) else 0
+score += 2 if breakout else 0
+score += 1.5 if ema_cross else 0
+score += 1.5 if strong_volume else 0
+score += 1 if macd_cross else 0
+score += 1 if bollinger_signal else 0
+score += 1 if fib_signal else 0
+score += 1 if pre_breakout else 0
 
-    percentage = int(min(100, (score / max_score) * 100))
-    percentage = max(0, percentage)  # Sicherheitsgrenze
+percentage = int(min(100, (score / max_score) * 100))
+percentage = max(0, percentage)  # Sicherheitsgrenze
+
 
     # 🟢 Signalstärke-Titel
     if score >= 8:
