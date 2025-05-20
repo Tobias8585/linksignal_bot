@@ -289,8 +289,8 @@ df_5m['high'] = df_5m['high'].astype(float)
 df_5m['low'] = df_5m['low'].astype(float)
 df_5m['close'] = df_5m['close'].astype(float)
 
-if df_1m is None or df_5m is None:
-    return None, None
+    if df_1m is None or df_5m is None
+        return None, None
 
 
     signal_1m, count_1m = get_simple_signal(df_1m)
