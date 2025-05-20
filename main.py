@@ -374,9 +374,9 @@ def analyze_combined(symbol):
         reasons.append("Heikin-Ashi negativ")
     if signal_1m == "SHORT" and last_ha_close > last_ha_open:
         reasons.append("Heikin-Ashi positiv")
-    if signal_1m == "LONG" and rsi >= 35:
+    if signal_1m == "LONG" and rsi >= 38:
         reasons.append("RSI nicht im Long-Bereich (<35)")
-    if signal_1m == "SHORT" and rsi <= 70:
+    if signal_1m == "SHORT" and rsi <= 67:
         reasons.append("RSI nicht im Short-Bereich (>70)")
     if atr < price * 0.003:
         reasons.append("ATR zu niedrig (Volatilität)")
@@ -385,7 +385,7 @@ def analyze_combined(symbol):
     if signal_1m == "SHORT" and ema >= ema50 * 0.999:
         reasons.append("EMA-Trend nicht negativ")
     if not macd_cross:
-        reasons.append("MACD-Cross fehlt")
+        log_print(f"{symbol}: Hinweis – MACD-Cross fehlt, aber nicht kritisch")
     if not breakout:
         reasons.append("Kein Breakout-Signal")
     if signal_1m == "LONG" and candle_close < candle_open:
