@@ -382,9 +382,47 @@ def analyze_combined(symbol):
     adx = ADXIndicator(df['high'], df['low'], df['close'], window=14).adx().iloc[-1]
     log_print(f"{symbol}: ADX-Wert liegt bei {adx:.2f}")  # 🔍 Nur Logging, keine Wirkung
 
-    if adx < 25:
-        log_print(f"{symbol}: Kein Signal – ADX ({adx:.2f}) < 25 → Trend zu schwach")
-        return None, None
+# ✅ Strukturierte Fehleranalyse – warum kein Signal
+reasons = []
+
+if adx < 25:
+    reasons.append("ADX < 25")
+
+if signal_1m == "LONG" and last_ha_close < last_ha_open:
+    reasons.append("Heikin-Ashi negativ")
+if signal_1m == "SHORT" and last_ha_close > last_ha_open:
+    reasons.append("Heikin-Ashi positiv")
+
+if signal_1m == "LONG" and rsi >= 35:
+    reasons.append("RSI nicht im Long-Bereich (<35)")
+if signal_1m == "SHORT" and rsi <= 70:
+    reasons.append("RSI nicht im Short-Bereich (>70)")
+
+if atr < price * 0.003:
+    reasons.append("ATR zu niedrig (Volatilität)")
+
+if signal_1m == "LONG" and ema <= ema50 * 1.001:
+    reasons.append("EMA-Trend nicht positiv")
+if signal_1m == "SHORT" and ema >= ema50 * 0.999:
+    reasons.append("EMA-Trend nicht negativ")
+
+if not macd_cross:
+    reasons.append("MACD-Cross fehlt")
+
+if not breakout:
+    reasons.append("Kein Breakout-Signal")
+
+if signal_1m == "LONG" and candle_close < candle_open:
+    reasons.append("Aktuelle Candle rot")
+
+if signal_1m == "LONG" and df_1m['close'].iloc[-2] < df_1m['open'].iloc[-2]:
+    reasons.append("Letzte abgeschlossene Candle rot")
+
+if reasons:
+    reason_text = f"{symbol}: Kein Signal – " + ", ".join(reasons)
+    log_print(reason_text)
+    return None, reason_text
+
 
 
     recent_high = df['high'].iloc[-50:].max()
