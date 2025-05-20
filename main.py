@@ -359,12 +359,24 @@ def analyze_combined(symbol):
     macd_cross = macd_line > macd_signal if signal_1m == "LONG" else macd_line < macd_signal
 
     if len(df) < 20:
-        log_print(f"{symbol}: Zu wenig Daten für ADX-Berechnung (nur {len(df)} Kerzen)")
+        log_print(f"{symbol}: Zu wenig Daten für ADX-/ATR-Berechnung (nur {len(df)} Kerzen)")
         return None, None
 
     adx = ADXIndicator(df['high'], df['low'], df['close'], window=14).adx().iloc[-1]
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
     volatility_pct = atr / price * 100
+
+    # 🟡 Logging aktivieren
+    if pd.isna(adx):
+        log_print(f"{symbol}: ⚠️ ADX ist NaN")
+    else:
+        log_print(f"{symbol}: ADX-Wert liegt bei {adx:.2f}")
+
+    if pd.isna(atr):
+        log_print(f"{symbol}: ⚠️ ATR ist NaN")
+    else:
+        log_print(f"{symbol}: ATR = {atr:.4f} | Volatilität = {volatility_pct:.2f} %")
+
 
     # Fehleranalyse
     reasons = []
