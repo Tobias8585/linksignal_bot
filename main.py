@@ -282,9 +282,12 @@ def analyze_combined(symbol):
 
     signal_1m, count_1m = get_simple_signal(df_1m)
     signal_5m, count_5m = get_simple_signal(df_5m)
-    if not signal_1m:
-        log_print(f"{symbol}: Kein 1m-Signal")
-        return None, None
+    
+    # 🔄 Doppelanalyse: Ein Signal in 1m oder 5m reicht
+    if not signal_1m and not signal_5m:
+    log_print(f"{symbol}: Kein Signal in 1m oder 5m – übersprungen")
+    return None, None
+
 
     if not btc_strength_ok and signal_1m == "LONG":
         log_print(f"{symbol}: ⚠️ BTC schwach – Vorsicht bei LONG-Signal")
