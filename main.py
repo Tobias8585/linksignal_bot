@@ -289,7 +289,7 @@ def analyze_combined(symbol):
     df_5m['low'] = df_5m['low'].astype(float)
     df_5m['close'] = df_5m['close'].astype(float)
 
-    if df_1m is None or df_5m is None
+    if df_1m is None or df_5m is None:
         return None, None
 
 
