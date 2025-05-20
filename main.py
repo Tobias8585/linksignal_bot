@@ -399,7 +399,7 @@ def analyze_combined(symbol):
     if not macd_cross:
         log_print(f"{symbol}: Hinweis – MACD-Cross fehlt, aber nicht kritisch")
     if not breakout:
-        reasons.append("Kein Breakout-Signal")
+        log_print(f"{symbol}: Hinweis – Kein Breakout-Signal, aber kein Ausschlusskriterium mehr")
     if signal_1m == "LONG" and candle_close < candle_open:
         reasons.append("Aktuelle Candle rot")
     if signal_1m == "LONG" and df_1m['close'].iloc[-2] < df_1m['open'].iloc[-2]:
