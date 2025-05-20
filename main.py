@@ -401,7 +401,7 @@ def analyze_combined(symbol):
     # Fehleranalyse
     reasons = []
     if adx < 22.5:
-        reasons.append("ADX < 25")
+        reasons.append("ADX < 22.5")
     if signal_1m == "LONG" and last_ha_close < last_ha_open:
         reasons.append("Heikin-Ashi negativ")
     if signal_1m == "SHORT" and last_ha_close > last_ha_open:
