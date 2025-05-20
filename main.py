@@ -379,10 +379,13 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Zu wenig Daten für ADX-Berechnung (nur {len(df)} Kerzen)")
         return None, None
 
-    adx_value = ADXIndicator(high=df['high'], low=df['low'], close=df['close'], window=14).adx().iloc[-1]
-    if adx_value < 25:
-        log_print(f"{symbol}: Kein Signal – ADX ({adx_value:.2f}) < 25 → Trend zu schwach")
+    adx = ADXIndicator(df['high'], df['low'], df['close'], window=14).adx().iloc[-1]
+    log_print(f"{symbol}: ADX-Wert liegt bei {adx:.2f}")  # 🔍 Nur Logging, keine Wirkung
+
+    if adx < 25:
+        log_print(f"{symbol}: Kein Signal – ADX ({adx:.2f}) < 25 → Trend zu schwach")
         return None, None
+
 
     recent_high = df['high'].iloc[-50:].max()
     recent_low = df['low'].iloc[-50:].min()
