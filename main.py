@@ -285,8 +285,8 @@ def analyze_combined(symbol):
     
     # 🔄 Doppelanalyse: Ein Signal in 1m oder 5m reicht
     if not signal_1m and not signal_5m:
-    log_print(f"{symbol}: Kein Signal in 1m oder 5m – übersprungen")
-    return None, None
+        log_print(f"{symbol}: Kein Signal in 1m oder 5m – übersprungen")
+        return None, None
 
 
     if not btc_strength_ok and signal_1m == "LONG":
