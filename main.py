@@ -387,9 +387,9 @@ def analyze_combined(symbol):
     if signal_1m == "SHORT" and last_ha_close > last_ha_open:
         reasons.append("Heikin-Ashi positiv")
     if signal_1m == "LONG" and rsi >= 38:
-        reasons.append("RSI nicht im Long-Bereich (<35)")
+        reasons.append("RSI nicht im Long-Bereich (<38)")
     if signal_1m == "SHORT" and rsi <= 67:
-        reasons.append("RSI nicht im Short-Bereich (>70)")
+        reasons.append("RSI nicht im Short-Bereich (>67)")
     if atr < price * 0.003:
         reasons.append("ATR zu niedrig (Volatilität)")
     if signal_1m == "LONG" and ema <= ema50 * 1.001:
