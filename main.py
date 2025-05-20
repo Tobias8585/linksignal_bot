@@ -88,12 +88,14 @@ def is_breakout_in_preparation(df, direction="LONG"):
 
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
-    # Prüfe starke Preisänderung mit schwachem Volumen
+    # Prüfe starke Preisänderung mit abgestufter Volumenwarnung
     price_change_pct = abs(df['close'].iloc[-1] - df['open'].iloc[-1]) / df['open'].iloc[-1] * 100
-    if price_change_pct > 1.5 and volume < avg_volume:
-        log_print(f"{symbol}: Preisbewegung > 1.5 %, aber Volumen zu gering – kein Signal")
-        return None, f"{symbol}: Kein Signal – starke Preisbewegung bei schwachem Volumen"
-
+    if price_change_pct > 1.5:
+        if volume < avg_volume * 0.6:
+            log_print(f"{symbol}: Preisbewegung > 1.5 %, aber Volumen deutlich zu gering – kein Signal")
+            return None, f"{symbol}: Signal blockiert – starker Move mit extrem schwachem Volumen"
+        elif volume < avg_volume * 0.9:
+            log_print(f"{symbol}: Preisbewegung > 1.5 %, Volumen unterdurchschnittlich – Warnung")
 
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     cci = CCIIndicator(high=df['high'], low=df['low'], close=df['close'], window=20).cci().iloc[-1]
