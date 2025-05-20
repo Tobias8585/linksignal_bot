@@ -115,7 +115,7 @@ def is_breakout_in_preparation(df, direction="LONG"):
 
 
 def run_bot():
-    global last_status_time, last_breakout_check, low_coins, low_coins_24h, low_coins_12h, pre_breakout_coins, all_signal_results
+    global last_status_time, last_breakout_check, low_coins, pre_breakout_coins, all_signal_results
 
     schedule.every().day.at("07:00").do(check_market_events)
 
@@ -149,7 +149,7 @@ def run_bot():
                 f"🟢 {market_bullish_count} bullish | 🔴 {market_bearish_count} bearish | ⚪️ {market_neutral_count} neutral\n"
                 f"→ Tendenz: {market_trend}\n\n"
                 f"📉 *Tiefstände:*\n"
-                f"🔻 24h: {len(low_coins_24h)} Coins | 🔻 12h: {len(low_coins_12h)} Coins\n"
+                f"🔻 72h-Tiefstand: {len(low_coins)} Coins\n"
                 f"🔍 Kandidaten (5m): {low_list_text}\n\n"
                 f"🪙 *BTC-Stärke:* {status_btc}"
                 f"🔍 *Anzahl analysierter Coins:* {len(symbols)}"
