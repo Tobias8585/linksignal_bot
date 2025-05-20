@@ -481,7 +481,7 @@ def analyze_combined(symbol):
     if score < 3:
         return None, None
 
-    if signal_1m == "LONG":
+        if signal_1m == "LONG":
         current_open = df_1m['open'].iloc[-1]
         current_close = df_1m['close'].iloc[-1]
         if current_close <= current_open:
@@ -493,32 +493,32 @@ def analyze_combined(symbol):
             log_print(f"{symbol}: Kein LONG – letzte abgeschlossene Candle war rot")
             return None, None
 
-time.sleep(60)
-latest_close = df_1m['close'].iloc[-1]
-latest_open = df_1m['open'].iloc[-1]
-candle_size = abs(latest_close - latest_open) / latest_open
+    time.sleep(60)
+    latest_close = df_1m['close'].iloc[-1]
+    latest_open = df_1m['open'].iloc[-1]
+    candle_size = abs(latest_close - latest_open) / latest_open
 
-if signal_1m == "LONG":
-    if latest_close < latest_open:
-        if candle_size > 0.003:
-            log_print(f"{symbol}: ❌ Bestätigungscandle nach 1 Min war klar negativ – Signal verworfen")
-            return None, f"{symbol}: Abbruch – negative 1-Minuten-Bestätigung"
-        else:
-            log_print(f"{symbol}: ⚠️ Bestätigungscandle nach 1 Min war leicht negativ – Warnung")
+    if signal_1m == "LONG":
+        if latest_close < latest_open:
+            if candle_size > 0.003:
+                log_print(f"{symbol}: ❌ Bestätigungscandle nach 1 Min war klar negativ – Signal verworfen")
+                return None, f"{symbol}: Abbruch – negative 1-Minuten-Bestätigung"
+            else:
+                log_print(f"{symbol}: ⚠️ Bestätigungscandle nach 1 Min war leicht negativ – Warnung")
 
-if signal_1m == "SHORT":
-    if latest_close > latest_open:
-        if candle_size > 0.003:
-            log_print(f"{symbol}: ❌ Bestätigungscandle nach 1 Min war klar positiv – SHORT-Signal verworfen")
-            return None, f"{symbol}: Abbruch – positive 1-Minuten-Bestätigung bei SHORT"
-        else:
-            log_print(f"{symbol}: ⚠️ Bestätigungscandle nach 1 Min war leicht positiv – Warnung")
-
+    if signal_1m == "SHORT":
+        if latest_close > latest_open:
+            if candle_size > 0.003:
+                log_print(f"{symbol}: ❌ Bestätigungscandle nach 1 Min war klar positiv – SHORT-Signal verworfen")
+                return None, f"{symbol}: Abbruch – positive 1-Minuten-Bestätigung bei SHORT"
+            else:
+                log_print(f"{symbol}: ⚠️ Bestätigungscandle nach 1 Min war leicht positiv – Warnung")
 
     tp1 = price + 1.5 * atr if signal_1m == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal_1m == "LONG" else price - 2.5 * atr
     sl = price - 1.2 * atr if signal_1m == "LONG" else price + 1.2 * atr
     zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
+
 
     msg = (
         f"🔔 *Signal für: {symbol}* | *{signal_1m}* ({signal_strength})\n"
