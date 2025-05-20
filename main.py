@@ -231,20 +231,22 @@ def get_simple_signal(df):
 
     # RSI prüfen
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
-    if rsi < 35:
+    if rsi < 38:
         signal_direction = "LONG"
         count += 1
-    elif rsi > 70:
+    elif rsi > 67:
         signal_direction = "SHORT"
         count += 1
-
-    # MACD prüfen
+        
+# MACD prüfen (gelockert – auch fast gleich erlaubt)
     macd = MACD(df['close'])
     macd_line = macd.macd().iloc[-1]
     macd_signal = macd.macd_signal().iloc[-1]
-    if signal_direction == "LONG" and macd_line > macd_signal:
+    macd_diff = macd_line - macd_signal
+
+    if signal_direction == "LONG" and macd_diff > -0.003:
         count += 1
-    elif signal_direction == "SHORT" and macd_line < macd_signal:
+    elif signal_direction == "SHORT" and macd_diff < 0.003:
         count += 1
 
     return signal_direction, count
@@ -407,7 +409,8 @@ def analyze_combined(symbol):
         return None, None
 
     strong_volume = volume > avg_volume * 1.3
-    ema_cross = ema > ema50 if signal_1m == "LONG" else ema < ema50
+    ema_cross = ema > ema50 * 1.001 if signal_1m == "LONG" else ema < ema50 * 0.999
+
 
     if count_1m == 2:
         if not (strong_volume and breakout):
