@@ -304,8 +304,7 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: ⚠️ BTC schwach – Vorsicht bei LONG-Signal")
 
     if (signal_1m == "LONG" and signal_5m == "SHORT") or (signal_1m == "SHORT" and signal_5m == "LONG"):
-        log_print(f"{symbol}: Divergenz 1m/5m erkannt – kein klares Setup")
-        return None, None
+    log_print(f"{symbol}: Hinweis – Divergenz zwischen 1m und 5m")
 
     df = df_5m
     df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(float)
@@ -396,14 +395,7 @@ def analyze_combined(symbol):
         reasons.append("EMA-Trend nicht positiv")
     if signal_1m == "SHORT" and ema >= ema50 * 0.999:
         reasons.append("EMA-Trend nicht negativ")
-    if not macd_cross:
-        log_print(f"{symbol}: Hinweis – MACD-Cross fehlt, aber nicht kritisch")
-    if not breakout:
-        log_print(f"{symbol}: Hinweis – Kein Breakout-Signal, aber kein Ausschlusskriterium mehr")
-    if signal_1m == "LONG" and candle_close < candle_open:
-        reasons.append("Aktuelle Candle rot")
-    if signal_1m == "LONG" and df_1m['close'].iloc[-2] < df_1m['open'].iloc[-2]:
-        reasons.append("Letzte abgeschlossene Candle rot")
+    log_print(f"{symbol}: Hinweis – MACD-Cross fehlt, aber nicht kritisch")
 
     if reasons:
         reason_text = f"{symbol}: Kein Signal – " + ", ".join(reasons)
