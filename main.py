@@ -358,8 +358,10 @@ def analyze_combined(symbol):
     macd_cross = macd_line > macd_signal if signal_1m == "LONG" else macd_line < macd_signal
 
     if len(df) < 20:
+        log_print(f"{symbol}: Hinweis – Zu wenig Daten für ADX-/ATR-Berechnung (nur {len(df)} Kerzen)")
+        adx = None
+        atr = None
         log_print(f"{symbol}: Zu wenig Daten für ADX-/ATR-Berechnung (nur {len(df)} Kerzen)")
-        return None, None
 
     adx = ADXIndicator(df['high'], df['low'], df['close'], window=14).adx().iloc[-1]
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
