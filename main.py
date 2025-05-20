@@ -571,6 +571,7 @@ def check_all_symbols():
     global market_sentiment, all_signal_results
     global total_long_signals, total_short_signals
     global market_bullish_count, market_bearish_count, market_neutral_count
+    global symbols
 
     all_signal_results = []
     market_sentiment["long"] = 0
