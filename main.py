@@ -275,19 +275,19 @@ def analyze_combined(symbol):
 
     market_bias_warning = ""
 
-df_1m = get_klines(symbol, interval="1m", limit=50)
-df_5m = get_klines(symbol, interval="5m", limit=300)
+    df_1m = get_klines(symbol, interval="1m", limit=50)
+    df_5m = get_klines(symbol, interval="5m", limit=300)
 
-# ✅ Datentyp-Sicherheit für numerische Vergleiche
-df_1m['open'] = df_1m['open'].astype(float)
-df_1m['high'] = df_1m['high'].astype(float)
-df_1m['low'] = df_1m['low'].astype(float)
-df_1m['close'] = df_1m['close'].astype(float)
+    # ✅ Datentyp-Sicherheit für numerische Vergleiche
+    df_1m['open'] = df_1m['open'].astype(float)
+    df_1m['high'] = df_1m['high'].astype(float)
+    df_1m['low'] = df_1m['low'].astype(float)
+    df_1m['close'] = df_1m['close'].astype(float)
 
-df_5m['open'] = df_5m['open'].astype(float)
-df_5m['high'] = df_5m['high'].astype(float)
-df_5m['low'] = df_5m['low'].astype(float)
-df_5m['close'] = df_5m['close'].astype(float)
+    df_5m['open'] = df_5m['open'].astype(float)
+    df_5m['high'] = df_5m['high'].astype(float)
+    df_5m['low'] = df_5m['low'].astype(float)
+    df_5m['close'] = df_5m['close'].astype(float)
 
     if df_1m is None or df_5m is None
         return None, None
