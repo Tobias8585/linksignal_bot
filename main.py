@@ -160,8 +160,7 @@ def run_bot():
 
             last_status_time = time.time()
             low_coins = []
-            low_coins_24h = []
-            low_coins_12h = []
+           
 
 
         if time.time() - last_breakout_check > 900:
