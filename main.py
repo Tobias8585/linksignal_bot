@@ -304,7 +304,7 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: ⚠️ BTC schwach – Vorsicht bei LONG-Signal")
 
     if (signal_1m == "LONG" and signal_5m == "SHORT") or (signal_1m == "SHORT" and signal_5m == "LONG"):
-    log_print(f"{symbol}: Hinweis – Divergenz zwischen 1m und 5m")
+        log_print(f"{symbol}: Hinweis – Divergenz zwischen 1m und 5m")
 
     df = df_5m
     df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(float)
