@@ -406,13 +406,16 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: SHORT aber über Ichimoku-Kijun")
         return None, None
 
+        # 🔍 ATR & Volatilität berechnen und loggen
     atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
     volatility_pct = atr / price * 100
-    
+
+    log_print(f"{symbol}: ATR = {atr:.4f} | Volatilität = {volatility_pct:.2f} %")
 
     if atr < price * 0.003:
-        log_print(f"{symbol}: Kein Signal – ATR zu niedrig")
+        log_print(f"{symbol}: Kein Signal – ATR ({atr:.4f}) < Schwelle ({price * 0.003:.4f}) → Volatilität zu gering")
         return None, None
+
 
     strong_volume = volume > avg_volume * 1.3
     ema_cross = ema > ema50 * 1.001 if signal_1m == "LONG" else ema < ema50 * 0.999
