@@ -90,6 +90,12 @@ def is_breakout_in_preparation(df, direction="LONG"):
 
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
+    # Prüfe starke Preisänderung mit schwachem Volumen
+    price_change_pct = abs(df['close'].iloc[-1] - df['open'].iloc[-1]) / df['open'].iloc[-1] * 100
+    if price_change_pct > 1.5 and volume < avg_volume:
+        log_print(f"{symbol}: Preisbewegung > 1.5 %, aber Volumen zu gering – kein Signal")
+        return None, f"{symbol}: Kein Signal – starke Preisbewegung bei schwachem Volumen"
+
 
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     cci = CCIIndicator(high=df['high'], low=df['low'], close=df['close'], window=20).cci().iloc[-1]
@@ -259,6 +265,12 @@ def is_reversal_candidate(df):
     macd_signal = macd.macd_signal().iloc[-1]
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
+    # Prüfe starke Preisänderung mit schwachem Volumen
+    price_change_pct = abs(df['close'].iloc[-1] - df['open'].iloc[-1]) / df['open'].iloc[-1] * 100
+    if price_change_pct > 1.5 and volume < avg_volume:
+        log_print(f"{symbol}: Preisbewegung > 1.5 %, aber Volumen zu gering – kein Signal")
+        return None, f"{symbol}: Kein Signal – starke Preisbewegung bei schwachem Volumen"
+
 
     is_macd_cross = macd_line > macd_signal or macd_line < macd_signal
     is_rsi_extreme = rsi < 30 or rsi > 70
@@ -305,6 +317,7 @@ def analyze_combined(symbol):
 
     if (signal_1m == "LONG" and signal_5m == "SHORT") or (signal_1m == "SHORT" and signal_5m == "LONG"):
         log_print(f"{symbol}: Hinweis – Divergenz zwischen 1m und 5m")
+        return None, f"{symbol}: Signal blockiert wegen Divergenz 1m vs. 5m"
 
     df = df_5m
     df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(float)
@@ -314,6 +327,12 @@ def analyze_combined(symbol):
     candle_open = df['open'].iloc[-1]
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
+    # Prüfe starke Preisänderung mit schwachem Volumen
+    price_change_pct = abs(df['close'].iloc[-1] - df['open'].iloc[-1]) / df['open'].iloc[-1] * 100
+    if price_change_pct > 1.5 and volume < avg_volume:
+        log_print(f"{symbol}: Preisbewegung > 1.5 %, aber Volumen zu gering – kein Signal")
+        return None, f"{symbol}: Kein Signal – starke Preisbewegung bei schwachem Volumen"
+
     prev_resistance = df['high'].iloc[-21:-1].max()
     prev_support = df['low'].iloc[-21:-1].min()
 
@@ -382,7 +401,7 @@ def analyze_combined(symbol):
     # Fehleranalyse
     reasons = []
     if adx < 22.5:
-        reasons.append("ADX < 22.5")
+        reasons.append("ADX < 25")
     if signal_1m == "LONG" and last_ha_close < last_ha_open:
         reasons.append("Heikin-Ashi negativ")
     if signal_1m == "SHORT" and last_ha_close > last_ha_open:
@@ -439,13 +458,11 @@ def analyze_combined(symbol):
 
     if is_near_recent_low(df, window=50, tolerance=0.02):
         low_coins.append(symbol)
+    if is_near_recent_low(df, window=864, tolerance=0.03):
+        low_coins.append(symbol)
     if is_reversal_candidate(df):
         send_telegram(f"🔄 *Reversal-Kandidat erkannt*: {symbol}\nCoin zeigt starke Umkehrsignale (RSI/CCI/MACD/Volumen).")
-    if is_near_recent_low(df, window=288, tolerance=0.03):
-        low_coins_24h.append(symbol)
-    if is_near_recent_low(df, window=144, tolerance=0.03):
-        low_coins_12h.append(symbol)
-
+        
     # Score-Bewertung
     score = 0
     max_score = 11
