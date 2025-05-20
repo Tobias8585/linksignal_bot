@@ -273,7 +273,7 @@ def is_reversal_candidate(df):
 def analyze_combined(symbol):
     global market_sentiment, low_coins, pre_breakout_coins, btc_strength_ok
 
-    market_bias_warning = ""  # Hinweis zur Marktstimmung vorbereiten
+    market_bias_warning = ""
 
     df_1m = get_klines(symbol, interval="1m", limit=50)
     df_5m = get_klines(symbol, interval="5m", limit=300)
@@ -282,12 +282,10 @@ def analyze_combined(symbol):
 
     signal_1m, count_1m = get_simple_signal(df_1m)
     signal_5m, count_5m = get_simple_signal(df_5m)
-    
-    # 🔄 Doppelanalyse: Ein Signal in 1m oder 5m reicht
+
     if not signal_1m and not signal_5m:
         log_print(f"{symbol}: Kein Signal in 1m oder 5m – übersprungen")
         return None, None
-
 
     if not btc_strength_ok and signal_1m == "LONG":
         log_print(f"{symbol}: ⚠️ BTC schwach – Vorsicht bei LONG-Signal")
@@ -296,33 +294,23 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: Divergenz 1m/5m erkannt – kein klares Setup")
         return None, None
 
-    price = df_5m['close'].iloc[-1]
-    candle_close = df_5m['close'].iloc[-1]
-    candle_open = df_5m['open'].iloc[-1]
+    df = df_5m
+    df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(float)
 
-    df = df_5m  # 🔁 WICHTIG: jetzt korrekt oben gesetzt
-
-    # 🔧 Fix: Sicherstellen, dass alle Spalten numerisch sind
-    df['open'] = df['open'].astype(float)
-    df['high'] = df['high'].astype(float)
-    df['low'] = df['low'].astype(float)
-    df['close'] = df['close'].astype(float)
-
+    price = df['close'].iloc[-1]
+    candle_close = df['close'].iloc[-1]
+    candle_open = df['open'].iloc[-1]
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
     prev_resistance = df['high'].iloc[-21:-1].max()
+    prev_support = df['low'].iloc[-21:-1].min()
 
-    breakout = False
-    if signal_1m == "LONG":
-        breakout = price > prev_resistance
-    elif signal_1m == "SHORT":
-        breakout = price < df['low'].iloc[-21:-1].min()
+    breakout = (price > prev_resistance) if signal_1m == "LONG" else (price < prev_support)
 
     if breakout and signal_1m == "LONG" and price > prev_resistance * 1.01:
         log_print(f"{symbol}: Breakout bereits weit gelaufen – kein Einstieg")
         return None, None
-
-    if breakout and signal_1m == "SHORT" and price < df['low'].iloc[-21:-1].min() * 0.99:
+    if breakout and signal_1m == "SHORT" and price < prev_support * 0.99:
         log_print(f"{symbol}: Breakdown bereits weit gelaufen – kein Einstieg")
         return None, None
 
@@ -334,34 +322,16 @@ def analyze_combined(symbol):
             log_print(f"{symbol}: Breakout, aber kein signifikantes Volumen")
             return None, None
 
-    # 🧭 Marktstimmungs-Warnung setzen, wenn Signal gegen Mehrheit läuft
     if signal_1m == "LONG" and total_short_signals > total_long_signals * 1.5:
         market_bias_warning = "⚠️ *Markt bearish – LONG mit Vorsicht bewerten*"
     elif signal_1m == "SHORT" and total_long_signals > total_short_signals * 1.5:
         market_bias_warning = "⚠️ *Markt bullish – SHORT mit Vorsicht bewerten*"
 
-    # 🔸 Heikin-Ashi Trendfilter (Step 8)
     ha_close = (df['open'] + df['high'] + df['low'] + df['close']) / 4
-    ha_open = ha_close.shift(1)
-    if ha_open.isna().any():
-        ha_open = df['open']  # Fallback
-
+    ha_open = ha_close.shift(1).fillna(df['open'])
     last_ha_open = ha_open.iloc[-1]
     last_ha_close = ha_close.iloc[-1]
 
-    if signal_1m == "LONG" and last_ha_close < last_ha_open:
-        log_print(f"{symbol}: Kein LONG – Heikin-Ashi zeigt Abwärtstrend")
-        return None, None
-    if signal_1m == "SHORT" and last_ha_close > last_ha_open:
-        log_print(f"{symbol}: Kein SHORT – Heikin-Ashi zeigt Aufwärtstrend")
-        return None, None
-
-
-
-
-
-
-    # ⬇️ Der Rest deines Blocks (ab RSI usw.) kann unverändert bleiben
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     ema = df['close'].ewm(span=20).mean().iloc[-1]
     ema50 = df['close'].ewm(span=50).mean().iloc[-1]
@@ -380,54 +350,43 @@ def analyze_combined(symbol):
         return None, None
 
     adx = ADXIndicator(df['high'], df['low'], df['close'], window=14).adx().iloc[-1]
-    log_print(f"{symbol}: ADX-Wert liegt bei {adx:.2f}")  # 🔍 Nur Logging, keine Wirkung
+    atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
+    volatility_pct = atr / price * 100
 
-# ✅ Strukturierte Fehleranalyse – warum kein Signal
-reasons = []
+    # Fehleranalyse
+    reasons = []
+    if adx < 25:
+        reasons.append("ADX < 25")
+    if signal_1m == "LONG" and last_ha_close < last_ha_open:
+        reasons.append("Heikin-Ashi negativ")
+    if signal_1m == "SHORT" and last_ha_close > last_ha_open:
+        reasons.append("Heikin-Ashi positiv")
+    if signal_1m == "LONG" and rsi >= 35:
+        reasons.append("RSI nicht im Long-Bereich (<35)")
+    if signal_1m == "SHORT" and rsi <= 70:
+        reasons.append("RSI nicht im Short-Bereich (>70)")
+    if atr < price * 0.003:
+        reasons.append("ATR zu niedrig (Volatilität)")
+    if signal_1m == "LONG" and ema <= ema50 * 1.001:
+        reasons.append("EMA-Trend nicht positiv")
+    if signal_1m == "SHORT" and ema >= ema50 * 0.999:
+        reasons.append("EMA-Trend nicht negativ")
+    if not macd_cross:
+        reasons.append("MACD-Cross fehlt")
+    if not breakout:
+        reasons.append("Kein Breakout-Signal")
+    if signal_1m == "LONG" and candle_close < candle_open:
+        reasons.append("Aktuelle Candle rot")
+    if signal_1m == "LONG" and df_1m['close'].iloc[-2] < df_1m['open'].iloc[-2]:
+        reasons.append("Letzte abgeschlossene Candle rot")
 
-if adx < 25:
-    reasons.append("ADX < 25")
+    if reasons:
+        reason_text = f"{symbol}: Kein Signal – " + ", ".join(reasons)
+        log_print(reason_text)
+        return None, reason_text
 
-if signal_1m == "LONG" and last_ha_close < last_ha_open:
-    reasons.append("Heikin-Ashi negativ")
-if signal_1m == "SHORT" and last_ha_close > last_ha_open:
-    reasons.append("Heikin-Ashi positiv")
-
-if signal_1m == "LONG" and rsi >= 35:
-    reasons.append("RSI nicht im Long-Bereich (<35)")
-if signal_1m == "SHORT" and rsi <= 70:
-    reasons.append("RSI nicht im Short-Bereich (>70)")
-
-if atr < price * 0.003:
-    reasons.append("ATR zu niedrig (Volatilität)")
-
-if signal_1m == "LONG" and ema <= ema50 * 1.001:
-    reasons.append("EMA-Trend nicht positiv")
-if signal_1m == "SHORT" and ema >= ema50 * 0.999:
-    reasons.append("EMA-Trend nicht negativ")
-
-if not macd_cross:
-    reasons.append("MACD-Cross fehlt")
-
-if not breakout:
-    reasons.append("Kein Breakout-Signal")
-
-if signal_1m == "LONG" and candle_close < candle_open:
-    reasons.append("Aktuelle Candle rot")
-
-if signal_1m == "LONG" and df_1m['close'].iloc[-2] < df_1m['open'].iloc[-2]:
-    reasons.append("Letzte abgeschlossene Candle rot")
-
-if reasons:
-    reason_text = f"{symbol}: Kein Signal – " + ", ".join(reasons)
-    log_print(reason_text)
-    return None, reason_text
-
-
-
-    recent_high = df['high'].iloc[-50:].max()
-    recent_low = df['low'].iloc[-50:].min()
-    fib_618 = recent_low + 0.618 * (recent_high - recent_low)
+    # Weitere Bewertung
+    fib_618 = df['low'].iloc[-50:].min() + 0.618 * (df['high'].iloc[-50:].max() - df['low'].iloc[-50:].min())
     fib_signal = (signal_1m == "LONG" and price > fib_618) or (signal_1m == "SHORT" and price < fib_618)
 
     bb = BollingerBands(close=df['close'], window=20, window_dev=2)
@@ -444,20 +403,8 @@ if reasons:
         log_print(f"{symbol}: SHORT aber über Ichimoku-Kijun")
         return None, None
 
-        # 🔍 ATR & Volatilität berechnen und loggen
-    atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
-    volatility_pct = atr / price * 100
-
-    log_print(f"{symbol}: ATR = {atr:.4f} | Volatilität = {volatility_pct:.2f} %")
-
-    if atr < price * 0.003:
-        log_print(f"{symbol}: Kein Signal – ATR ({atr:.4f}) < Schwelle ({price * 0.003:.4f}) → Volatilität zu gering")
-        return None, None
-
-
     strong_volume = volume > avg_volume * 1.3
     ema_cross = ema > ema50 * 1.001 if signal_1m == "LONG" else ema < ema50 * 0.999
-
 
     if count_1m == 2:
         if not (strong_volume and breakout):
@@ -473,21 +420,16 @@ if reasons:
 
     if is_near_recent_low(df, window=50, tolerance=0.02):
         low_coins.append(symbol)
-
     if is_reversal_candidate(df):
         send_telegram(f"🔄 *Reversal-Kandidat erkannt*: {symbol}\nCoin zeigt starke Umkehrsignale (RSI/CCI/MACD/Volumen).")
-
     if is_near_recent_low(df, window=288, tolerance=0.03):
         low_coins_24h.append(symbol)
-
     if is_near_recent_low(df, window=144, tolerance=0.03):
         low_coins_12h.append(symbol)
 
-
-       # 🔢 Neue gewichtete Signalqualität
+    # Score-Bewertung
     score = 0
-    max_score = 11  # Summe aller Gewichtungen
-
+    max_score = 11
     score += 2 if (signal_1m == "LONG" and rsi < 35) or (signal_1m == "SHORT" and rsi > 70) else 0
     score += 2 if breakout else 0
     score += 1.5 if ema_cross else 0
@@ -498,61 +440,30 @@ if reasons:
     score += 1 if pre_breakout else 0
 
     percentage = int(min(100, (score / max_score) * 100))
-    percentage = max(0, percentage)  # Sicherheitsgrenze
-
-    # 🟢 Signalstärke-Titel
-    if score >= 8:
-        signal_strength = "🟢 Sehr starkes Signal"
-    elif score >= 5:
-        signal_strength = "🟡 Gutes Signal"
-    elif score >= 3:
-        signal_strength = "🔸 Mögliches Signal"
-    else:
+    percentage = max(0, percentage)
+    signal_strength = "🟢 Sehr starkes Signal" if score >= 8 else "🟡 Gutes Signal" if score >= 5 else "🔸 Mögliches Signal"
+    if score < 3:
         return None, None
 
-    # 📉 Marktstimmung widerspricht Signal → Qualität abwerten
-    if signal_1m == "LONG" and total_short_signals > total_long_signals * 1.5:
-        percentage -= 10
-        percentage = max(0, percentage)
-        signal_strength += " ⚠️"
-    elif signal_1m == "SHORT" and total_long_signals > total_short_signals * 1.5:
-        percentage -= 10
-        percentage = max(0, percentage)
-        signal_strength += " ⚠️"
-
-    # 🔴 Vorschlag 5: Aktuelle Candle prüfen – kein LONG bei fallender Bewegung
     if signal_1m == "LONG":
         current_open = df_1m['open'].iloc[-1]
         current_close = df_1m['close'].iloc[-1]
         if current_close <= current_open:
-            log_print(f"{symbol}: Kein Signal – aktuelle Candle fällt (Close <= Open)")
+            log_print(f"{symbol}: Kein Signal – aktuelle Candle fällt")
             return None, None
-
-
-    # 🔴 Vorschlag 7: Kein LONG bei roter letzter abgeschlossener Candle
-    if signal_1m == "LONG":
         last_close = df_1m['close'].iloc[-2]
         last_open = df_1m['open'].iloc[-2]
         if last_close < last_open:
-            log_print(f"{symbol}: Kein LONG – letzte abgeschlossene Kerze war rot")
+            log_print(f"{symbol}: Kein LONG – letzte abgeschlossene Candle war rot")
             return None, None
 
-    # ⏳ Vorschlag 6: Verzögerung zur Validierung
     time.sleep(60)
-
-
-    # Nochmals prüfen: Ist das Signal stabil geblieben?
     latest_close = df_1m['close'].iloc[-1]
     latest_open = df_1m['open'].iloc[-1]
-
-    if signal_1m == "LONG" and latest_close <= latest_open:
-        log_print(f"{symbol}: Signal abgebrochen – Candle ist nach 1 Minute nicht mehr grün")
-        return None, None
-    elif signal_1m == "SHORT" and latest_close >= latest_open:
-        log_print(f"{symbol}: Signal abgebrochen – Candle ist nach 1 Minute nicht mehr rot")
+    if (signal_1m == "LONG" and latest_close <= latest_open) or (signal_1m == "SHORT" and latest_close >= latest_open):
+        log_print(f"{symbol}: Signal abgebrochen – Candle nach 1 Minute nicht bestätigt")
         return None, None
 
-    # TP/SL & Zeitstempel nach finaler Bestätigung
     tp1 = price + 1.5 * atr if signal_1m == "LONG" else price - 1.5 * atr
     tp2 = price + 2.5 * atr if signal_1m == "LONG" else price - 2.5 * atr
     sl = price - 1.2 * atr if signal_1m == "LONG" else price + 1.2 * atr
@@ -583,17 +494,11 @@ if reasons:
         f"• SL: {sl:.4f}\n\n"
         f"🕒 *Zeit:* {zurich_time}"
     )
-    
-    # Hinweis zur Marktstimmung (wenn vorhanden)
+
     if market_bias_warning:
         msg += f"\n{market_bias_warning}"
-
-
-    # BTC-Stärkehinweis ergänzen
-    if signal_1m == "LONG" and not btc_strength_ok:
-        msg += "\n⚠️ *BTC schwach*: Long-Signal mit Vorsicht bewerten."
-    elif signal_1m == "LONG" and btc_strength_ok:
-        msg += "\n🟢 *BTC stark*: zusätzliche Unterstützung vorhanden."
+    if signal_1m == "LONG":
+        msg += "\n🟢 *BTC stark*" if btc_strength_ok else "\n⚠️ *BTC schwach*: Long-Signal mit Vorsicht bewerten."
 
     return signal_1m, msg
 
