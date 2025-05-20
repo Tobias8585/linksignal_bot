@@ -525,7 +525,7 @@ def analyze_combined(symbol):
         f"• Bestätigung: 5m *(6 Stunden Analyse)* → {signal_5m or 'kein Signal'}\n"
         f"• Trend: {'Aufwärts' if price > ema and price > ema50 else 'Abwärts' if price < ema and price < ema50 else 'Seitwärts'}\n"
         f"• RSI-Zone: {rsi:.2f}\n"
-        f"• ADX (Trendstärke): {adx_value:.2f}\n"
+        f"• ADX (Trendstärke): {adx:.2f}\n"
         f"• Volatilität: {volatility_pct:.2f} %\n\n"
         f"📉 *Indikatoren:*\n"
         f"• MACD-Cross: {'✅' if macd_cross else '❌'}\n"
