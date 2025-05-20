@@ -312,9 +312,9 @@ def analyze_combined(symbol):
     if not btc_strength_ok and signal_1m == "LONG":
         log_print(f"{symbol}: ⚠️ BTC schwach – Vorsicht bei LONG-Signal")
 
-    if (signal_1m == "LONG" and signal_5m == "SHORT") or (signal_1m == "SHORT" and signal_5m == "LONG"):
-        log_print(f"{symbol}: Hinweis – Divergenz zwischen 1m und 5m")
-        return None, f"{symbol}: Signal blockiert wegen Divergenz 1m vs. 5m"
+   if (signal_1m == "LONG" and signal_5m == "SHORT") or (signal_1m == "SHORT" and signal_5m == "LONG"):
+        log_print(f"{symbol}: ⚠️ Divergenz 1m vs. 5m – Qualitätsrisiko")
+        divergence_warning = True  # Optional: für späteren Hinweis im Telegram-Text
 
     df = df_5m
     df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].astype(float)
