@@ -481,7 +481,7 @@ def analyze_combined(symbol):
     if score < 3:
         return None, None
 
-        if signal_1m == "LONG":
+    if signal_1m == "LONG":
         current_open = df_1m['open'].iloc[-1]
         current_close = df_1m['close'].iloc[-1]
         if current_close <= current_open:
