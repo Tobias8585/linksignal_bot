@@ -591,9 +591,11 @@ def analyze_combined(symbol):
             else:
                 log_print(f"{symbol}: ⚠️ Bestätigungscandle nach 1 Min war leicht positiv – Warnung")
 
-    tp1 = price + 1.5 * atr if signal_1m == "LONG" else price - 1.5 * atr
-    tp2 = price + 2.5 * atr if signal_1m == "LONG" else price - 2.5 * atr
-    sl = price - 1.2 * atr if signal_1m == "LONG" else price + 1.2 * atr
+    # ✅ Empfohlene Take-Profit- und Stop-Loss-Strategie (moderate ATR-Basierung)
+    tp1 = price + 1.2 * atr if signal_1m == "LONG" else price - 1.2 * atr
+    tp2 = price + 2.0 * atr if signal_1m == "LONG" else price - 2.0 * atr
+    sl = price - 0.8 * atr if signal_1m == "LONG" else price + 0.8 * atr
+
     zurich_time = datetime.now(timezone("Europe/Zurich")).strftime('%d.%m.%Y %H:%M:%S')
 
 
