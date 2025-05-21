@@ -465,8 +465,8 @@ def analyze_combined(symbol):
 
         # Fehleranalyse
     reasons = []
-    if adx < 22.5:
-        reasons.append("ADX < 22.5")
+    if adx < 20:
+        reasons.append("ADX < 20")
 
     # Neue Heikin-Ashi-Logik: 3 Candles prüfen
     ha_bodies = ha_close[-3:] - ha_open[-3:]
