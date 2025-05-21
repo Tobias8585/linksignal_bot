@@ -681,9 +681,10 @@ def check_all_symbols():
 
             send_telegram(signal_msg)
             log_print(f"{symbol}: Signal gesendet\n{signal_msg}")
+            
         else:
             all_signal_results.append("NONE")
-            log_print(f"{symbol}: Kein Signal")
+            # Kein pauschales Log – analyze_combined() liefert bereits eine differenzierte Begründung
 
     # ✅ Nach dem for-Loop: Gesamtstatus berechnen
     if market_sentiment["long"] == 0 and market_sentiment["short"] == 0:
