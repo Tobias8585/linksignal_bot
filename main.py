@@ -683,7 +683,7 @@ def home():
     return "Bot mit primärer 1m-Analyse läuft."
 
 
-    @app.route('/webhook', methods=['POST'])
+@app.route('/webhook', methods=['POST'])
 def webhook():
     data = request.get_json()
     symbol = data.get('symbol')
