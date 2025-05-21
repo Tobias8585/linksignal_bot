@@ -451,7 +451,7 @@ else:
     if reasons:
         reason_text = f"{symbol}: Kein Signal – " + ", ".join(reasons)
         log_print(reason_text)
-        return None, reason_text
+    return None, reason_text
 
     # Weitere Bewertung
     fib_618 = df['low'].iloc[-50:].min() + 0.618 * (df['high'].iloc[-50:].max() - df['low'].iloc[-50:].min())
