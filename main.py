@@ -389,28 +389,28 @@ def analyze_combined(symbol):
     macd_signal = macd.macd_signal().iloc[-1]
     macd_cross = macd_line > macd_signal if signal_1m == "LONG" else macd_line < macd_signal
 
-    # ADX & ATR Berechnung mit Schutz vor fehlenden oder unvollständigen Daten
-try:
-    adx_series = ADXIndicator(df['high'], df['low'], df['close'], window=14).adx()
-    adx = adx_series.iloc[-1] if len(adx_series) >= 15 else None
-    atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
-    volatility_pct = atr / price * 100 if atr else None
-except Exception as e:
-    log_print(f"{symbol}: ⚠️ Fehler bei ADX-/ATR-Berechnung: {e}")
-    adx = None
-    atr = None
-    volatility_pct = None
+       # ADX & ATR Berechnung mit Schutz vor fehlenden oder unvollständigen Daten
+    try:
+        adx_series = ADXIndicator(df['high'], df['low'], df['close'], window=14).adx()
+        adx = adx_series.iloc[-1] if len(adx_series) >= 15 else None
+        atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
+        volatility_pct = atr / price * 100 if atr else None
+    except Exception as e:
+        log_print(f"{symbol}: ⚠️ Fehler bei ADX-/ATR-Berechnung: {e}")
+        adx = None
+        atr = None
+        volatility_pct = None
 
-# Logging der Ergebnisse
-if adx is None:
-    log_print(f"{symbol}: ⚠️ ADX konnte nicht berechnet werden")
-else:
-    log_print(f"{symbol}: ADX-Wert liegt bei {adx:.2f}")
+    # Logging der Ergebnisse
+    if adx is None:
+        log_print(f"{symbol}: ⚠️ ADX konnte nicht berechnet werden")
+    else:
+        log_print(f"{symbol}: ADX-Wert liegt bei {adx:.2f}")
 
-if atr is None:
-    log_print(f"{symbol}: ⚠️ ATR konnte nicht berechnet werden")
-else:
-    log_print(f"{symbol}: ATR = {atr:.4f} | Volatilität = {volatility_pct:.2f} %")
+    if atr is None:
+        log_print(f"{symbol}: ⚠️ ATR konnte nicht berechnet werden")
+    else:
+        log_print(f"{symbol}: ATR = {atr:.4f} | Volatilität = {volatility_pct:.2f} %")
 
 
 
