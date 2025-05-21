@@ -264,11 +264,24 @@ def is_reversal_candidate(df):
     macd_signal = macd.macd_signal().iloc[-1]
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(window=20).mean().iloc[-1]
-    # Prüfe starke Preisänderung mit schwachem Volumen
+
+    # Preisbewegung prüfen
     price_change_pct = abs(df['close'].iloc[-1] - df['open'].iloc[-1]) / df['open'].iloc[-1] * 100
-    if price_change_pct > 1.5 and volume < avg_volume:
-        log_print(f"{symbol}: Preisbewegung > 1.5 %, aber Volumen zu gering – kein Signal")
-        return None, f"{symbol}: Kein Signal – starke Preisbewegung bei schwachem Volumen"
+    if price_change_pct > 1.5 and volume < avg_volume * 0.6:
+        log_print(f"{symbol}: ❌ Reversal abgebrochen – starker Move bei sehr geringem Volumen")
+        return False, None
+    elif price_change_pct > 1.5 and volume < avg_volume * 0.9:
+        log_print(f"{symbol}: ⚠️ Reversal-Warnung – Volumen leicht unterdurchschnittlich")
+
+    # Kriterien für Long-Reversal
+    if rsi < 30 and cci < -100 and macd_line > macd_signal:
+        return True, "LONG"
+    # Kriterien für Short-Reversal
+    elif rsi > 70 and cci > 100 and macd_line < macd_signal:
+        return True, "SHORT"
+    else:
+        return False, None
+
 
 
     is_macd_cross = macd_line > macd_signal or macd_line < macd_signal
