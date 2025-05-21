@@ -871,15 +871,29 @@ def place_order(symbol, direction, quantity, tp, sl):
     if not bot_active:
         log_print(f"{symbol}: Bot inaktiv – keine Orders mehr.")
         return
+
+    client = get_binance_client(CHAT_ID)
+    if client is None:
+        log_print(f"{symbol}: Kein API-Client verfügbar – Order nicht möglich.")
+        return
+
     try:
         side = "BUY" if direction == "LONG" else "SELL"
+        position_side = "LONG" if direction == "LONG" else "SHORT"
+
         order = client.new_order(
             symbol=symbol,
             side=side,
+            positionSide=position_side,
             type="MARKET",
             quantity=quantity
         )
-        log_print(f"{symbol}: Order ausgeführt – {side}, Menge: {quantity}")
-        send_telegram(f"📈 *Trade ausgeführt*: {symbol}\n➡️ {side} {quantity}\nTP: {tp:.4f}, SL: {sl:.4f}")
+
+        log_print(f"{symbol}: Order ausgeführt – {side} ({position_side}), Menge: {quantity}")
+        send_telegram(
+            f"📈 *Trade ausgeführt*: {symbol}\n"
+            f"➡️ {side} ({position_side}) {quantity}\n"
+            f"🎯 TP: {tp:.4f} | 🛑 SL: {sl:.4f}"
+        )
     except Exception as e:
         log_print(f"{symbol}: ❌ Orderfehler: {e}")
