@@ -425,41 +425,39 @@ if signal_1m == "SHORT" and ema >= ema50 * 0.999:
     reasons.append("EMA-Trend nicht negativ")
 
 log_print(f"{symbol}: Hinweis – MACD-Cross fehlt, aber nicht kritisch")
-
 if reasons:
     reason_text = f"{symbol}: Kein Signal – " + ", ".join(reasons)
     log_print(reason_text)
     return None, reason_text
 
+# Weitere Bewertung
+fib_618 = df['low'].iloc[-50:].min() + 0.618 * (df['high'].iloc[-50:].max() - df['low'].iloc[-50:].min())
+fib_signal = (signal_1m == "LONG" and price > fib_618) or (signal_1m == "SHORT" and price < fib_618)
 
-    # Weitere Bewertung
-    fib_618 = df['low'].iloc[-50:].min() + 0.618 * (df['high'].iloc[-50:].max() - df['low'].iloc[-50:].min())
-    fib_signal = (signal_1m == "LONG" and price > fib_618) or (signal_1m == "SHORT" and price < fib_618)
+bb = BollingerBands(close=df['close'], window=20, window_dev=2)
+bb_upper = bb.bollinger_hband().iloc[-1]
+bb_lower = bb.bollinger_lband().iloc[-1]
+bollinger_signal = (signal_1m == "LONG" and price < bb_lower) or (signal_1m == "SHORT" and price > bb_upper)
 
-    bb = BollingerBands(close=df['close'], window=20, window_dev=2)
-    bb_upper = bb.bollinger_hband().iloc[-1]
-    bb_lower = bb.bollinger_lband().iloc[-1]
-    bollinger_signal = (signal_1m == "LONG" and price < bb_lower) or (signal_1m == "SHORT" and price > bb_upper)
+ichimoku = IchimokuIndicator(high=df['high'], low=df['low'], window1=9, window2=26, window3=52)
+kijun_sen = ichimoku.ichimoku_base_line().iloc[-1]
+if signal_1m == "LONG" and price < kijun_sen:
+    log_print(f"{symbol}: LONG aber unter Ichimoku-Kijun")
+    return None, None
+if signal_1m == "SHORT" and price > kijun_sen:
+    log_print(f"{symbol}: SHORT aber über Ichimoku-Kijun")
+    return None, None
 
-    ichimoku = IchimokuIndicator(high=df['high'], low=df['low'], window1=9, window2=26, window3=52)
-    kijun_sen = ichimoku.ichimoku_base_line().iloc[-1]
-    if signal_1m == "LONG" and price < kijun_sen:
-        log_print(f"{symbol}: LONG aber unter Ichimoku-Kijun")
+strong_volume = volume > avg_volume * 1.3
+ema_cross = ema > ema50 * 1.001 if signal_1m == "LONG" else ema < ema50 * 0.999
+
+if count_1m == 2:
+    if not (strong_volume and breakout):
+        log_print(f"{symbol}: 2/3 aber kein Breakout oder Volumen")
         return None, None
-    if signal_1m == "SHORT" and price > kijun_sen:
-        log_print(f"{symbol}: SHORT aber über Ichimoku-Kijun")
+    if signal_1m == "SHORT" and not (ema_trend_down and ema50_trend_down):
+        log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
         return None, None
-
-    strong_volume = volume > avg_volume * 1.3
-    ema_cross = ema > ema50 * 1.001 if signal_1m == "LONG" else ema < ema50 * 0.999
-
-    if count_1m == 2:
-        if not (strong_volume and breakout):
-            log_print(f"{symbol}: 2/3 aber kein Breakout oder Volumen")
-            return None, None
-        if signal_1m == "SHORT" and not (ema_trend_down and ema50_trend_down):
-            log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
-            return None, None
 
     pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
     if pre_breakout:
