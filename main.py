@@ -470,12 +470,16 @@ def analyze_combined(symbol):
     if pre_breakout:
         pre_breakout_coins.append(symbol)
 
-    if is_near_recent_low(df, window=50, tolerance=0.02):
-        low_coins.append(symbol)
-    if is_near_recent_low(df, window=864, tolerance=0.03):
-        low_coins.append(symbol)
+    # 72h-Tiefstand erkennen (nur wenn genug Daten vorhanden)
+    if len(df) >= 864:
+        min_price = df['low'].iloc[-864:].min()
+        current_price = df['close'].iloc[-1]
+        if current_price <= min_price * 1.005:
+            low_coins.append(symbol)
+
     if is_reversal_candidate(df):
         send_telegram(f"🔄 *Reversal-Kandidat erkannt*: {symbol}\nCoin zeigt starke Umkehrsignale (RSI/CCI/MACD/Volumen).")
+
         
     # Score-Bewertung
     score = 0
