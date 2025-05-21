@@ -877,6 +877,10 @@ def place_order(symbol, direction, quantity, tp, sl):
         log_print(f"{symbol}: Kein API-Client verfügbar – Order nicht möglich.")
         return
 
+    if quantity < 0.001:
+        log_print(f"{symbol}: ⚠️ Ordermenge {quantity} zu klein – Order übersprungen")
+        return
+
     try:
         side = "BUY" if direction == "LONG" else "SELL"
         position_side = "LONG" if direction == "LONG" else "SHORT"
