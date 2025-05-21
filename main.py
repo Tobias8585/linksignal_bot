@@ -421,6 +421,26 @@ def analyze_combined(symbol):
     macd_signal = macd.macd_signal().iloc[-1]
     macd_cross = macd_line > macd_signal if signal_1m == "LONG" else macd_line < macd_signal
 
+    # 1. ❌ Deutlicher MACD-Widerspruch – Signal wird verworfen
+    if signal_1m == "LONG" and macd_diff < -0.03:
+        log_print(f"{symbol}: ❌ MACD deutlich negativ – LONG-Signal abgebrochen")
+        return None, f"{symbol}: Abbruch – MACD klar gegen LONG"
+    elif signal_1m == "SHORT" and macd_diff > 0.03:
+        log_print(f"{symbol}: ❌ MACD deutlich positiv – SHORT-Signal abgebrochen")
+        return None, f"{symbol}: Abbruch – MACD klar gegen SHORT"
+
+    # 2. ❕ Kein MACD-Cross, aber kein Ausschlussgrund → nur Hinweis
+    elif abs(macd_diff) < 0.005:
+        log_print(f"{symbol}: Hinweis – MACD-Cross fehlt, aber nicht kritisch")
+
+    # 3. ✅ Score erhöhen, wenn MACD in Signalrichtung (leicht oder stark)
+    if signal_1m == "LONG" and macd_diff > 0:
+        count += 1
+        log_print(f"{symbol}: ✅ MACD spricht für LONG – Score +1")
+    elif signal_1m == "SHORT" and macd_diff < 0:
+        count += 1
+        log_print(f"{symbol}: ✅ MACD spricht für SHORT – Score +1")
+
     if len(df) < 20:
         log_print(f"{symbol}: Hinweis – Zu wenig Daten für ADX-/ATR-Berechnung (nur {len(df)} Kerzen)")
         adx = None
@@ -469,14 +489,6 @@ def analyze_combined(symbol):
     if signal_1m == "SHORT" and ema >= ema50 * 0.995:
         reasons.append("EMA-Trend nicht negativ")
 
-    # MACD aktiv gegen das Signal?
-    if signal_1m == "LONG" and macd_line < macd_signal:
-        log_print(f"{symbol}: ⚠️ MACD spricht gegen LONG – Score wird reduziert")
-    if signal_1m == "SHORT" and macd_line > macd_signal:
-        log_print(f"{symbol}: ⚠️ MACD spricht gegen SHORT – Score wird reduziert")
-
-
-    log_print(f"{symbol}: Hinweis – MACD-Cross fehlt, aber nicht kritisch")
 
     if reasons:
         reason_text = f"{symbol}: Kein Signal – " + ", ".join(reasons)
