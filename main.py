@@ -628,6 +628,12 @@ def analyze_combined(symbol):
     if signal_1m == "LONG":
         msg += "\n🟢 *BTC stark*" if btc_strength_ok else "\n⚠️ *BTC schwach*: Long-Signal mit Vorsicht bewerten."
 
+
+    # 🟢 Automatisch Order platzieren, wenn Bot aktiv
+    if bot_active:
+        menge = round(MAX_CAPITAL / price, 3)
+        place_order(symbol, signal_1m, menge, tp1, sl)
+
     return signal_1m, msg
 
 
