@@ -431,10 +431,6 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: ❌ MACD deutlich positiv – SHORT-Signal abgebrochen")
         return None, f"{symbol}: Abbruch – MACD klar gegen SHORT"
 
-    # 2. ❕ Kein MACD-Cross, aber kein Ausschlussgrund → nur Hinweis
-    elif abs(macd_diff) < 0.005:
-        log_print(f"{symbol}: Hinweis – MACD-Cross fehlt, aber nicht kritisch")
-
     # 3. ✅ Score erhöhen, wenn MACD in Signalrichtung (leicht oder stark)
     if signal_1m == "LONG" and macd_diff > 0:
         count += 1
