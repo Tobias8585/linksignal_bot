@@ -14,9 +14,24 @@ import os
 from datetime import datetime, timedelta
 from binance.um_futures import UMFutures
 
-api_key = os.getenv("BINANCE_API_KEY")
-api_secret = os.getenv("BINANCE_API_SECRET")
-client = UMFutures(key=api_key, secret=api_secret)
+
+from binance.um_futures import UMFutures
+
+def get_binance_client(chat_id):
+    if str(chat_id) == os.getenv("CHAT_ID"):
+        return UMFutures(
+            key=os.getenv("BINANCE_API_KEY_1"),
+            secret=os.getenv("BINANCE_API_SECRET_1")
+        )
+    elif str(chat_id) == os.getenv("CHAT_ID_2"):
+        return UMFutures(
+            key=os.getenv("BINANCE_API_KEY_2"),
+            secret=os.getenv("BINANCE_API_SECRET_2")
+        )
+    else:
+        log_print(f"Unbekannte Chat-ID: {chat_id} – kein API-Zugang verfügbar")
+        return None
+
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
@@ -42,6 +57,22 @@ last_breakout_check = 0
 low_coins = []
 pre_breakout_coins = []
 market_sentiment = {"long": 0, "short": 0}
+
+# === 📌 Trading-Kontrollvariablen ===
+MAX_CAPITAL = 150.0  # USD
+MAX_DRAWDOWN = 30.0  # USD
+current_profit = 0.0
+bot_active = True
+
+def check_drawdown(profit_loss):
+    global current_profit, bot_active
+    current_profit += profit_loss
+    if current_profit <= -MAX_DRAWDOWN:
+        bot_active = False
+        msg = f"⛔️ Maximaler Verlust erreicht: {current_profit:.2f} USDT\nBot wird gestoppt."
+        log_print(msg)
+        send_telegram(msg)
+
 btc_strength_ok = True  # BTC-Stärke-Standardwert, wird beim Start als "stark" angenommen
 
 
@@ -809,3 +840,20 @@ if __name__ == "__main__":
     log_print("Telegram-Startnachricht wurde gesendet.")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
+def place_order(symbol, direction, quantity, tp, sl):
+    if not bot_active:
+        log_print(f"{symbol}: Bot inaktiv – keine Orders mehr.")
+        return
+    try:
+        side = "BUY" if direction == "LONG" else "SELL"
+        order = client.new_order(
+            symbol=symbol,
+            side=side,
+            type="MARKET",
+            quantity=quantity
+        )
+        log_print(f"{symbol}: Order ausgeführt – {side}, Menge: {quantity}")
+        send_telegram(f"📈 *Trade ausgeführt*: {symbol}\n➡️ {side} {quantity}\nTP: {tp:.4f}, SL: {sl:.4f}")
+    except Exception as e:
+        log_print(f"{symbol}: ❌ Orderfehler: {e}")
