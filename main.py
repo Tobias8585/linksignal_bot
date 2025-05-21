@@ -596,16 +596,21 @@ def check_all_symbols():
     market_bearish_count = 0
     market_neutral_count = 0
 
-    try:
-        exchange_info = client.exchange_info()
-        symbols = [
+try:
+    exchange_info = client.exchange_info()
+    symbols = [
         s['symbol'] for s in exchange_info['symbols']
-            if s['contractType'] == 'PERPETUAL' and s['symbol'].endswith("USDT")
-                ]
-                log_print(f"{len(symbols)} Futures-Coins werden analysiert.")
-    except Exception as e:
-        log_print(f"Fehler beim Laden der Symbolliste: {e}")
-        return
+        if s['contractType'] == 'PERPETUAL' and s['symbol'].endswith("USDT")
+    ]
+    log_print(f"{len(symbols)} Futures-Coins werden analysiert.")
+except Exception as e:
+    log_print(f"Fehler beim Laden der Symbolliste: {e}")
+    return
+
+if not symbols:
+    log_print("Keine Symbole zum Prüfen verfügbar.")
+    return
+
 
     if not symbols:
         log_print("Keine Symbole zum Prüfen verfügbar.")
