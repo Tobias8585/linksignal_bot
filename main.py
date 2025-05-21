@@ -313,15 +313,17 @@ def analyze_combined(symbol):
     df_5m['close'] = df_5m['close'].astype(float)
 
     if df_1m is None or df_5m is None:
-        return None, None
+        pass  # Kein früher return – vollständige Analyse wird durchgeführt
 
 
     signal_1m, count_1m = get_simple_signal(df_1m)
     signal_5m, count_5m = get_simple_signal(df_5m)
 
+    # ⚠️ Kein 1m/5m-Signal, aber wir analysieren trotzdem vollständig
+    dummy_mode = True
     if not signal_1m and not signal_5m:
         log_print(f"{symbol}: Kein Signal in 1m oder 5m – übersprungen")
-        return None, None
+        pass  # Kein früher return – vollständige Analyse wird durchgeführt
 
     if not btc_strength_ok and signal_1m == "LONG":
         log_print(f"{symbol}: ⚠️ BTC schwach – Vorsicht bei LONG-Signal")
@@ -352,18 +354,18 @@ def analyze_combined(symbol):
 
     if breakout and signal_1m == "LONG" and price > prev_resistance * 1.01:
         log_print(f"{symbol}: Breakout bereits weit gelaufen – kein Einstieg")
-        return None, None
+        pass  # Kein früher return – vollständige Analyse wird durchgeführt
     if breakout and signal_1m == "SHORT" and price < prev_support * 0.99:
         log_print(f"{symbol}: Breakdown bereits weit gelaufen – kein Einstieg")
-        return None, None
+        pass  # Kein früher return – vollständige Analyse wird durchgeführt
 
     if breakout and signal_1m == "LONG":
         if candle_close < prev_resistance or candle_close < candle_open:
             log_print(f"{symbol}: Breakout, aber Candle nicht über Widerstand geschlossen")
-            return None, None
+            pass  # Kein früher return – vollständige Analyse wird durchgeführt
         if volume < avg_volume * 1.1:
             log_print(f"{symbol}: Breakout, aber kein signifikantes Volumen")
-            return None, None
+            pass  # Kein früher return – vollständige Analyse wird durchgeführt
 
     if signal_1m == "LONG" and total_short_signals > total_long_signals * 1.5:
         market_bias_warning = "⚠️ *Markt bearish – LONG mit Vorsicht bewerten*"
@@ -462,10 +464,10 @@ def analyze_combined(symbol):
     kijun_sen = ichimoku.ichimoku_base_line().iloc[-1]
     if signal_1m == "LONG" and price < kijun_sen:
         log_print(f"{symbol}: LONG aber unter Ichimoku-Kijun")
-        return None, None
+        pass  # Kein früher return – vollständige Analyse wird durchgeführt
     if signal_1m == "SHORT" and price > kijun_sen:
         log_print(f"{symbol}: SHORT aber über Ichimoku-Kijun")
-        return None, None
+        pass  # Kein früher return – vollständige Analyse wird durchgeführt
 
     strong_volume = volume > avg_volume * 1.3
     ema_cross = ema > ema50 * 1.001 if signal_1m == "LONG" else ema < ema50 * 0.999
@@ -473,10 +475,10 @@ def analyze_combined(symbol):
     if count_1m == 2:
         if not (strong_volume and breakout):
             log_print(f"{symbol}: 2/3 aber kein Breakout oder Volumen")
-            return None, None
+            pass  # Kein früher return – vollständige Analyse wird durchgeführt
         if signal_1m == "SHORT" and not (ema_trend_down and ema50_trend_down):
             log_print(f"{symbol}: 2/3 SHORT aber Trend nicht fallend")
-            return None, None
+            pass  # Kein früher return – vollständige Analyse wird durchgeführt
 
     pre_breakout = is_breakout_in_preparation(df, direction=signal_1m)
     if pre_breakout:
@@ -499,7 +501,15 @@ def analyze_combined(symbol):
 
 
         
-    # Score-Bewertung
+    
+    if dummy_mode:
+        reasons = []
+        reasons.append("Weder 1m noch 5m Signal erkannt")
+        reasons.append("Mögliche Ursachen: RSI außerhalb der Zonen, MACD kein Cross, kein Trend")
+        reason_text = f"{symbol}: Kein Signal – " + ", ".join(reasons)
+        log_print(reason_text)
+        return None, reason_text
+# Score-Bewertung
     score = 0
     max_score = 11
     score += 2 if (signal_1m == "LONG" and rsi < 35) or (signal_1m == "SHORT" and rsi > 70) else 0
@@ -515,19 +525,19 @@ def analyze_combined(symbol):
     percentage = max(0, percentage)
     signal_strength = "🟢 Sehr starkes Signal" if score >= 8 else "🟡 Gutes Signal" if score >= 5 else "🔸 Mögliches Signal"
     if score < 3:
-        return None, None
+        pass  # Kein früher return – vollständige Analyse wird durchgeführt
 
     if signal_1m == "LONG":
         current_open = df_1m['open'].iloc[-1]
         current_close = df_1m['close'].iloc[-1]
         if current_close <= current_open:
             log_print(f"{symbol}: Kein Signal – aktuelle Candle fällt")
-            return None, None
+            pass  # Kein früher return – vollständige Analyse wird durchgeführt
         last_close = df_1m['close'].iloc[-2]
         last_open = df_1m['open'].iloc[-2]
         if last_close < last_open:
             log_print(f"{symbol}: Kein LONG – letzte abgeschlossene Candle war rot")
-            return None, None
+            pass  # Kein früher return – vollständige Analyse wird durchgeführt
 
     time.sleep(60)
     latest_close = df_1m['close'].iloc[-1]
