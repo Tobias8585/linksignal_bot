@@ -162,7 +162,7 @@ def run_bot():
 
             last_status_time = time.time()
             low_coins = []
-
+           
 
 
         if time.time() - last_breakout_check > 900:
@@ -242,7 +242,7 @@ def get_simple_signal(df):
     elif rsi > 67:
         signal_direction = "SHORT"
         count += 1
-
+        
 # MACD prüfen (gelockert – auch fast gleich erlaubt)
     macd = MACD(df['close'])
     macd_line = macd.macd().iloc[-1]
@@ -255,7 +255,7 @@ def get_simple_signal(df):
         count += 1
 
     return signal_direction, count
-
+    
 def is_reversal_candidate(df):
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     cci = CCIIndicator(high=df['high'], low=df['low'], close=df['close'], window=20).cci().iloc[-1]
@@ -462,7 +462,7 @@ def analyze_combined(symbol):
         low_coins.append(symbol)
     if is_reversal_candidate(df):
         send_telegram(f"🔄 *Reversal-Kandidat erkannt*: {symbol}\nCoin zeigt starke Umkehrsignale (RSI/CCI/MACD/Volumen).")
-
+        
     # Score-Bewertung
     score = 0
     max_score = 11
@@ -481,7 +481,6 @@ def analyze_combined(symbol):
     if score < 3:
         return None, None
 
-        if signal_1m == "LONG":
     if signal_1m == "LONG":
         current_open = df_1m['open'].iloc[-1]
         current_close = df_1m['close'].iloc[-1]
