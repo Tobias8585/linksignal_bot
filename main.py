@@ -665,6 +665,11 @@ def check_all_symbols():
     market_bearish_count = 0
     market_neutral_count = 0
 
+    client = get_binance_client(CHAT_ID)  # Holt den passenden API-Zugang
+    if client is None:
+        log_print("Kein Binance-Client verfügbar – Symbolliste kann nicht geladen werden.")
+        return
+
     try:
         exchange_info = client.exchange_info()
         symbols = [
