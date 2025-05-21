@@ -489,9 +489,15 @@ def analyze_combined(symbol):
         current_price = df['close'].iloc[-1]
         if current_price <= min_price * 1.005:
             low_coins.append(symbol)
+            
+reversal, direction = is_reversal_candidate(df)
+if reversal:
+    send_telegram(
+        f"🔄 *Reversal-Kandidat erkannt*: {symbol}\n"
+        f"➡️ Richtung: *{direction}*\n"
+        f"Kriterien: RSI, CCI und MACD sprechen für eine Umkehr"
+    )
 
-    if is_reversal_candidate(df):
-        send_telegram(f"🔄 *Reversal-Kandidat erkannt*: {symbol}\nCoin zeigt starke Umkehrsignale (RSI/CCI/MACD/Volumen).")
 
         
     # Score-Bewertung
