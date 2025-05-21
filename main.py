@@ -419,8 +419,8 @@ def analyze_combined(symbol):
     macd = MACD(df['close'])
     macd_line = macd.macd().iloc[-1]
     macd_signal = macd.macd_signal().iloc[-1]
-    macd_cross = macd_line > macd_signal if signal_1m == "LONG" else macd_line < macd_signal
-
+    macd_diff = macd_line - macd_signal 
+    
     # 1. ❌ Deutlicher MACD-Widerspruch – Signal wird verworfen
     if signal_1m == "LONG" and macd_diff < -0.03:
         log_print(f"{symbol}: ❌ MACD deutlich negativ – LONG-Signal abgebrochen")
