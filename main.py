@@ -424,13 +424,18 @@ def analyze_combined(symbol):
     if signal_1m == "SHORT" and ema >= ema50 * 0.995:
         reasons.append("EMA-Trend nicht negativ")
 
+     # MACD aktiv gegen das Signal?
+    if signal_1m == "LONG" and macd_line < macd_signal:
+        reasons.append("MACD spricht gegen LONG")
+    if signal_1m == "SHORT" and macd_line > macd_signal:
+        reasons.append("MACD spricht gegen SHORT")
+
     log_print(f"{symbol}: Hinweis – MACD-Cross fehlt, aber nicht kritisch")
 
     if reasons:
         reason_text = f"{symbol}: Kein Signal – " + ", ".join(reasons)
         log_print(reason_text)
         return None, reason_text
-
 
     # Weitere Bewertung
     fib_618 = df['low'].iloc[-50:].min() + 0.618 * (df['high'].iloc[-50:].max() - df['low'].iloc[-50:].min())
