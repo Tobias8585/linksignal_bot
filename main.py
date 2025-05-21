@@ -619,9 +619,9 @@ def analyze_combined(symbol):
         f"• Preis: {price:.4f}\n"
         f"• Volumen: {volume:,.0f} vs Ø{avg_volume:,.0f}\n\n"
         f"🎯 *Zielbereiche:*\n"
-        f"• TP1: {tp1:.4f}\n"
-        f"• TP2: {tp2:.4f}\n"
-        f"• SL: {sl:.4f}\n\n"
+        f"• TP1: {tp1:.4f}  *(+1.2×ATR)*\n"
+        f"• TP2: {tp2:.4f}  *(+2.0×ATR)*\n"
+        f"• SL: {sl:.4f}    *(-0.8×ATR)*\n\n"
         f"🕒 *Zeit:* {zurich_time}"
     )
 
