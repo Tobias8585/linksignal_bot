@@ -256,7 +256,7 @@ def get_simple_signal(df):
 
     return signal_direction, count
     
-def is_reversal_candidate(df):
+def is_reversal_candidate(df, symbol=None):
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     cci = CCIIndicator(high=df['high'], low=df['low'], close=df['close'], window=20).cci().iloc[-1]
     macd = MACD(df['close'])
@@ -289,7 +289,6 @@ def is_reversal_candidate(df):
     is_cci_extreme = cci < -100 or cci > 100
     is_volume_spike = volume > avg_volume * 1.5
 
-    return is_macd_cross and is_rsi_extreme and is_cci_extreme and is_volume_spike
 
 
 
@@ -389,29 +388,26 @@ def analyze_combined(symbol):
     macd_signal = macd.macd_signal().iloc[-1]
     macd_cross = macd_line > macd_signal if signal_1m == "LONG" else macd_line < macd_signal
 
-       # ADX & ATR Berechnung mit Schutz vor fehlenden oder unvollständigen Daten
-    try:
-        adx_series = ADXIndicator(df['high'], df['low'], df['close'], window=14).adx()
-        adx = adx_series.iloc[-1] if len(adx_series) >= 15 else None
-        atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
-        volatility_pct = atr / price * 100 if atr else None
-    except Exception as e:
-        log_print(f"{symbol}: ⚠️ Fehler bei ADX-/ATR-Berechnung: {e}")
+    if len(df) < 20:
+        log_print(f"{symbol}: Hinweis – Zu wenig Daten für ADX-/ATR-Berechnung (nur {len(df)} Kerzen)")
         adx = None
         atr = None
-        volatility_pct = None
+        log_print(f"{symbol}: Zu wenig Daten für ADX-/ATR-Berechnung (nur {len(df)} Kerzen)")
 
-    # Logging der Ergebnisse
-    if adx is None:
-        log_print(f"{symbol}: ⚠️ ADX konnte nicht berechnet werden")
+    adx = ADXIndicator(df['high'], df['low'], df['close'], window=14).adx().iloc[-1]
+    atr = (df['high'] - df['low']).rolling(window=14).mean().iloc[-1]
+    volatility_pct = atr / price * 100
+
+    # 🟡 Logging aktivieren
+    if pd.isna(adx):
+        log_print(f"{symbol}: ⚠️ ADX ist NaN")
     else:
         log_print(f"{symbol}: ADX-Wert liegt bei {adx:.2f}")
 
-    if atr is None:
-        log_print(f"{symbol}: ⚠️ ATR konnte nicht berechnet werden")
+    if pd.isna(atr):
+        log_print(f"{symbol}: ⚠️ ATR ist NaN")
     else:
-        log_print(f"{symbol}: ATR = {atr:.4f} | Volatilität = {volatility_pct:.2f} %")
-
+        log_print(f"{symbol}: ATR = {atr:.4f} | Volatilität = {volatility_pct:.2f} %")
 
 
         # Fehleranalyse
@@ -451,7 +447,7 @@ def analyze_combined(symbol):
     if reasons:
         reason_text = f"{symbol}: Kein Signal – " + ", ".join(reasons)
         log_print(reason_text)
-    return None, reason_text
+        return None, reason_text
 
     # Weitere Bewertung
     fib_618 = df['low'].iloc[-50:].min() + 0.618 * (df['high'].iloc[-50:].max() - df['low'].iloc[-50:].min())
@@ -493,7 +489,7 @@ def analyze_combined(symbol):
         if current_price <= min_price * 1.005:
             low_coins.append(symbol)
             
-    reversal, direction = is_reversal_candidate(df)
+    reversal, direction = is_reversal_candidate(df, symbol=symbol)
     if reversal:
         send_telegram(
             f"🔄 *Reversal-Kandidat erkannt*: {symbol}\n"
