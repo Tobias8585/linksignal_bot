@@ -469,11 +469,12 @@ def analyze_combined(symbol):
     if signal_1m == "SHORT" and ema >= ema50 * 0.995:
         reasons.append("EMA-Trend nicht negativ")
 
-     # MACD aktiv gegen das Signal?
+    # MACD aktiv gegen das Signal?
     if signal_1m == "LONG" and macd_line < macd_signal:
-        reasons.append("MACD spricht gegen LONG")
+        log_print(f"{symbol}: ⚠️ MACD spricht gegen LONG – Score wird reduziert")
     if signal_1m == "SHORT" and macd_line > macd_signal:
-        reasons.append("MACD spricht gegen SHORT")
+        log_print(f"{symbol}: ⚠️ MACD spricht gegen SHORT – Score wird reduziert")
+
 
     log_print(f"{symbol}: Hinweis – MACD-Cross fehlt, aber nicht kritisch")
 
