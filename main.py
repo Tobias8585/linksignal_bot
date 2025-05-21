@@ -419,9 +419,9 @@ def analyze_combined(symbol):
         reasons.append("RSI nicht im Short-Bereich (>67)")
     if atr < price * 0.003:
         log_print(f"{symbol}: ⚠️ Geringe Volatilität (ATR niedrig) – Signal mit Vorsicht bewerten")
-    if signal_1m == "LONG" and ema <= ema50 * 1.001:
+    if signal_1m == "LONG" and ema <= ema50 * 1.005:
         reasons.append("EMA-Trend nicht positiv")
-    if signal_1m == "SHORT" and ema >= ema50 * 0.999:
+    if signal_1m == "SHORT" and ema >= ema50 * 0.995:
         reasons.append("EMA-Trend nicht negativ")
 
     log_print(f"{symbol}: Hinweis – MACD-Cross fehlt, aber nicht kritisch")
