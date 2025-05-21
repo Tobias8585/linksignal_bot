@@ -398,14 +398,21 @@ def analyze_combined(symbol):
         log_print(f"{symbol}: ATR = {atr:.4f} | Volatilität = {volatility_pct:.2f} %")
 
 
-    # Fehleranalyse
+        # Fehleranalyse
     reasons = []
     if adx < 22.5:
         reasons.append("ADX < 22.5")
-    if signal_1m == "LONG" and last_ha_close < last_ha_open:
-        reasons.append("Heikin-Ashi negativ")
-    if signal_1m == "SHORT" and last_ha_close > last_ha_open:
-        reasons.append("Heikin-Ashi positiv")
+
+    # Neue Heikin-Ashi-Logik: 3 Candles prüfen
+    ha_bodies = ha_close[-3:] - ha_open[-3:]
+    green_count = sum(1 for x in ha_bodies if x > 0)
+    red_count = sum(1 for x in ha_bodies if x < 0)
+
+    if signal_1m == "LONG" and green_count < 2:
+        reasons.append("Heikin-Ashi: weniger als 2 von 3 grün")
+    if signal_1m == "SHORT" and red_count < 2:
+        reasons.append("Heikin-Ashi: weniger als 2 von 3 rot")
+
     if signal_1m == "LONG" and rsi >= 38:
         reasons.append("RSI nicht im Long-Bereich (<38)")
     if signal_1m == "SHORT" and rsi <= 67:
@@ -416,12 +423,14 @@ def analyze_combined(symbol):
         reasons.append("EMA-Trend nicht positiv")
     if signal_1m == "SHORT" and ema >= ema50 * 0.999:
         reasons.append("EMA-Trend nicht negativ")
+
     log_print(f"{symbol}: Hinweis – MACD-Cross fehlt, aber nicht kritisch")
 
     if reasons:
         reason_text = f"{symbol}: Kein Signal – " + ", ".join(reasons)
         log_print(reason_text)
         return None, reason_text
+
 
     # Weitere Bewertung
     fib_618 = df['low'].iloc[-50:].min() + 0.618 * (df['high'].iloc[-50:].max() - df['low'].iloc[-50:].min())
