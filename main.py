@@ -473,10 +473,10 @@ def analyze_combined(symbol):
     green_count = sum(1 for x in ha_bodies if x > 0)
     red_count = sum(1 for x in ha_bodies if x < 0)
 
-    if signal_1m == "LONG" and green_count < 2:
-        reasons.append("Heikin-Ashi: weniger als 2 von 3 grün")
-    if signal_1m == "SHORT" and red_count < 2:
-        reasons.append("Heikin-Ashi: weniger als 2 von 3 rot")
+    if signal_1m == "LONG" and green_count < 1:
+        reasons.append("Heikin-Ashi: weniger als 1 von 3 grün")
+    if signal_1m == "SHORT" and red_count < 1:
+        reasons.append("Heikin-Ashi: weniger als 1 von 3 rot")
 
     if signal_1m == "LONG" and rsi >= 38:
         reasons.append("RSI nicht im Long-Bereich (<38)")
