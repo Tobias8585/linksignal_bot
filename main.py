@@ -678,7 +678,7 @@ if not symbols:
 
 
 
-        @app.route('/')
+@app.route('/')
 def home():
     return "Bot mit primärer 1m-Analyse läuft."
 
