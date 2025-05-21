@@ -183,7 +183,7 @@ def run_bot():
                 f"🔻 72h-Tiefstand: {len(low_coins)} Coins\n"
                 f"🔍 Kandidaten (5m): {low_list_text}\n\n"
                 f"🪙 *BTC-Stärke:* {status_btc}"
-                f"🔍 *Anzahl analysierter Coins:* {len(symbols)}"
+                f"🔍 *Anzahl analysierter Coins:* {len(symbols) if 'symbols' in globals() else 'unbekannt'}"
             )
 
             try:
