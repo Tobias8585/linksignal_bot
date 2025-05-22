@@ -137,7 +137,8 @@ def analyze_symbol(symbol):
 
     if reasons:
         log_print(f"{symbol}: ❌ Kein Trade – Gründe: {', '.join(reasons)}")
-        return
+        return None, reasons  # Damit der Aufrufer es auch erkennt
+
 
     tp = price + 1.5 * atr if direction == "LONG" else price - 1.5 * atr
     sl = price - 0.9 * atr if direction == "LONG" else price + 0.9 * atr
