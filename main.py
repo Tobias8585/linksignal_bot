@@ -5,15 +5,12 @@ import schedule
 from flask import Flask, request
 from bs4 import BeautifulSoup
 import pytz
-from pytz import timezone
 import pandas as pd
 from ta.momentum import RSIIndicator
-from ta.trend import EMAIndicator, MACD, CCIIndicator, ADXIndicator
+from ta.trend import EMAIndicator, MACD, ADXIndicator
 from datetime import datetime, timedelta
 from binance.um_futures import UMFutures
 import os
-bot_active = True
-
 
 # Konstante Limits
 MAX_CAPITAL = 150.0
@@ -91,7 +88,6 @@ def analyze_symbol(symbol):
     if df is None or len(df) < 20:
         return None, ["Unzureichende Daten"]
 
-    # Berechnungen
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     macd = MACD(df['close'])
     macd_line = macd.macd().iloc[-1]
@@ -105,8 +101,6 @@ def analyze_symbol(symbol):
     atr = (df['high'] - df['low']).rolling(14).mean().iloc[-1]
 
     reasons = []
-
-    # Filtergründe
     if volume < avg_volume * 0.65:
         reasons.append("Volumen < 0.65× Durchschnitt")
     if adx < 10:
@@ -115,7 +109,6 @@ def analyze_symbol(symbol):
         reasons.append(f"RSI außerhalb der Long-/Short-Bereiche ({rsi:.2f})")
         return None, reasons
 
-    # Richtung bestimmen
     if 35 <= rsi <= 47:
         if not (ema20 > ema50):
             reasons.append("EMA20 nicht über EMA50 (kein Aufwärtstrend)")
@@ -124,7 +117,6 @@ def analyze_symbol(symbol):
             reasons.append("MACD gegen LONG")
             return None, reasons
         direction = "LONG"
-
     elif 53 <= rsi <= 65:
         if not (ema20 < ema50):
             reasons.append("EMA20 nicht unter EMA50 (kein Abwärtstrend)")
@@ -133,16 +125,13 @@ def analyze_symbol(symbol):
             reasons.append("MACD gegen SHORT")
             return None, reasons
         direction = "SHORT"
-
     else:
         reasons.append(f"RSI zu neutral für Long/Short ({rsi:.2f})")
         return None, reasons
 
-    # Falls trotzdem Gründe existieren (zusätzlicher Schutz)
     if reasons:
         return None, reasons
 
-    # Erfolgsfall: Trade vorbereiten
     tp = price + 1.5 * atr if direction == "LONG" else price - 1.5 * atr
     sl = price - 0.9 * atr if direction == "LONG" else price + 0.9 * atr
     qty = round(MAX_CAPITAL / price, 3)
@@ -163,8 +152,6 @@ def analyze_symbol(symbol):
         "msg": msg
     }, None
 
-
-# Order platzieren
 def place_order(symbol, direction, quantity, tp, sl):
     log_print(f"{symbol}: Starte Orderversuch mit qty={quantity}, TP={tp}, SL={sl}")
 
@@ -190,7 +177,7 @@ def place_order(symbol, direction, quantity, tp, sl):
                 quantity=quantity
             )
             log_print(f"{symbol}: ✅ Order {side} {quantity} gesetzt")
-            break  # Wenn erfolgreich, Schleife verlassen
+            break
         except Exception as e:
             log_print(f"{symbol}: ❌ Order-Versuch {attempt + 1} fehlgeschlagen: {e}")
             time.sleep(2)
@@ -215,16 +202,10 @@ def run_bot():
                 and s['status'] == 'TRADING'
             ]
             log_print(f"✅ Symbole geladen: {len(symbols)} Futures-Paare")
-            log_print(f"🔍 Beginne Analyse von {len(symbols)} Symbolen")
-
-            if not symbols:
-                log_print("⚠️ Keine Symbole gefunden – Prüfe exchange_info()")
-                return
         except Exception as e:
             log_print(f"❌ Fehler bei exchange_info: {e}")
             return
 
-        # Debug-Zähler initialisieren
         analyzed = 0
         signals_found = 0
         orders_placed = 0
@@ -244,21 +225,17 @@ def run_bot():
                 signals_found += 1
 
                 if bot_active:
-                    log_print(f"{symbol}: 🔄 place_order() wird jetzt ausgeführt mit qty={result['qty']}, TP={result['tp']}, SL={result['sl']}")
+                    log_print(f"{symbol}: 🔄 Order wird ausgeführt")
                     place_order(symbol, result["direction"], result["qty"], result["tp"], result["sl"])
                     orders_placed += 1
-
             except Exception as e:
                 log_print(f"{symbol}: ⚠️ Fehler bei Analyse: {e}")
 
-        # Debug-Ausgabe am Ende
         log_print(f"🧠 Debug-Zähler: Analysiert: {analyzed}, Signale: {signals_found}, Orders: {orders_placed}")
 
     except Exception as outer_error:
         log_print(f"❌ Fehler im run_bot(): {outer_error}")
 
-
-# Bot alle 5 Minuten ausführen
 schedule.every(5).minutes.do(lambda: threading.Thread(target=run_bot).start())
 
 def scheduler_loop():
@@ -266,18 +243,15 @@ def scheduler_loop():
         schedule.run_pending()
         time.sleep(1)
 
-
-# Flask Start
 @app.route('/')
 def home():
     return "Bot läuft"
 
 if __name__ == '__main__':
     send_telegram("🚀 Vereinfachter Bot gestartet")
-    threading.Thread(target=run_bot).start()  # 🔁 run_bot sofort beim Start!
+    threading.Thread(target=run_bot).start()
     threading.Thread(target=scheduler_loop).start()
     app.run(host='0.0.0.0', port=8080)
-
 
 
 
