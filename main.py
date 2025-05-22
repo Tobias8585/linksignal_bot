@@ -465,10 +465,9 @@ def analyze_combined(symbol):
 
 
         # Fehleranalyse
-    if adx < 15:
-        reasons.append("ADX < 15 – zu wenig Trend")
-    elif adx < 17:
-        log_print(f"{symbol}: ⚠️ ADX nur schwach ({adx:.2f}) – Trendkraft begrenzt")
+    reasons = []
+    if adx < 17:
+        reasons.append("ADX < 17")
 
     # Neue Heikin-Ashi-Logik: 3 Candles prüfen
     ha_bodies = ha_close[-3:] - ha_open[-3:]
@@ -539,6 +538,16 @@ def analyze_combined(symbol):
     reversal, direction = is_reversal_candidate(df, symbol=symbol)
     if reversal:
         send_telegram(
+            f"🔄 *Reversal-Kandidat erkannt*: {symbol}\n"
+            f"➡️ Richtung: *{direction}*\n"
+            f"Kriterien: RSI, CCI und MACD sprechen für eine Umkehr"
+        )
+        if bot_active:
+            menge = round(MAX_CAPITAL / price, 3)
+            tp1 = price + 1.2 * atr if direction == "LONG" else price - 1.2 * atr
+            sl = price - 0.8 * atr if direction == "LONG" else price + 0.8 * atr
+            place_order(symbol, direction, menge, tp1, sl)
+
             f"🔄 *Reversal-Kandidat erkannt*: {symbol}\n"
             f"➡️ Richtung: *{direction}*\n"
             f"Kriterien: RSI, CCI und MACD sprechen für eine Umkehr"
