@@ -164,6 +164,8 @@ def analyze_symbol(symbol):
 
 # Order platzieren
 def place_order(symbol, direction, quantity, tp, sl):
+    log_print(f"{symbol}: Starte Orderversuch mit qty={quantity}, TP={tp}, SL={sl}")
+
     client = get_binance_client(os.getenv("CHAT_ID"))
     if client is None:
         log_print(f"{symbol}: Kein Client")
@@ -181,10 +183,10 @@ def place_order(symbol, direction, quantity, tp, sl):
                 type="MARKET",
                 quantity=quantity
             )
-            log_print(f"{symbol}: Order {side} {quantity} gesetzt")
-            break
+            log_print(f"{symbol}: ✅ Order {side} {quantity} gesetzt")
+            break  # Wenn erfolgreich, Schleife verlassen
         except Exception as e:
-            log_print(f"{symbol}: Order-Versuch {attempt + 1} fehlgeschlagen: {e}")
+            log_print(f"{symbol}: ❌ Order-Versuch {attempt + 1} fehlgeschlagen: {e}")
             time.sleep(2)
 
 def run_bot():
