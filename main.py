@@ -203,7 +203,10 @@ def run_bot():
             try:
                 log_print(f"{symbol}: Analyse gestartet")  # 🟡 Diagnosezeile
                 analyze_symbol(symbol)
-                time.sleep(0.05)
+                # time.sleep(0.05)  # 💤 Auskommentiert für Geschwindigkeitstest
+            except Exception as e:
+                log_print(f"{symbol}: Fehler bei Analyse: {e}")
+
 
                 
             except Exception as e:
