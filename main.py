@@ -123,25 +123,36 @@ def analyze_symbol(symbol):
         if not (macd_line < macd_signal):
             reasons.append(f"MACD gegen SHORT ({macd_line - macd_signal:.4f})")
 
-    if reasons:
-        log_print(f"{symbol}: ❌ Kein Trade – Gründe: {', '.join(reasons)}")
-        return
+if reasons:
+    log_print(f"{symbol}: ❌ Kein Trade – Gründe: {', '.join(reasons)}")
+    return
 
-    direction = "LONG" if rsi < 40 else "SHORT"
-    tp = price + 1.5 * atr if direction == "LONG" else price - 1.5 * atr
-    sl = price - 0.9 * atr if direction == "LONG" else price + 0.9 * atr
-    qty = round(MAX_CAPITAL / price, 3)
+direction = "LONG" if rsi < 40 else "SHORT"
+tp = price + 1.5 * atr if direction == "LONG" else price - 1.5 * atr
+sl = price - 0.9 * atr if direction == "LONG" else price + 0.9 * atr
+qty = round(MAX_CAPITAL / price, 3)
 
-    msg = (
+if ema20 > ema50:
+    ema_trend_text = "bullisch ✅"
+elif ema20 < ema50:
+    ema_trend_text = "bärisch ✅"
+else:
+    ema_trend_text = "neutral ⚠️"
+
+msg = (
     f"📢 *Signal {direction} für {symbol}*\n"
-    f"RSI: {rsi:.2f}, MACD: {macd_line - macd_signal:.4f}, EMA: {ema20:.4f}/{ema50:.4f}, ADX: {adx:.2f}\n"
+    f"RSI: {rsi:.2f} | MACD-Diff: {macd_line - macd_signal:.4f}\n"
+    f"EMA20: {ema20:.4f} | EMA50: {ema50:.4f} → *Trend: {ema_trend_text}*\n"
+    f"ADX: {adx:.2f}\n"
     f"TP: {tp:.4f} | SL: {sl:.4f}"
 )
 
-    send_telegram(msg)
+send_telegram(msg)
 
-    if bot_active:
-        place_order(symbol, direction, qty, tp, sl)
+if bot_active:
+    place_order(symbol, direction, qty, tp, sl)
+
+
 
 # Order platzieren
 def place_order(symbol, direction, quantity, tp, sl):
