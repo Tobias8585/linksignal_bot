@@ -170,8 +170,10 @@ def place_order(symbol, direction, quantity, tp, sl):
         log_print(f"{symbol}: Fehler bei Order: {e}")
         
 def run_bot():
+    log_print("🚀 run_bot() gestartet – Anfang der Funktion erreicht")
     try:
         log_print("🚦 Starte neuen run_bot() Durchlauf")
+
 
         check_btc_strength()
         client = get_binance_client(os.getenv("CHAT_ID"))
@@ -188,6 +190,8 @@ def run_bot():
                 and s['status'] == 'TRADING'
             ]
             log_print(f"✅ Symbole geladen: {len(symbols)} Futures-Paare")
+            log_print(f"🔍 Beginne Analyse von {len(symbols)} Symbolen")
+
             if not symbols:
                 log_print("⚠️ Keine Symbole gefunden – Prüfe exchange_info()")
                 return
