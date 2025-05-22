@@ -243,10 +243,11 @@ def run_bot():
             except Exception as e:
                 log_print(f"{symbol}: ⚠️ Fehler bei Analyse: {e}")
 
-    except Exception as outer_error:
-        log_print(f"❌ Fehler im run_bot(): {outer_error}")
+    # Debug-Zusammenfassung
+    log_print(f"🧠 Debug-Zähler: Analysiert: {analyzed}, Signale: {signals_found}, Orders: {orders_placed}")
 
-
+except Exception as outer_error:
+    log_print(f"❌ Fehler im run_bot(): {outer_error}")
 
 
 # Bot alle 5 Minuten ausführen
