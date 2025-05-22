@@ -131,7 +131,10 @@ def analyze_symbol(symbol):
     sl = price - 0.9 * atr if direction == "LONG" else price + 0.9 * atr
     qty = round(MAX_CAPITAL / price, 3)
 
-    send_telegram(f"📢 *Signal {direction} für {symbol}*
+    send_telegram(f"📢 *Signal {direction} für {symbol}*\n"
+              f"RSI: {rsi:.2f}, MACD: {macd_line - macd_signal:.4f}, EMA: {ema20:.4f}/{ema50:.4f}, ADX: {adx:.2f}\n"
+              f"TP: {tp:.4f} | SL: {sl:.4f}")
+
 RSI: {rsi:.2f}, MACD: {macd_line - macd_signal:.4f}, EMA: {ema20:.4f}/{ema50:.4f}, ADX: {adx:.2f}
 TP: {tp:.4f} | SL: {sl:.4f}")
     if bot_active:
