@@ -548,11 +548,6 @@ def analyze_combined(symbol):
             sl = price - 0.8 * atr if direction == "LONG" else price + 0.8 * atr
             place_order(symbol, direction, menge, tp1, sl)
 
-            f"🔄 *Reversal-Kandidat erkannt*: {symbol}\n"
-            f"➡️ Richtung: *{direction}*\n"
-            f"Kriterien: RSI, CCI und MACD sprechen für eine Umkehr"
-        )
-
 
     
     if dummy_mode:
