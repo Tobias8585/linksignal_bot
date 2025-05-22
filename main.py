@@ -189,7 +189,7 @@ def run_bot():
 
 
 # Bot alle 5 Minuten ausführen
-schedule.every(5).minutes.do(run_bot)
+schedule.every(5).minutes.do(lambda: threading.Thread(target=run_bot).start())
 
 def scheduler_loop():
     while True:
