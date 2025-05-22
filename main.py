@@ -221,50 +221,19 @@ def run_bot():
                 log_print("⚠️ Keine Symbole gefunden – Prüfe exchange_info()")
                 return
         except Exception as e:
-            log_print(f"Fehler bei exchange_info: {e}")
             log_print(f"❌ Fehler bei exchange_info: {e}")
             return
 
-        for symbol in symbols:
-            try:
-                log_print(f"{symbol}: Analyse gestartet")
-                result, reasons = analyze_symbol(symbol)
-
-               
-def run_bot():
-    log_print("🚀 run_bot() gestartet – Anfang der Funktion erreicht")
-    try:
-        log_print("🚦 Starte neuen run_bot() Durchlauf")
-
-        check_btc_strength()
-        client = get_binance_client(os.getenv("CHAT_ID"))
-        if not client:
-            log_print("❌ Kein Binance-Client verfügbar")
-            return
-
-        try:
-            info = client.exchange_info()
-            symbols = [
-                s['symbol'] for s in info['symbols']
-                if s['contractType'] == 'PERPETUAL'
-                and s['quoteAsset'] == 'USDT'
-                and s['status'] == 'TRADING'
-            ]
-            log_print(f"✅ Symbole geladen: {len(symbols)} Futures-Paare")
-            log_print(f"🔍 Beginne Analyse von {len(symbols)} Symbolen")
-
-            if not symbols:
-                log_print("⚠️ Keine Symbole gefunden – Prüfe exchange_info()")
-                return
-        except Exception as e:
-            log_print(f"Fehler bei exchange_info: {e}")
-            return
+        # Debug-Zähler initialisieren
+        analyzed = 0
+        signals_found = 0
+        orders_placed = 0
 
         for symbol in symbols:
             try:
-                log_print(f"{symbol}: Analyse gestartet")
                 log_print(f"{symbol}: 🧠 Analyse gestartet")
                 result, reasons = analyze_symbol(symbol)
+                analyzed += 1
 
                 if result is None:
                     log_print(f"{symbol}: ❌ Kein Trade – Gründe: {', '.join(reasons)}")
@@ -272,21 +241,21 @@ def run_bot():
 
                 log_print(f"{symbol}: ✅ Signal erkannt → {result['direction']}")
                 send_telegram(result["msg"])
+                signals_found += 1
 
                 if bot_active:
                     log_print(f"{symbol}: 🔄 place_order() wird jetzt ausgeführt mit qty={result['qty']}, TP={result['tp']}, SL={result['sl']}")
                     place_order(symbol, result["direction"], result["qty"], result["tp"], result["sl"])
+                    orders_placed += 1
 
             except Exception as e:
-                log_print(f"{symbol}: Fehler bei Analyse: {e}")
                 log_print(f"{symbol}: ⚠️ Fehler bei Analyse: {e}")
 
+        # Debug-Ausgabe am Ende
+        log_print(f"🧠 Debug-Zähler: Analysiert: {analyzed}, Signale: {signals_found}, Orders: {orders_placed}")
+
     except Exception as outer_error:
-        log_print(f"Fehler im run_bot(): {outer_error}")
-
         log_print(f"❌ Fehler im run_bot(): {outer_error}")
-
-
 
 
 # Bot alle 5 Minuten ausführen
