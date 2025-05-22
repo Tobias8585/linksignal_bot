@@ -162,7 +162,6 @@ def place_order(symbol, direction, quantity, tp, sl):
     except Exception as e:
         log_print(f"{symbol}: Fehler bei Order: {e}")
 
-# Ablauf starten
 def run_bot():
     check_btc_strength()
     client = get_binance_client(os.getenv("CHAT_ID"))
@@ -170,7 +169,16 @@ def run_bot():
         return
     try:
         info = client.exchange_info()
-        symbols = [s['symbol'] for s in info['symbols'] if s['contractType'] == 'PERPETUAL' and s['symbol'].endswith('USDT')]
+        symbols = [
+            s['symbol'] for s in info['symbols']
+            if s['contractType'] == 'PERPETUAL'
+            and s['quoteAsset'] == 'USDT'
+            and s['status'] == 'TRADING'
+        ]
+        log_print(f"✅ Symbole geladen: {len(symbols)} Futures-Paare")
+        if not symbols:
+            log_print("⚠️ Keine Symbole gefunden – Prüfe exchange_info()")
+            return
     except Exception as e:
         log_print(f"Fehler bei exchange_info: {e}")
         return
