@@ -107,7 +107,7 @@ def analyze_symbol(symbol):
     if volume < avg_volume * 0.65:
         reasons.append("Volumen < 0.65× Durchschnitt")
     if adx < 12:
-        reasons.append(f"ADX < 15 ({adx:.2f})")
+        reasons.append(f"ADX < 12 ({adx:.2f})")
     if not (rsi < 40 or rsi > 60):
         reasons.append(f"RSI neutral ({rsi:.2f})")
 
