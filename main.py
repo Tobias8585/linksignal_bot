@@ -37,6 +37,9 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 # 🌍 Globale Zähler für Marktbreite
+# 🐞 Debug-Zählung für fast gültige Kandidaten (z. B. Score ≥ 4, aber 1 Blocker)
+debug_near_signals = 0
+
 total_long_signals = 0
 total_short_signals = 0
 
@@ -565,6 +568,12 @@ def analyze_combined(symbol):
     percentage = int(min(100, (score / max_score) * 100))
     percentage = max(0, percentage)
     signal_strength = "🟢 Sehr starkes Signal" if score >= 8 else "🟡 Gutes Signal" if score >= 5 else "🔸 Mögliches Signal"
+    
+    if score >= 4 and reasons:
+        global debug_near_signals
+        debug_near_signals += 1
+        log_print(f"{symbol}: 🐞 Fast-Signal – Score {score} mit Blockern: {', '.join(reasons)}")
+
     if score < 3:
         pass  # Kein früher return – vollständige Analyse wird durchgeführt
 
@@ -762,6 +771,8 @@ def check_all_symbols():
         sentiment_text = "Keine Signale erkannt"
 
     log_print(f"📊 Marktbreite: {total_long_signals}x LONG | {total_short_signals}x SHORT → Stimmung: {sentiment_text}")
+    log_print(f"🐞 Debug-Zähler: {debug_near_signals} fast gültige Kandidaten (Score ≥ 4 mit Blockade)")
+
 
 
 
