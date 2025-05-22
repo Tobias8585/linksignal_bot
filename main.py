@@ -84,19 +84,6 @@ def get_klines(symbol, interval="5m", limit=100):
         log_print(f"{symbol}: Fehler beim Laden: {e}")
         return None
 
-# Reversal-Signale prüfen (separat)
-def is_reversal_trade(df):
-    rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
-    cci = CCIIndicator(df['high'], df['low'], df['close'], window=20).cci().iloc[-1]
-    macd = MACD(df['close'])
-    macd_line = macd.macd().iloc[-1]
-    macd_signal = macd.macd_signal().iloc[-1]
-    if rsi < 30 and cci < -100 and macd_line > macd_signal:
-        return "LONG"
-    elif rsi > 70 and cci > 100 and macd_line < macd_signal:
-        return "SHORT"
-    return None
-
 # Hauptanalyse
 def analyze_symbol(symbol):
     df = get_klines(symbol, limit=50)
@@ -115,39 +102,38 @@ def analyze_symbol(symbol):
     price = df['close'].iloc[-1]
     atr = (df['high'] - df['low']).rolling(14).mean().iloc[-1]
 
-    # Regel 3: Volumenfilter (binär)
+    reasons = []
+
     if volume < avg_volume * 0.7:
-        log_print(f"{symbol}: ❌ Volumen < 0.7x – kein Trade")
-        return
-
-    # Regel 4: ADX-Filter (binär)
+        reasons.append("Volumen < 0.7× Durchschnitt")
     if adx < 15:
-        log_print(f"{symbol}: ❌ ADX < 15 – kein Trade")
+        reasons.append(f"ADX < 15 ({adx:.2f})")
+    if not (rsi < 40 or rsi > 60):
+        reasons.append(f"RSI neutral ({rsi:.2f})")
+
+    if rsi < 40:
+        if not (ema20 > ema50):
+            reasons.append("EMA20 nicht über EMA50 (kein Aufwärtstrend)")
+        if not (macd_line > macd_signal):
+            reasons.append(f"MACD gegen LONG ({macd_line - macd_signal:.4f})")
+    elif rsi > 60:
+        if not (ema20 < ema50):
+            reasons.append("EMA20 nicht unter EMA50 (kein Abwärtstrend)")
+        if not (macd_line < macd_signal):
+            reasons.append(f"MACD gegen SHORT ({macd_line - macd_signal:.4f})")
+
+    if reasons:
+        log_print(f"{symbol}: ❌ Kein Trade – Gründe: {', '.join(reasons)}")
         return
 
-    # Regel 1: RSI, EMA, MACD – Pflicht
-    if (rsi < 40 and ema20 > ema50 and macd_line > macd_signal):
-        direction = "LONG"
-    elif (rsi > 60 and ema20 < ema50 and macd_line < macd_signal):
-        direction = "SHORT"
-    else:
-        log_print(f"{symbol}: ❌ Signalbedingungen nicht erfüllt")
-        # Reversal-Check
-        reversal = is_reversal_trade(df)
-        if reversal:
-            tp = price + 1.2 * atr if reversal == "LONG" else price - 1.2 * atr
-            sl = price - 0.7 * atr if reversal == "LONG" else price + 0.7 * atr
-            qty = round(MAX_CAPITAL / price, 3)
-            send_telegram(f"🔄 *Reversal-Signal {reversal}* für {symbol}\nTP: {tp:.4f} | SL: {sl:.4f}")
-            if bot_active:
-                place_order(symbol, reversal, qty, tp, sl)
-        return
-
+    direction = "LONG" if rsi < 40 else "SHORT"
     tp = price + 1.5 * atr if direction == "LONG" else price - 1.5 * atr
     sl = price - 0.9 * atr if direction == "LONG" else price + 0.9 * atr
     qty = round(MAX_CAPITAL / price, 3)
 
-    send_telegram(f"📢 *Signal {direction} für {symbol}*\nRSI: {rsi:.2f}, MACD: {macd_line - macd_signal:.4f}, EMA: {ema20:.4f}/{ema50:.4f}, ADX: {adx:.2f}\nTP: {tp:.4f} | SL: {sl:.4f}")
+    send_telegram(f"📢 *Signal {direction} für {symbol}*
+RSI: {rsi:.2f}, MACD: {macd_line - macd_signal:.4f}, EMA: {ema20:.4f}/{ema50:.4f}, ADX: {adx:.2f}
+TP: {tp:.4f} | SL: {sl:.4f}")
     if bot_active:
         place_order(symbol, direction, qty, tp, sl)
 
