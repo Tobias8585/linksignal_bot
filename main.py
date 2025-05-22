@@ -187,6 +187,15 @@ def run_bot():
         analyze_symbol(symbol)
         time.sleep(2)
 
+# Bot alle 5 Minuten ausführen
+schedule.every(5).minutes.do(run_bot)
+
+def scheduler_loop():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+
 # Flask Start
 @app.route('/')
 def home():
@@ -196,6 +205,7 @@ if __name__ == '__main__':
     send_telegram("🚀 Vereinfachter Bot gestartet")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
 
 
 
