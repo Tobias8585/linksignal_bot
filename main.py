@@ -108,45 +108,52 @@ def analyze_symbol(symbol):
         reasons.append("Volumen < 0.65× Durchschnitt")
     if adx < 10:
         reasons.append(f"ADX < 10 ({adx:.2f})")
-    if not (rsi < 40 or rsi > 60):
-        reasons.append(f"RSI neutral ({rsi:.2f})")
 
-    if rsi < 40:
+    if rsi < 35 or rsi > 65:
+        reasons.append(f"RSI außerhalb der Long-/Short-Bereiche ({rsi:.2f})")
+        return None, reasons
+
+    if 35 <= rsi <= 47:
         if not (ema20 > ema50):
             reasons.append("EMA20 nicht über EMA50 (kein Aufwärtstrend)")
-            return None, reasons  # HARTE Abweisung
+            return None, reasons
         if not (macd_line > macd_signal):
             reasons.append("MACD gegen LONG")
-            return None, reasons  # HARTE Abweisung
+            return None, reasons
+        direction = "LONG"
 
-    elif rsi > 60:
+    elif 53 <= rsi <= 65:
         if not (ema20 < ema50):
             reasons.append("EMA20 nicht unter EMA50 (kein Abwärtstrend)")
-            return None, reasons  # HARTE Abweisung
+            return None, reasons
         if not (macd_line < macd_signal):
             reasons.append("MACD gegen SHORT")
-            return None, reasons  # HARTE Abweisung
+            return None, reasons
+        direction = "SHORT"
 
+    else:
+        reasons.append(f"RSI zu neutral für Long/Short ({rsi:.2f})")
+        return None, reasons
 
     if reasons:
         log_print(f"{symbol}: ❌ Kein Trade – Gründe: {', '.join(reasons)}")
         return
 
-    direction = "LONG" if rsi < 40 else "SHORT"
     tp = price + 1.5 * atr if direction == "LONG" else price - 1.5 * atr
     sl = price - 0.9 * atr if direction == "LONG" else price + 0.9 * atr
     qty = round(MAX_CAPITAL / price, 3)
 
     msg = (
-    f"📢 *Signal {direction} für {symbol}*\n"
-    f"RSI: {rsi:.2f}, MACD: {macd_line - macd_signal:.4f}, EMA: {ema20:.4f}/{ema50:.4f}, ADX: {adx:.2f}\n"
-    f"TP: {tp:.4f} | SL: {sl:.4f}"
-)
+        f"📢 *Signal {direction} für {symbol}*\n"
+        f"RSI: {rsi:.2f}, MACD: {macd_line - macd_signal:.4f}, EMA: {ema20:.4f}/{ema50:.4f}, ADX: {adx:.2f}\n"
+        f"TP: {tp:.4f} | SL: {sl:.4f}"
+    )
 
     send_telegram(msg)
 
     if bot_active:
         place_order(symbol, direction, qty, tp, sl)
+
 
 # Order platzieren
 def place_order(symbol, direction, quantity, tp, sl):
