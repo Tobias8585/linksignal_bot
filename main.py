@@ -84,6 +84,19 @@ def get_klines(symbol, interval="5m", limit=100):
         log_print(f"{symbol}: Fehler beim Laden: {e}")
         return None
 
+# Reversal-Signale prüfen (separat)
+def is_reversal_trade(df):
+    rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
+    cci = CCIIndicator(df['high'], df['low'], df['close'], window=20).cci().iloc[-1]
+    macd = MACD(df['close'])
+    macd_line = macd.macd().iloc[-1]
+    macd_signal = macd.macd_signal().iloc[-1]
+    if rsi < 30 and cci < -100 and macd_line > macd_signal:
+        return "LONG"
+    elif rsi > 70 and cci > 100 and macd_line < macd_signal:
+        return "SHORT"
+    return None
+
 # Hauptanalyse
 def analyze_symbol(symbol):
     df = get_klines(symbol, limit=50)
@@ -113,14 +126,23 @@ def analyze_symbol(symbol):
         return
 
     # Regel 1: RSI, EMA, MACD – Pflicht
-    if not (rsi < 40 or rsi > 60):
-        log_print(f"{symbol}: ❌ RSI außerhalb der Signalbereiche")
-        return
-    if not ((rsi < 40 and ema20 > ema50 and macd_line > macd_signal) or (rsi > 60 and ema20 < ema50 and macd_line < macd_signal)):
+    if (rsi < 40 and ema20 > ema50 and macd_line > macd_signal):
+        direction = "LONG"
+    elif (rsi > 60 and ema20 < ema50 and macd_line < macd_signal):
+        direction = "SHORT"
+    else:
         log_print(f"{symbol}: ❌ Signalbedingungen nicht erfüllt")
+        # Reversal-Check
+        reversal = is_reversal_trade(df)
+        if reversal:
+            tp = price + 1.2 * atr if reversal == "LONG" else price - 1.2 * atr
+            sl = price - 0.7 * atr if reversal == "LONG" else price + 0.7 * atr
+            qty = round(MAX_CAPITAL / price, 3)
+            send_telegram(f"🔄 *Reversal-Signal {reversal}* für {symbol}\nTP: {tp:.4f} | SL: {sl:.4f}")
+            if bot_active:
+                place_order(symbol, reversal, qty, tp, sl)
         return
 
-    direction = "LONG" if rsi < 40 else "SHORT"
     tp = price + 1.5 * atr if direction == "LONG" else price - 1.5 * atr
     sl = price - 0.9 * atr if direction == "LONG" else price + 0.9 * atr
     qty = round(MAX_CAPITAL / price, 3)
@@ -169,4 +191,5 @@ if __name__ == '__main__':
     send_telegram("🚀 Vereinfachter Bot gestartet")
     threading.Thread(target=run_bot).start()
     app.run(host='0.0.0.0', port=8080)
+
 
