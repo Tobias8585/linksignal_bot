@@ -197,8 +197,11 @@ def run_bot():
 
         for symbol in symbols:
             try:
+                log_print(f"{symbol}: Analyse gestartet")  # 🟡 Diagnosezeile
                 analyze_symbol(symbol)
                 time.sleep(0.05)
+
+                
             except Exception as e:
                 log_print(f"{symbol}: Fehler bei Analyse: {e}")
 
