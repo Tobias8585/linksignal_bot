@@ -465,9 +465,10 @@ def analyze_combined(symbol):
 
 
         # Fehleranalyse
-    reasons = []
-    if adx < 17:
-        reasons.append("ADX < 17")
+    if adx < 15:
+        reasons.append("ADX < 15 – zu wenig Trend")
+    elif adx < 17:
+        log_print(f"{symbol}: ⚠️ ADX nur schwach ({adx:.2f}) – Trendkraft begrenzt")
 
     # Neue Heikin-Ashi-Logik: 3 Candles prüfen
     ha_bodies = ha_close[-3:] - ha_open[-3:]
