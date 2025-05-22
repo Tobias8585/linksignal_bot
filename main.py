@@ -104,9 +104,9 @@ def analyze_symbol(symbol):
 
     reasons = []
 
-    if volume < avg_volume * 0.7:
-        reasons.append("Volumen < 0.7× Durchschnitt")
-    if adx < 15:
+    if volume < avg_volume * 0.65:
+        reasons.append("Volumen < 0.65× Durchschnitt")
+    if adx < 12:
         reasons.append(f"ADX < 15 ({adx:.2f})")
     if not (rsi < 40 or rsi > 60):
         reasons.append(f"RSI neutral ({rsi:.2f})")
@@ -114,13 +114,19 @@ def analyze_symbol(symbol):
     if rsi < 40:
         if not (ema20 > ema50):
             reasons.append("EMA20 nicht über EMA50 (kein Aufwärtstrend)")
+            return None, reasons  # HARTE Abweisung
         if not (macd_line > macd_signal):
-            reasons.append(f"MACD gegen LONG ({macd_line - macd_signal:.4f})")
+            reasons.append("MACD gegen LONG")
+            return None, reasons  # HARTE Abweisung
+
     elif rsi > 60:
         if not (ema20 < ema50):
             reasons.append("EMA20 nicht unter EMA50 (kein Abwärtstrend)")
+            return None, reasons  # HARTE Abweisung
         if not (macd_line < macd_signal):
-            reasons.append(f"MACD gegen SHORT ({macd_line - macd_signal:.4f})")
+            reasons.append("MACD gegen SHORT")
+            return None, reasons  # HARTE Abweisung
+
 
     if reasons:
         log_print(f"{symbol}: ❌ Kein Trade – Gründe: {', '.join(reasons)}")
