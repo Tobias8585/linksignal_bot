@@ -84,12 +84,12 @@ def get_klines(symbol, interval="5m", limit=100):
         log_print(f"{symbol}: Fehler beim Laden: {e}")
         return None
 
-# Hauptanalyse
 def analyze_symbol(symbol):
     df = get_klines(symbol, limit=50)
     if df is None or len(df) < 20:
-        return
+        return None, ["Unzureichende Daten"]
 
+    # Berechnungen
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     macd = MACD(df['close'])
     macd_line = macd.macd().iloc[-1]
@@ -104,15 +104,16 @@ def analyze_symbol(symbol):
 
     reasons = []
 
+    # Filtergründe
     if volume < avg_volume * 0.65:
         reasons.append("Volumen < 0.65× Durchschnitt")
     if adx < 10:
         reasons.append(f"ADX < 10 ({adx:.2f})")
-
     if rsi < 35 or rsi > 65:
         reasons.append(f"RSI außerhalb der Long-/Short-Bereiche ({rsi:.2f})")
         return None, reasons
 
+    # Richtung bestimmen
     if 35 <= rsi <= 47:
         if not (ema20 > ema50):
             reasons.append("EMA20 nicht über EMA50 (kein Aufwärtstrend)")
@@ -135,25 +136,30 @@ def analyze_symbol(symbol):
         reasons.append(f"RSI zu neutral für Long/Short ({rsi:.2f})")
         return None, reasons
 
+    # Falls trotzdem Gründe existieren (zusätzlicher Schutz)
     if reasons:
-        log_print(f"{symbol}: ❌ Kein Trade – Gründe: {', '.join(reasons)}")
-        return None, reasons  # Damit der Aufrufer es auch erkennt
+        return None, reasons
 
-
+    # Erfolgsfall: Trade vorbereiten
     tp = price + 1.5 * atr if direction == "LONG" else price - 1.5 * atr
     sl = price - 0.9 * atr if direction == "LONG" else price + 0.9 * atr
     qty = round(MAX_CAPITAL / price, 3)
 
     msg = (
         f"📢 *Signal {direction} für {symbol}*\n"
-        f"RSI: {rsi:.2f}, MACD: {macd_line - macd_signal:.4f}, EMA: {ema20:.4f}/{ema50:.4f}, ADX: {adx:.2f}\n"
+        f"RSI: {rsi:.2f}, MACD: {macd_line - macd_signal:.4f}, "
+        f"EMA: {ema20:.4f}/{ema50:.4f}, ADX: {adx:.2f}\n"
         f"TP: {tp:.4f} | SL: {sl:.4f}"
     )
 
-    send_telegram(msg)
-
-    if bot_active:
-        place_order(symbol, direction, qty, tp, sl)
+    return {
+        "direction": direction,
+        "price": price,
+        "tp": tp,
+        "sl": sl,
+        "qty": qty,
+        "msg": msg
+    }, None
 
 
 # Order platzieren
@@ -186,7 +192,6 @@ def run_bot():
     try:
         log_print("🚦 Starte neuen run_bot() Durchlauf")
 
-
         check_btc_strength()
         client = get_binance_client(os.getenv("CHAT_ID"))
         if not client:
@@ -213,15 +218,24 @@ def run_bot():
 
         for symbol in symbols:
             try:
-                log_print(f"{symbol}: Analyse gestartet")  # 🟡 Diagnosezeile
-                analyze_symbol(symbol)
-                # time.sleep(0.05)  # 💤 Auskommentiert für Geschwindigkeitstest
+                log_print(f"{symbol}: Analyse gestartet")
+                result, reasons = analyze_symbol(symbol)
+
+                if result is None:
+                    log_print(f"{symbol}: ❌ Kein Trade – Gründe: {', '.join(reasons)}")
+                    continue
+
+                log_print(f"{symbol}: ✅ Signal erkannt → {result['direction']}")
+                send_telegram(result["msg"])
+                if bot_active:
+                    place_order(symbol, result["direction"], result["qty"], result["tp"], result["sl"])
+
             except Exception as e:
                 log_print(f"{symbol}: Fehler bei Analyse: {e}")
 
-
     except Exception as outer_error:
         log_print(f"Fehler im run_bot(): {outer_error}")
+
 
 
 
