@@ -221,47 +221,12 @@ def run_bot():
                 log_print("⚠️ Keine Symbole gefunden – Prüfe exchange_info()")
                 return
         except Exception as e:
-            log_print(f"Fehler bei exchange_info: {e}")
+            log_print(f"❌ Fehler bei exchange_info: {e}")
             return
 
         for symbol in symbols:
             try:
-                log_print(f"{symbol}: Analyse gestartet")
-                result, reasons = analyze_symbol(symbol)
-
-               
-def run_bot():
-    log_print("🚀 run_bot() gestartet – Anfang der Funktion erreicht")
-    try:
-        log_print("🚦 Starte neuen run_bot() Durchlauf")
-
-        check_btc_strength()
-        client = get_binance_client(os.getenv("CHAT_ID"))
-        if not client:
-            log_print("❌ Kein Binance-Client verfügbar")
-            return
-
-        try:
-            info = client.exchange_info()
-            symbols = [
-                s['symbol'] for s in info['symbols']
-                if s['contractType'] == 'PERPETUAL'
-                and s['quoteAsset'] == 'USDT'
-                and s['status'] == 'TRADING'
-            ]
-            log_print(f"✅ Symbole geladen: {len(symbols)} Futures-Paare")
-            log_print(f"🔍 Beginne Analyse von {len(symbols)} Symbolen")
-
-            if not symbols:
-                log_print("⚠️ Keine Symbole gefunden – Prüfe exchange_info()")
-                return
-        except Exception as e:
-            log_print(f"Fehler bei exchange_info: {e}")
-            return
-
-        for symbol in symbols:
-            try:
-                log_print(f"{symbol}: Analyse gestartet")
+                log_print(f"{symbol}: 🧠 Analyse gestartet")
                 result, reasons = analyze_symbol(symbol)
 
                 if result is None:
@@ -276,11 +241,10 @@ def run_bot():
                     place_order(symbol, result["direction"], result["qty"], result["tp"], result["sl"])
 
             except Exception as e:
-                log_print(f"{symbol}: Fehler bei Analyse: {e}")
+                log_print(f"{symbol}: ⚠️ Fehler bei Analyse: {e}")
 
     except Exception as outer_error:
-        log_print(f"Fehler im run_bot(): {outer_error}")
-
+        log_print(f"❌ Fehler im run_bot(): {outer_error}")
 
 
 
