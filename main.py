@@ -12,6 +12,8 @@ from ta.trend import EMAIndicator, MACD, CCIIndicator, ADXIndicator
 from datetime import datetime, timedelta
 from binance.um_futures import UMFutures
 import os
+bot_active = True
+
 
 # Konstante Limits
 MAX_CAPITAL = 150.0
