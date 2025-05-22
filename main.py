@@ -204,9 +204,8 @@ def home():
 
 if __name__ == '__main__':
     send_telegram("🚀 Vereinfachter Bot gestartet")
-    threading.Thread(target=run_bot).start()
+    threading.Thread(target=scheduler_loop).start()
     app.run(host='0.0.0.0', port=8080)
-
 
 
 
