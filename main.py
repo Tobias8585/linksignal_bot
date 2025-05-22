@@ -541,15 +541,15 @@ def analyze_combined(symbol):
         )
 
 
-        
     
     if dummy_mode:
         reasons = []
         reasons.append("Weder 1m noch 5m Signal erkannt")
-        reasons.append("Mögliche Ursachen: RSI außerhalb der Zonen, MACD kein Cross, kein Trend")
+        reasons.append("Mögliche Ursachen: RSI außerhalb der Zonen oder kein klarer Trend")
         reason_text = f"{symbol}: Kein Signal – " + ", ".join(reasons)
         log_print(reason_text)
         return None, reason_text
+
 # Score-Bewertung
     score = 0
     max_score = 11
