@@ -161,14 +161,25 @@ def place_order(symbol, direction, quantity, tp, sl):
     if client is None:
         log_print(f"{symbol}: Kein Client")
         return
-    try:
-        side = "BUY" if direction == "LONG" else "SELL"
-        position = "LONG" if direction == "LONG" else "SHORT"
-        client.new_order(symbol=symbol, side=side, positionSide=position, type="MARKET", quantity=quantity)
-        log_print(f"{symbol}: Order {side} {quantity} gesetzt")
-    except Exception as e:
-        log_print(f"{symbol}: Fehler bei Order: {e}")
-        
+
+    side = "BUY" if direction == "LONG" else "SELL"
+    position = "LONG" if direction == "LONG" else "SHORT"
+
+    for attempt in range(3):
+        try:
+            client.new_order(
+                symbol=symbol,
+                side=side,
+                positionSide=position,
+                type="MARKET",
+                quantity=quantity
+            )
+            log_print(f"{symbol}: Order {side} {quantity} gesetzt")
+            break
+        except Exception as e:
+            log_print(f"{symbol}: Order-Versuch {attempt + 1} fehlgeschlagen: {e}")
+            time.sleep(2)
+
 def run_bot():
     log_print("🚀 run_bot() gestartet – Anfang der Funktion erreicht")
     try:
