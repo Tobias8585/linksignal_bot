@@ -208,10 +208,6 @@ def run_bot():
                 log_print(f"{symbol}: Fehler bei Analyse: {e}")
 
 
-                
-            except Exception as e:
-                log_print(f"{symbol}: Fehler bei Analyse: {e}")
-
     except Exception as outer_error:
         log_print(f"Fehler im run_bot(): {outer_error}")
 
