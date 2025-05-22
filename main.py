@@ -230,11 +230,13 @@ def scheduler_loop():
 @app.route('/')
 def home():
     return "Bot läuft"
-
+    
 if __name__ == '__main__':
     send_telegram("🚀 Vereinfachter Bot gestartet")
+    threading.Thread(target=run_bot).start()  # 🔁 run_bot sofort beim Start!
     threading.Thread(target=scheduler_loop).start()
     app.run(host='0.0.0.0', port=8080)
+
 
 
 
