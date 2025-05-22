@@ -174,6 +174,10 @@ def place_order(symbol, direction, quantity, tp, sl):
     side = "BUY" if direction == "LONG" else "SELL"
     position = "LONG" if direction == "LONG" else "SHORT"
 
+    if quantity < 0.001:
+        log_print(f"{symbol}: ❌ Ordermenge {quantity} zu klein – Order nicht gesendet")
+        return
+
     for attempt in range(3):
         try:
             client.new_order(
