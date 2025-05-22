@@ -270,10 +270,10 @@ def get_simple_signal(df):
 
     # RSI prüfen
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
-    if rsi < 38:
+    if rsi < 35:
         signal_direction = "LONG"
         count += 1
-    elif rsi > 67:
+    elif rsi > 65:
         signal_direction = "SHORT"
         count += 1
         
