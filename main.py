@@ -185,7 +185,8 @@ def run_bot():
 
     for symbol in symbols:
         analyze_symbol(symbol)
-        time.sleep(0.5)
+        time.sleep(0.05)  # vorher 0.5 → jetzt 10× schneller
+
 
 # Bot alle 5 Minuten ausführen
 schedule.every(5).minutes.do(run_bot)
