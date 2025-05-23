@@ -9,6 +9,11 @@ from ta.trend import EMAIndicator, MACD, ADXIndicator
 from binance.um_futures import UMFutures
 import os
 
+# Zwei Clients initialisieren
+client_1 = UMFutures(api_key=os.getenv("BINANCE_API_KEY_1"), api_secret=os.getenv("BINANCE_API_SECRET_1"))
+client_2 = UMFutures(api_key=os.getenv("BINANCE_API_KEY_2"), api_secret=os.getenv("BINANCE_API_SECRET_2"))
+
+
 # Konstanten und Globals
 MAX_CAPITAL = 150.0
 bot_active = True
@@ -128,26 +133,33 @@ def analyze_symbol(symbol):
            f"TP: {tp:.4f} | SL: {sl:.4f}")
     return {"direction":direction,"qty":qty,"tp":tp,"sl":sl,"msg":msg}, None
 
-def place_order(symbol, direction, quantity, tp, sl, chat_id):
-    log_print(f"{symbol}: 🔑 Orderversuch mit API für Chat-ID {chat_id}")
-    client = get_binance_client(chat_id)
-    if client is None:
-        log_print(f"{symbol}: Kein Client für {chat_id}")
-        return
-    side = "BUY" if direction=="LONG" else "SELL"
-    position = direction
+def place_order(symbol, direction, quantity, tp, sl):
+    log_print(f"{symbol}: Starte Orderversuch mit qty={quantity}, TP={tp}, SL={sl}")
+
+    # Side und Position
+    side = "BUY" if direction == "LONG" else "SELL"
+    position = "LONG" if direction == "LONG" else "SHORT"
+
     if quantity < 0.001:
-        log_print(f"{symbol}: ❌ Menge {quantity} zu klein")
+        log_print(f"{symbol}: ❌ Ordermenge {quantity} zu klein – Order nicht gesendet")
         return
-    for i in range(3):
-        try:
-            client.new_order(symbol=symbol, side=side,
-                             positionSide=position, type="MARKET", quantity=quantity)
-            log_print(f"{symbol}: ✅ Order gesetzt für {chat_id}")
-            break
-        except Exception as e:
-            log_print(f"{symbol}: ❌ Order-Versuch {i+1} fehlgeschlagen: {e}")
-            time.sleep(2)
+
+    # Für beide Clients durchlaufen
+    for idx, client in enumerate([client_1, client_2], start=1):
+        for attempt in range(3):
+            try:
+                client.new_order(
+                    symbol=symbol,
+                    side=side,
+                    positionSide=position,
+                    type="MARKET",
+                    quantity=quantity
+                )
+                log_print(f"{symbol}: ✅ Order {side} {quantity} gesetzt bei Client {idx}")
+                break  # Wenn erfolgreich, keine weiteren Versuche
+            except Exception as e:
+                log_print(f"{symbol}: ❌ Order-Versuch {attempt + 1} bei Client {idx} fehlgeschlagen: {e}")
+                time.sleep(2)
 
 def run_bot(chat_id):
     log_print(f"🚀 run_bot gestartet für Chat-ID {chat_id}")
