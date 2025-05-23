@@ -16,7 +16,6 @@ client_1 = UMFutures(key=os.getenv("BINANCE_API_KEY_1"), secret=os.getenv("BINAN
 client_2 = UMFutures(key=os.getenv("BINANCE_API_KEY_2"), secret=os.getenv("BINANCE_API_SECRET_2"))
 
 
-
 # Konstanten und Globals
 MAX_CAPITAL = 150.0
 bot_active = True
