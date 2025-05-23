@@ -1,3 +1,10 @@
+from dotenv import load_dotenv
+import os
+
+# Direkt nach dem Import:
+load_dotenv()
+
+# Dann kommen alle anderen Importe:
 import requests
 import time
 import threading
@@ -5,11 +12,9 @@ import schedule
 from flask import Flask
 import pandas as pd
 from ta.momentum import RSIIndicator
-from ta.trend import EMAIndicator, MACD, ADXIndicator
+from ta.trend import EMAIndicator, MACD
 from binance.um_futures import UMFutures
-import os
-from dotenv import load_dotenv
-load_dotenv()
+
 
 client_1 = UMFutures(key=os.getenv("BINANCE_API_KEY_1"), secret=os.getenv("BINANCE_API_SECRET_1"))
 client_2 = UMFutures(key=os.getenv("BINANCE_API_KEY_2"), secret=os.getenv("BINANCE_API_SECRET_2"))
