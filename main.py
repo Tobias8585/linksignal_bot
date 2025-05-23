@@ -29,7 +29,7 @@ def log_print(msg):
     log_file.flush()
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-CHAT_IDS = [os.getenv("CHAT_ID"), os.getenv("CHAT_ID_2")]
+CCHAT_IDS = [int(os.getenv("CHAT_ID")), int(os.getenv("CHAT_ID_2"))]
 
 def send_telegram(message):
     for chat_id in set(CHAT_IDS):
