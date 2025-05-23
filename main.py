@@ -72,6 +72,7 @@ def analyze_symbol(symbol):
     df = get_klines(symbol, limit=50)
     if df is None or len(df) < 20:
         return None, ["Unzureichende Daten"]
+        
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     macd_line = MACD(df['close']).macd().iloc[-1]
     macd_signal = MACD(df['close']).macd_signal().iloc[-1]
@@ -84,33 +85,39 @@ def analyze_symbol(symbol):
     atr = (df['high'] - df['low']).rolling(14).mean().iloc[-1]
 
     reasons = []
+
     if volume < avg_volume * 0.65:
         reasons.append("Volumen < 0.65× Durchschnitt")
     if adx < 10:
         reasons.append(f"ADX < 10 ({adx:.2f})")
+
+    # RSI-Prüfung
     if rsi < 35 or rsi > 65:
-        reasons.append(f"RSI außerhalb Bereich ({rsi:.2f})")
+        reasons.append(f"RSI außerhalb der Long-/Short-Bereiche ({rsi:.2f})")
         return None, reasons
 
     if 35 <= rsi <= 47:
         if ema20 <= ema50:
-            reasons.append("EMA20 nicht über EMA50")
+            reasons.append("EMA20 nicht über EMA50 (kein Aufwärtstrend)")
             return None, reasons
         if macd_line <= macd_signal:
             reasons.append("MACD gegen LONG")
             return None, reasons
         direction = "LONG"
+
     elif 53 <= rsi <= 65:
         if ema20 >= ema50:
-            reasons.append("EMA20 nicht unter EMA50")
+            reasons.append("EMA20 nicht unter EMA50 (kein Abwärtstrend)")
             return None, reasons
         if macd_line >= macd_signal:
             reasons.append("MACD gegen SHORT")
             return None, reasons
         direction = "SHORT"
+
     else:
-        reasons.append(f"RSI zu neutral ({rsi:.2f})")
+        reasons.append(f"RSI zu neutral für Long/Short ({rsi:.2f})")
         return None, reasons
+
 
     tp = price + 1.5 * atr if direction=="LONG" else price - 1.5*atr
     sl = price - 0.9 * atr if direction=="LONG" else price + 0.9*atr
