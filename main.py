@@ -9,9 +9,9 @@ from ta.trend import EMAIndicator, MACD, ADXIndicator
 from binance.um_futures import UMFutures
 import os
 
-# Zwei Clients initialisieren
-client_1 = UMFutures(api_key=os.getenv("BINANCE_API_KEY_1"), api_secret=os.getenv("BINANCE_API_SECRET_1"))
-client_2 = UMFutures(api_key=os.getenv("BINANCE_API_KEY_2"), api_secret=os.getenv("BINANCE_API_SECRET_2"))
+client_1 = UMFutures(key=os.getenv("BINANCE_API_KEY_1"), secret=os.getenv("BINANCE_API_SECRET_1"))
+client_2 = UMFutures(key=os.getenv("BINANCE_API_KEY_2"), secret=os.getenv("BINANCE_API_SECRET_2"))
+
 
 
 # Konstanten und Globals
