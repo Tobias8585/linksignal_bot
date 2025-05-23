@@ -13,17 +13,15 @@ from flask import Flask
 import pandas as pd
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD
+from ta.trend import ADXIndicator
 from binance.um_futures import UMFutures
 
+# Initialisiere den Binance-Client mit nur einem API-Zugang
+client = UMFutures(key=os.getenv("BINANCE_API_KEY"), secret=os.getenv("BINANCE_API_SECRET"))
 
-client_1 = UMFutures(key=os.getenv("BINANCE_API_KEY_1"), secret=os.getenv("BINANCE_API_SECRET_1"))
-client_2 = UMFutures(key=os.getenv("BINANCE_API_KEY_2"), secret=os.getenv("BINANCE_API_SECRET_2"))
-
-
-# Konstanten und Globals
-MAX_CAPITAL = 150.0
-bot_active = True
-btc_strength_ok = True
+START_CAPITAL = 150.0
+MAX_LOSS = 30.0
+capital_lost = 0.0
 
 app = Flask(__name__)
 log_file = open("log.txt", "a", encoding="utf-8")
@@ -34,38 +32,17 @@ def log_print(msg):
     log_file.flush()
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-CCHAT_IDS = [int(os.getenv("CHAT_ID")), int(os.getenv("CHAT_ID_2"))]
+CHAT_ID = int(os.getenv("CHAT_ID"))
 
 def send_telegram(message):
-    for chat_id in set(CHAT_IDS):
-        try:
-            requests.post(
-                f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
-                json={"chat_id": chat_id, "text": message, "parse_mode": "Markdown"},
-                timeout=5
-            )
-        except Exception as e:
-            log_print(f"Telegram-Fehler: {e}")
-
-def get_binance_client(chat_id):
-    if str(chat_id) == os.getenv("CHAT_ID"):
-        return UMFutures(key=os.getenv("BINANCE_API_KEY_1"), secret=os.getenv("BINANCE_API_SECRET_1"))
-    elif str(chat_id) == os.getenv("CHAT_ID_2"):
-        return UMFutures(key=os.getenv("BINANCE_API_KEY_2"), secret=os.getenv("BINANCE_API_SECRET_2"))
-    return None
-
-def check_btc_strength():
-    global btc_strength_ok
-    df = get_klines("BTCUSDT", "5m", 50)
-    if df is None:
-        btc_strength_ok = True
-        return
-    rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
-    macd = MACD(df['close']).macd().iloc[-1]
-    ema20 = df['close'].ewm(span=20).mean().iloc[-1]
-    ema50 = df['close'].ewm(span=50).mean().iloc[-1]
-    price = df['close'].iloc[-1]
-    btc_strength_ok = (rsi > 50 and macd > 0 and price > ema20 and price > ema50)
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+            json={"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"},
+            timeout=5
+        )
+    except Exception as e:
+        log_print(f"Telegram-Fehler: {e}")
 
 def get_klines(symbol, interval="5m", limit=100):
     url = f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}"
@@ -83,7 +60,7 @@ def analyze_symbol(symbol):
     df = get_klines(symbol, limit=50)
     if df is None or len(df) < 20:
         return None, ["Unzureichende Daten"]
-        
+
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     macd_line = MACD(df['close']).macd().iloc[-1]
     macd_signal = MACD(df['close']).macd_signal().iloc[-1]
@@ -97,17 +74,11 @@ def analyze_symbol(symbol):
 
     reasons = []
 
-    if volume < avg_volume * 0.65:
-        reasons.append("Volumen < 0.65× Durchschnitt")
-    if adx < 10:
-        reasons.append(f"ADX < 10 ({adx:.2f})")
-
-    # RSI-Prüfung
     if rsi < 35 or rsi > 65:
         reasons.append(f"RSI außerhalb der Long-/Short-Bereiche ({rsi:.2f})")
         return None, reasons
 
-    if 35 <= rsi <= 47:
+    if 35 <= rsi <= 44:
         if ema20 <= ema50:
             reasons.append("EMA20 nicht über EMA50 (kein Aufwärtstrend)")
             return None, reasons
@@ -116,7 +87,7 @@ def analyze_symbol(symbol):
             return None, reasons
         direction = "LONG"
 
-    elif 53 <= rsi <= 65:
+    elif 56 <= rsi <= 65:
         if ema20 >= ema50:
             reasons.append("EMA20 nicht unter EMA50 (kein Abwärtstrend)")
             return None, reasons
@@ -129,20 +100,17 @@ def analyze_symbol(symbol):
         reasons.append(f"RSI zu neutral für Long/Short ({rsi:.2f})")
         return None, reasons
 
-
-    tp = price + 1.5 * atr if direction=="LONG" else price - 1.5*atr
-    sl = price - 0.9 * atr if direction=="LONG" else price + 0.9*atr
-    qty = round(MAX_CAPITAL / price, 3)
+    tp = price + 1.5 * atr if direction == "LONG" else price - 1.5 * atr
+    sl = price - 0.9 * atr if direction == "LONG" else price + 0.9 * atr
+    qty = round(START_CAPITAL / price, 3)
 
     msg = (f"📢 *Signal {direction} für {symbol}*\n"
            f"RSI: {rsi:.2f}, EMA: {ema20:.2f}/{ema50:.2f}, ADX: {adx:.2f}\n"
            f"TP: {tp:.4f} | SL: {sl:.4f}")
-    return {"direction":direction,"qty":qty,"tp":tp,"sl":sl,"msg":msg}, None
+    return {"direction": direction, "qty": qty, "tp": tp, "sl": sl, "msg": msg}, None
 
 def place_order(symbol, direction, quantity, tp, sl):
     log_print(f"{symbol}: Starte Orderversuch mit qty={quantity}, TP={tp}, SL={sl}")
-
-    # Side und Position
     side = "BUY" if direction == "LONG" else "SELL"
     position = "LONG" if direction == "LONG" else "SHORT"
 
@@ -150,36 +118,37 @@ def place_order(symbol, direction, quantity, tp, sl):
         log_print(f"{symbol}: ❌ Ordermenge {quantity} zu klein – Order nicht gesendet")
         return
 
-    # Für beide Clients durchlaufen
-    for idx, client in enumerate([client_1, client_2], start=1):
-        for attempt in range(3):
-            try:
-                client.new_order(
-                    symbol=symbol,
-                    side=side,
-                    positionSide=position,
-                    type="MARKET",
-                    quantity=quantity
-                )
-                log_print(f"{symbol}: ✅ Order {side} {quantity} gesetzt bei Client {idx}")
-                break  # Wenn erfolgreich, keine weiteren Versuche
-            except Exception as e:
-                log_print(f"{symbol}: ❌ Order-Versuch {attempt + 1} bei Client {idx} fehlgeschlagen: {e}")
-                time.sleep(2)
+    potenzieller_verlust = 0.9 * abs(tp - sl) * quantity
+    global capital_lost
+    if capital_lost + potenzieller_verlust >= MAX_LOSS:
+        log_print(f"{symbol}: ⚠️ Verlustgrenze erreicht – keine Order mehr erlaubt")
+        send_telegram("⚠️ Maximaler Verlust erreicht – Bot gestoppt")
+        return
 
+    for attempt in range(3):
+        try:
+            client.new_order(
+                symbol=symbol,
+                side=side,
+                positionSide=position,
+                type="MARKET",
+                quantity=quantity
+            )
+            capital_lost += potenzieller_verlust
+            log_print(f"{symbol}: ✅ Order {side} {quantity} erfolgreich")
+            log_print(f"{symbol}: 📉 Kumulierter Verlust: {capital_lost:.2f} USDT")
+            break
+        except Exception as e:
+            log_print(f"{symbol}: ❌ Order-Versuch {attempt + 1} fehlgeschlagen: {e}")
+            time.sleep(2)
 
-def run_bot(chat_id):
-    log_print(f"🚀 run_bot gestartet für Chat-ID {chat_id}")
+def run_bot():
+    log_print(f"🚀 run_bot gestartet")
     try:
-        check_btc_strength()
-        client = get_binance_client(chat_id)
-        if not client:
-            log_print(f"❌ Kein Binance-Client für {chat_id}")
-            return
         info = client.exchange_info()
         symbols = [s['symbol'] for s in info['symbols']
-                   if s['contractType']=="PERPETUAL" and s['quoteAsset']=="USDT" and s['status']=="TRADING"]
-        log_print(f"✅ {len(symbols)} Symbole für {chat_id}")
+                   if s['contractType'] == "PERPETUAL" and s['quoteAsset'] == "USDT" and s['status'] == "TRADING"]
+        log_print(f"✅ {len(symbols)} Symbole geladen")
         analyzed = signals = orders = 0
         for sym in symbols:
             try:
@@ -196,16 +165,15 @@ def run_bot(chat_id):
 
                 if bot_active:
                     log_print(f"{sym}: ✅ Signal gültig – starte Order...")
-                    place_order(sym, res["direction"], res["qty"], res["tp"], res["sl"], chat_id)
+                    place_order(sym, res["direction"], res["qty"], res["tp"], res["sl"])
                     orders += 1
                 else:
                     log_print(f"{sym}: 🔒 Bot nicht aktiv – keine Order trotz gültigem Signal.")
             except Exception as e:
                 log_print(f"{sym}: Analyse-Fehler {e}")
-        log_print(f"✅ {chat_id}: Analyzed {analyzed}, Signals {signals}, Orders {orders}")
+        log_print(f"✅ Analyse abgeschlossen: {analyzed} geprüft, {signals} Signale, {orders} Orders")
     except Exception as e:
-        log_print(f"{chat_id}: Lauf-Fehler {e}")
-
+        log_print(f"❌ Lauf-Fehler: {e}")
 
 def scheduler_loop():
     while True:
@@ -216,13 +184,11 @@ def scheduler_loop():
 def home():
     return "Bot läuft"
 
-if __name__=="__main__":
-    send_telegram("🚀 Multiuser Bot gestartet (2 Nutzer)")
-    threading.Thread(target=run_bot, args=(os.getenv("CHAT_ID"),)).start()
-    threading.Thread(target=run_bot, args=(os.getenv("CHAT_ID_2"),)).start()
+if __name__ == "__main__":
+    send_telegram("🚀 Bot gestartet")
+    threading.Thread(target=run_bot).start()
     threading.Thread(target=scheduler_loop).start()
     app.run(host="0.0.0.0", port=8080)
-
 
 
 
