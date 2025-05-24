@@ -243,11 +243,19 @@ def home():
     
 if __name__ == "__main__":
     send_telegram("🚀 Bot gestartet")
-    run_bot()  # Einmal direkt starten
-    schedule.every(5).minutes.do(run_bot)  # Dann alle 5 Min
-    threading.Thread(target=scheduler_loop).start()
-    app.run(host="0.0.0.0", port=8080)
 
+    # 1. Starte Bot direkt einmal
+    run_bot()
+
+    # 2. Starte den Scheduler im Hintergrund
+    threading.Thread(target=scheduler_loop, daemon=True).start()
+
+    # 3. Starte Flask dauerhaft im eigenen Thread
+    threading.Thread(target=lambda: app.run(host="0.0.0.0", port=8080), daemon=True).start()
+
+    # 4. Endlosschleife damit main.py nicht sofort beendet wird
+    while True:
+        time.sleep(60)
 
 
 
