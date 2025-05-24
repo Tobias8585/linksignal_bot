@@ -241,6 +241,12 @@ def scheduler_loop():
 def home():
     return "Bot läuft"
     
+import socket
+
+def is_port_free(port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(("0.0.0.0", port)) != 0
+
 if __name__ == "__main__":
     send_telegram("🚀 Bot gestartet")
 
@@ -250,12 +256,16 @@ if __name__ == "__main__":
     # 2. Starte den Scheduler im Hintergrund
     threading.Thread(target=scheduler_loop, daemon=True).start()
 
-    # 3. Starte Flask dauerhaft im eigenen Thread
-    threading.Thread(target=lambda: app.run(host="0.0.0.0", port=8080), daemon=True).start()
+    # 3. Starte Flask nur, wenn Port 8080 frei ist
+    if is_port_free(8080):
+        threading.Thread(target=lambda: app.run(host="0.0.0.0", port=8080), daemon=True).start()
+    else:
+        print("⚠️ Flask-Start übersprungen: Port 8080 ist belegt.")
 
     # 4. Endlosschleife damit main.py nicht sofort beendet wird
     while True:
         time.sleep(60)
+
 
 
 
