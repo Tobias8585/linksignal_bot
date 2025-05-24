@@ -253,6 +253,8 @@ if __name__ == "__main__":
     # 1. Starte Bot direkt einmal
     run_bot()
 
+    schedule.every(1).minutes.do(run_bot)
+
     # 2. Starte den Scheduler im Hintergrund
     threading.Thread(target=scheduler_loop, daemon=True).start()
 
