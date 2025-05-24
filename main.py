@@ -200,7 +200,8 @@ def place_order(symbol, direction, quantity, tp, sl):
 
 
 def run_bot():
-    log_print(f"🚀 run_bot gestartet")
+    log_print("🚀 run_bot gestartet")
+    log_print("📊 Starte neue Analyse...")  # <== NEU
     try:
         info = client.exchange_info()
         symbols = [s['symbol'] for s in info['symbols']
