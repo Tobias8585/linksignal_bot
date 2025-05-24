@@ -22,6 +22,8 @@ client = UMFutures(key=os.getenv("BINANCE_API_KEY"), secret=os.getenv("BINANCE_A
 START_CAPITAL = 150.0
 MAX_LOSS = 30.0
 capital_lost = 0.0
+bot_active = True
+
 
 app = Flask(__name__)
 log_file = open("log.txt", "a", encoding="utf-8")
@@ -74,6 +76,18 @@ def analyze_symbol(symbol):
 
     reasons = []
 
+    # Volumen-Check
+    if volume < 0.65 * avg_volume:
+        reasons.append(f"Volumen zu gering ({volume:.2f} < {avg_volume:.2f})")
+        return None, reasons
+
+    # Trendstärke-Check (ADX)
+    if adx < 10:
+        reasons.append(f"ADX zu schwach ({adx:.2f}) – kein echter Trend")
+        return None, reasons
+
+
+
     if rsi < 35 or rsi > 65:
         reasons.append(f"RSI außerhalb der Long-/Short-Bereiche ({rsi:.2f})")
         return None, reasons
@@ -108,7 +122,7 @@ def analyze_symbol(symbol):
            f"RSI: {rsi:.2f}, EMA: {ema20:.2f}/{ema50:.2f}, ADX: {adx:.2f}\n"
            f"TP: {tp:.4f} | SL: {sl:.4f}")
     return {"direction": direction, "qty": qty, "tp": tp, "sl": sl, "msg": msg}, None
-
+    
 def place_order(symbol, direction, quantity, tp, sl):
     log_print(f"{symbol}: Starte Orderversuch mit qty={quantity}, TP={tp}, SL={sl}")
     side = "BUY" if direction == "LONG" else "SELL"
@@ -127,6 +141,7 @@ def place_order(symbol, direction, quantity, tp, sl):
 
     for attempt in range(3):
         try:
+            # Market-Order senden
             client.new_order(
                 symbol=symbol,
                 side=side,
@@ -134,13 +149,55 @@ def place_order(symbol, direction, quantity, tp, sl):
                 type="MARKET",
                 quantity=quantity
             )
+
             capital_lost += potenzieller_verlust
             log_print(f"{symbol}: ✅ Order {side} {quantity} erfolgreich")
             log_print(f"{symbol}: 📉 Kumulierter Verlust: {capital_lost:.2f} USDT")
-            break
+
+            # TP- und SL-Absicherung setzen
+            tp_order_type = "TAKE_PROFIT_MARKET"
+            sl_order_type = "STOP_MARKET"
+
+            tp_side = "SELL" if direction == "LONG" else "BUY"
+            sl_side = "SELL" if direction == "LONG" else "BUY"
+            position_side = "LONG" if direction == "LONG" else "SHORT"
+
+            # Take-Profit setzen
+            try:
+                client.new_order(
+                    symbol=symbol,
+                    side=tp_side,
+                    positionSide=position_side,
+                    type=tp_order_type,
+                    stopPrice=round(tp, 4),
+                    closePosition=True,
+                    timeInForce="GTC"
+                )
+                log_print(f"{symbol}: ✅ TP gesetzt bei {tp:.4f}")
+            except Exception as e:
+                log_print(f"{symbol}: ❌ Fehler beim Setzen des TP: {e}")
+
+            # Stop-Loss setzen
+            try:
+                client.new_order(
+                    symbol=symbol,
+                    side=sl_side,
+                    positionSide=position_side,
+                    type=sl_order_type,
+                    stopPrice=round(sl, 4),
+                    closePosition=True,
+                    timeInForce="GTC"
+                )
+                log_print(f"{symbol}: ✅ SL gesetzt bei {sl:.4f}")
+            except Exception as e:
+                log_print(f"{symbol}: ❌ Fehler beim Setzen des SL: {e}")
+
+            break  # success, raus aus Retry-Schleife
+
         except Exception as e:
             log_print(f"{symbol}: ❌ Order-Versuch {attempt + 1} fehlgeschlagen: {e}")
             time.sleep(2)
+
 
 def run_bot():
     log_print(f"🚀 run_bot gestartet")
@@ -183,12 +240,14 @@ def scheduler_loop():
 @app.route("/")
 def home():
     return "Bot läuft"
-
+    
 if __name__ == "__main__":
     send_telegram("🚀 Bot gestartet")
-    threading.Thread(target=run_bot).start()
+    run_bot()  # Einmal direkt starten
+    schedule.every(5).minutes.do(run_bot)  # Dann alle 5 Min
     threading.Thread(target=scheduler_loop).start()
     app.run(host="0.0.0.0", port=8080)
+
 
 
 
