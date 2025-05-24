@@ -254,7 +254,7 @@ if __name__ == "__main__":
     # 1. Starte Bot direkt einmal
     run_bot()
 
-        # 1b. Test-Order auslösen
+    # 1b. Test-Order auslösen (einmalig beim Start)
     test_symbol = "LINAUSDT"
     test_order = {
         "direction": "LONG",
@@ -266,10 +266,8 @@ if __name__ == "__main__":
     send_telegram(test_order["msg"])
     place_order(test_symbol, test_order["direction"], test_order["qty"], test_order["tp"], test_order["sl"])
 
-
+    # 2. Starte Scheduler
     schedule.every(1).minutes.do(run_bot)
-
-    # 2. Starte den Scheduler im Hintergrund
     threading.Thread(target=scheduler_loop, daemon=True).start()
 
     # 3. Starte Flask nur, wenn Port 8080 frei ist
@@ -278,9 +276,10 @@ if __name__ == "__main__":
     else:
         print("⚠️ Flask-Start übersprungen: Port 8080 ist belegt.")
 
-    # 4. Endlosschleife damit main.py nicht sofort beendet wird
+    # 4. Endlosschleife
     while True:
         time.sleep(60)
+
 
 
 
