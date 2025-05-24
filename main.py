@@ -254,6 +254,19 @@ if __name__ == "__main__":
     # 1. Starte Bot direkt einmal
     run_bot()
 
+        # 1b. Test-Order auslösen
+    test_symbol = "LINAUSDT"
+    test_order = {
+        "direction": "LONG",
+        "qty": 1000,
+        "tp": 0.0123,
+        "sl": 0.0105,
+        "msg": "📢 Testsignal LONG für LINAUSDT (manuell ausgelöst)"
+    }
+    send_telegram(test_order["msg"])
+    place_order(test_symbol, test_order["direction"], test_order["qty"], test_order["tp"], test_order["sl"])
+
+
     schedule.every(1).minutes.do(run_bot)
 
     # 2. Starte den Scheduler im Hintergrund
