@@ -15,6 +15,8 @@ from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD
 from ta.trend import ADXIndicator
 from binance.um_futures import UMFutures
+from decimal import Decimal, ROUND_DOWN
+
 
 # Initialisiere den Binance-Client mit nur einem API-Zugang
 client = UMFutures(key=os.getenv("BINANCE_API_KEY"), secret=os.getenv("BINANCE_API_SECRET"))
@@ -122,9 +124,31 @@ def analyze_symbol(symbol):
            f"RSI: {rsi:.2f}, EMA: {ema20:.2f}/{ema50:.2f}, ADX: {adx:.2f}\n"
            f"TP: {tp:.4f} | SL: {sl:.4f}")
     return {"direction": direction, "qty": qty, "tp": tp, "sl": sl, "msg": msg}, None
+
+def round_to_step(value, step):
+    """
+    Rundet einen Wert sauber auf die zulässige Schrittgröße (Tickgröße oder Stückelung).
+    Beispiel: 0.07631 bei Schritt 0.01 → 0.07
+    """
+    d_value = Decimal(str(value))
+    d_step = Decimal(str(step))
+    return float((d_value // d_step) * d_step)
+
     
 def place_order(symbol, direction, quantity, tp, sl):
     log_print(f"{symbol}: Starte Orderversuch mit qty={quantity}, TP={tp}, SL={sl}")
+
+    # ✅ Hole die erlaubten Rundungswerte von Binance
+    exchange_info = client.futures_exchange_info()
+    symbol_info = next(s for s in exchange_info['symbols'] if s['symbol'] == symbol)
+    price_step = next(f for f in symbol_info['filters'] if f['filterType'] == 'PRICE_FILTER')['tickSize']
+    qty_step = next(f for f in symbol_info['filters'] if f['filterType'] == 'LOT_SIZE')['stepSize']
+
+    tp = round_to_step(tp, price_step)
+    sl = round_to_step(sl, price_step)
+    quantity = round_to_step(quantity, qty_step)
+
+
     side = "BUY" if direction == "LONG" else "SELL"
     position = "LONG" if direction == "LONG" else "SHORT"
 
@@ -254,17 +278,6 @@ if __name__ == "__main__":
     # 1. Starte Bot direkt einmal
     run_bot()
 
-    # 1b. Test-Order auslösen (einmalig beim Start)
-    test_symbol = "LINAUSDT"
-    test_order = {
-        "direction": "LONG",
-        "qty": 1000,
-        "tp": 0.0123,
-        "sl": 0.0105,
-        "msg": "📢 Testsignal LONG für LINAUSDT (manuell ausgelöst)"
-    }
-    send_telegram(test_order["msg"])
-    place_order(test_symbol, test_order["direction"], test_order["qty"], test_order["tp"], test_order["sl"])
 
     # 2. Starte Scheduler
     schedule.every(1).minutes.do(run_bot)
