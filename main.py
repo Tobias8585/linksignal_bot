@@ -135,11 +135,12 @@ def round_to_step(value, step):
     return float((d_value // d_step) * d_step)
 
     
+
 def place_order(symbol, direction, quantity, tp, sl):
     log_print(f"{symbol}: Starte Orderversuch mit qty={quantity}, TP={tp}, SL={sl}")
 
-    # ✅ Hole die erlaubten Rundungswerte von Binance
-    exchange_info = client.futures_exchange_info()
+    # Korrekte Methode für Exchange Info:
+    exchange_info = client.exchange_info()
     symbol_info = next(s for s in exchange_info['symbols'] if s['symbol'] == symbol)
     price_step = next(f for f in symbol_info['filters'] if f['filterType'] == 'PRICE_FILTER')['tickSize']
     qty_step = next(f for f in symbol_info['filters'] if f['filterType'] == 'LOT_SIZE')['stepSize']
@@ -147,7 +148,6 @@ def place_order(symbol, direction, quantity, tp, sl):
     tp = round_to_step(tp, price_step)
     sl = round_to_step(sl, price_step)
     quantity = round_to_step(quantity, qty_step)
-
 
     side = "BUY" if direction == "LONG" else "SELL"
     position = "LONG" if direction == "LONG" else "SHORT"
@@ -165,7 +165,6 @@ def place_order(symbol, direction, quantity, tp, sl):
 
     for attempt in range(3):
         try:
-            # Market-Order senden
             client.new_order(
                 symbol=symbol,
                 side=side,
@@ -292,6 +291,7 @@ if __name__ == "__main__":
     # 4. Endlosschleife
     while True:
         time.sleep(60)
+
 
 
 
