@@ -270,13 +270,12 @@ import socket
 def is_port_free(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("0.0.0.0", port)) != 0
-
+        
 if __name__ == "__main__":
     send_telegram("🚀 Bot gestartet")
 
     # 1. Starte Bot direkt einmal
     run_bot()
-
 
     # 2. Starte Scheduler
     schedule.every(1).minutes.do(run_bot)
