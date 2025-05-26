@@ -22,7 +22,7 @@ def get_market_trend(client, symbols):
 
     def get_change(symbol, interval):
         try:
-            klines = client.get_klines(symbol=symbol, interval=interval, limit=2)
+            klines = client.klines(symbol=symbol, interval=interval, limit=2)
             open_price = float(klines[0][1])
             close_price = float(klines[1][4])
             return ((close_price - open_price) / open_price) * 100
@@ -59,14 +59,20 @@ def get_market_trend(client, symbols):
         elif bearish_criteria >= 2:
             bearish += 1
 
-        time.sleep(0.1)  # API-Schutz
+        time.sleep(0.1)  # API-Schutz pro Symbol
 
-    if bullish >= 20:
+    # ✅ Rückgabe am Ende – nur einmal
+    if bullish >= 25:
+        return "strong_bullish"
+    elif bearish >= 25:
+        return "strong_bearish"
+    elif bullish >= 20:
         return "bullish"
     elif bearish >= 20:
         return "bearish"
     else:
         return "neutral"
+
 
 
 
@@ -86,6 +92,29 @@ def log_print(msg):
     print(msg, flush=True)
     log_file.write(f"{msg}\n")
     log_file.flush()
+
+# ✅ HIER EINFÜGEN:
+import csv
+from datetime import datetime
+
+def log_trade(symbol, direction, entry_price, qty, tp, sl, callback_rate):
+    filename = "trades.csv"
+    file_exists = os.path.isfile(filename)
+    with open(filename, mode="a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(["timestamp", "symbol", "direction", "entry_price", "qty", "tp", "sl", "callback_rate"])
+        writer.writerow([
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            symbol,
+            direction,
+            entry_price,
+            qty,
+            tp,
+            sl,
+            callback_rate
+        ])
+
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = int(os.getenv("CHAT_ID"))
@@ -131,38 +160,33 @@ def analyze_symbol(symbol):
     reasons = []
 
     # Volumen-Check
-    if volume < 0.65 * avg_volume:
+    if volume < 0.5 * avg_volume:
         reasons.append(f"Volumen zu gering ({volume:.2f} < {avg_volume:.2f})")
         return None, reasons
 
-    # Trendstärke-Check (ADX)
-    if adx < 10:
-        reasons.append(f"ADX zu schwach ({adx:.2f}) – kein echter Trend")
-        return None, reasons
 
-
-
-    if rsi < 35 or rsi > 65:
+    if rsi < 33 or rsi > 67:
         reasons.append(f"RSI außerhalb der Long-/Short-Bereiche ({rsi:.2f})")
         return None, reasons
 
-    if 35 <= rsi <= 44:
-        if ema20 <= ema50:
-            reasons.append("EMA20 nicht über EMA50 (kein Aufwärtstrend)")
+    if 33 <= rsi <= 46:
+        if ema20 <= ema50 * 0.995:
+            reasons.append("EMA20 deutlich nicht über EMA50 (kein Aufwärtstrend)")
             return None, reasons
         if macd_line <= macd_signal:
             reasons.append("MACD gegen LONG")
             return None, reasons
         direction = "LONG"
 
-    elif 56 <= rsi <= 65:
-        if ema20 >= ema50:
-            reasons.append("EMA20 nicht unter EMA50 (kein Abwärtstrend)")
+    elif 54 <= rsi <= 67:
+        if ema20 >= ema50 * 1.005:
+            reasons.append("EMA20 deutlich nicht unter EMA50 (kein Abwärtstrend)")
             return None, reasons
         if macd_line >= macd_signal:
             reasons.append("MACD gegen SHORT")
             return None, reasons
         direction = "SHORT"
+
 
     else:
         reasons.append(f"RSI zu neutral für Long/Short ({rsi:.2f})")
@@ -173,9 +197,17 @@ def analyze_symbol(symbol):
     qty = round(START_CAPITAL / price, 3)
 
     msg = (f"📢 *Signal {direction} für {symbol}*\n"
-           f"RSI: {rsi:.2f}, EMA: {ema20:.2f}/{ema50:.2f}, ADX: {adx:.2f}\n"
-           f"TP: {tp:.4f} | SL: {sl:.4f}")
-    return {"direction": direction, "qty": qty, "tp": tp, "sl": sl, "msg": msg}, None
+            f"RSI: {rsi:.2f}, EMA: {ema20:.2f}/{ema50:.2f}\n"
+            f"TP: {tp:.4f} | SL: {sl:.4f}")
+    return {
+        "direction": direction,
+        "qty": qty,
+        "tp": tp,
+        "sl": sl,
+        "msg": msg
+    }, []
+
+
 
 def round_to_step(value, step):
     """
@@ -191,7 +223,6 @@ def round_to_step(value, step):
 def place_order(symbol, direction, quantity, tp, sl):
     log_print(f"{symbol}: Starte Orderversuch mit qty={quantity}, TP={tp}, SL={sl}")
 
-    # Korrekte Methode für Exchange Info:
     exchange_info = client.exchange_info()
     symbol_info = next(s for s in exchange_info['symbols'] if s['symbol'] == symbol)
     price_step = next(f for f in symbol_info['filters'] if f['filterType'] == 'PRICE_FILTER')['tickSize']
@@ -215,9 +246,25 @@ def place_order(symbol, direction, quantity, tp, sl):
         send_telegram("⚠️ Maximaler Verlust erreicht – Bot gestoppt")
         return
 
+    # ATR für dynamische Trailing-Logik berechnen
+    df = get_klines(symbol, '5m', 100)
+    df['ATR'] = talib.ATR(df['High'], df['Low'], df['Close'], timeperiod=14)
+    last_atr = df['ATR'].iloc[-1] if 'ATR' in df and not df['ATR'].isna().all() else 0.0
+
+    # Dynamische Trailing-Werte setzen
+    if last_atr < 0.005:
+        callback_rate = 0.35
+        activation_multiplier = 1.007
+    elif last_atr < 0.015:
+        callback_rate = 0.75
+        activation_multiplier = 1.01
+    else:
+        callback_rate = 1.2
+        activation_multiplier = 1.015
+
     for attempt in range(3):
         try:
-            client.new_order(
+            order = client.new_order(
                 symbol=symbol,
                 side=side,
                 positionSide=position,
@@ -225,34 +272,37 @@ def place_order(symbol, direction, quantity, tp, sl):
                 quantity=quantity
             )
 
+            # Einstiegspreis aus tatsächlicher Order verwenden
+            price = float(order['fills'][0]['price'])
+
             capital_lost += potenzieller_verlust
             log_print(f"{symbol}: ✅ Order {side} {quantity} erfolgreich")
             log_print(f"{symbol}: 📉 Kumulierter Verlust: {capital_lost:.2f} USDT")
 
-            # TP- und SL-Absicherung setzen
-            tp_order_type = "TAKE_PROFIT_MARKET"
-            sl_order_type = "STOP_MARKET"
+            log_trade(symbol, direction, price, quantity, tp, sl, callback_rate)
 
-            tp_side = "SELL" if direction == "LONG" else "BUY"
+
+            sl_order_type = "STOP_MARKET"
             sl_side = "SELL" if direction == "LONG" else "BUY"
             position_side = "LONG" if direction == "LONG" else "SHORT"
 
-            # Take-Profit setzen
+            # ✅ Dynamischer Trailing TP
             try:
+                activation_price = round(price * activation_multiplier, 4) if direction == "LONG" else round(price / activation_multiplier, 4)
                 client.new_order(
                     symbol=symbol,
-                    side=tp_side,
+                    side=sl_side,
                     positionSide=position_side,
-                    type=tp_order_type,
-                    stopPrice=round(tp, 4),
-                    closePosition=True,
-                    timeInForce="GTC"
+                    type="TRAILING_STOP_MARKET",
+                    activationPrice=activation_price,
+                    callbackRate=callback_rate,
+                    reduceOnly=True
                 )
-                log_print(f"{symbol}: ✅ TP gesetzt bei {tp:.4f}")
+                log_print(f"{symbol}: ✅ Trailing TP gesetzt – Aktivierung bei {activation_price}, callback {callback_rate}%")
             except Exception as e:
-                log_print(f"{symbol}: ❌ Fehler beim Setzen des TP: {e}")
+                log_print(f"{symbol}: ❌ Fehler beim Setzen des Trailing TP: {e}")
 
-            # Stop-Loss setzen
+            # Fester SL
             try:
                 client.new_order(
                     symbol=symbol,
@@ -267,7 +317,7 @@ def place_order(symbol, direction, quantity, tp, sl):
             except Exception as e:
                 log_print(f"{symbol}: ❌ Fehler beim Setzen des SL: {e}")
 
-            break  # success, raus aus Retry-Schleife
+            break
 
         except Exception as e:
             log_print(f"{symbol}: ❌ Order-Versuch {attempt + 1} fehlgeschlagen: {e}")
@@ -299,13 +349,14 @@ def run_bot():
                     log_print(f"{sym}: ❌ Kein gültiges Signal – Gründe: {', '.join(reasons)}")
                     continue
 
-                # ⭐ NEU: Signal filtern nach Markttrend
-                if res["direction"] == "LONG" and market_trend != "bullish":
-                    log_print(f"{sym}: ⚠️ Long-Signal blockiert durch Markttrend: {market_trend}")
+                # ❗ Nur bei extremem Gegentrend blockieren
+                if res["direction"] == "LONG" and market_trend == "strong_bearish":
+                    log_print(f"{sym}: ❌ Long blockiert durch starken Bärenmarkt")
                     continue
-                if res["direction"] == "SHORT" and market_trend != "bearish":
-                    log_print(f"{sym}: ⚠️ Short-Signal blockiert durch Markttrend: {market_trend}")
+                if res["direction"] == "SHORT" and market_trend == "strong_bullish":
+                    log_print(f"{sym}: ❌ Short blockiert durch starken Bullenmarkt")
                     continue
+
 
                 send_telegram(res["msg"])
                 signals += 1
@@ -359,8 +410,6 @@ if __name__ == "__main__":
     # 4. Endlosschleife
     while True:
         time.sleep(60)
-
-
 
 
 
