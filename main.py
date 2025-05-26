@@ -16,7 +16,7 @@ from ta.trend import EMAIndicator, MACD
 from ta.trend import ADXIndicator
 from binance.um_futures import UMFutures
 from decimal import Decimal, ROUND_DOWN
-import talib 
+
 
 def get_market_trend(client, symbols):
     import time
