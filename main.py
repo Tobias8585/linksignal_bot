@@ -346,8 +346,8 @@ def place_order(symbol, direction, quantity, tp, sl):
 
 
 def run_bot():
-    log_print("\U0001F680 run_bot gestartet")
-    log_print("\U0001F4CA Starte neue Analyse...")
+    log_print("🚀 run_bot gestartet")  # funktioniert nur, wenn dein Terminal UTF-8-kompatibel ist
+    log_print("📊 Starte neue Analyse...")
 
     try:
         info = client.exchange_info()
@@ -369,37 +369,35 @@ def run_bot():
         for sym in symbols:
             try:
                 for direction in ["long", "short"]:
-                    log_print(f"{sym}: Analyse für {direction.upper()}")
+                    log_print(f"{sym}: 🔍 Analyse für {direction.upper()}")
                     res, reasons = analyze_symbol(sym, direction)
                     analyzed += 1
 
                     if res is None:
-                        log_print(f"{sym}: ❌ Kein gültiges {direction.upper()}-Signal – Gründe: {', '.join(reasons)}")
+                        grund = ', '.join(reasons)
+                        log_print(f"{sym}: ❌ Kein gültiges {direction.upper()}-Signal – Gründe: {grund}")
                         continue
 
                     if res["direction"] == "open_long" and market_trend == "strong_bearish":
-                        log_print(f"{sym}: ❌ Long blockiert durch starken Bärenmarkt")
+                        log_print(f"{sym}: ⛔️ LONG blockiert durch starken Bärenmarkt")
                         continue
                     if res["direction"] == "open_short" and market_trend == "strong_bullish":
-                        log_print(f"{sym}: ❌ Short blockiert durch starken Bullenmarkt")
+                        log_print(f"{sym}: ⛔️ SHORT blockiert durch starken Bullenmarkt")
                         continue
 
                     send_telegram(res["msg"])
                     signals += 1
 
                     if bot_active:
-                        log_print(f"{sym}: ✅ Signal gültig – starte Order...")
+                        log_print(f"{sym}: ✅ {direction.upper()}-Signal gültig – starte Order...")
                         place_order(sym, res["direction"], res["qty"], res["tp"], res["sl"])
                         orders += 1
                     else:
                         log_print(f"{sym}: 🔒 Bot nicht aktiv – keine Order trotz gültigem Signal.")
             except Exception as e:
-                log_print(f"{sym}: Analyse-Fehler {e}")
+                log_print(f"{sym}: ❌ Analyse-Fehler: {e}")
 
         log_print(f"✅ Analyse abgeschlossen: {analyzed} geprüft, {signals} Signale, {orders} Orders")
-
-    except Exception as e:
-        log_print(f"❌ Lauf-Fehler: {e}")
 
 
 def scheduler_loop():
