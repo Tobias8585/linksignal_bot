@@ -278,11 +278,11 @@ def place_order(symbol, direction, quantity, tp, sl):
             )
 
          # Einstiegspreis aus tatsächlicher Order verwenden
-        try:
-            price = float(order.get('avgFillPrice') or order.get('price') or order['fills'][0]['price'])
-        except Exception as e:
-            log_print(f"{symbol}: ❌ Kein Preis in Orderantwort: {e}")
-            return
+            try:
+                price = float(order.get('avgFillPrice') or order.get('price') or order['fills'][0]['price'])
+            except Exception as e:
+                log_print(f"{symbol}: ❌ Kein Preis in Orderantwort: {e}")
+                continue  # ➤ versuche den nächsten attempt
 
 
             capital_lost += potenzieller_verlust
