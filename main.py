@@ -17,6 +17,58 @@ from ta.trend import ADXIndicator
 from binance.um_futures import UMFutures
 from decimal import Decimal, ROUND_DOWN
 
+def get_market_trend(client, symbols):
+    import time
+
+    def get_change(symbol, interval):
+        try:
+            klines = client.get_klines(symbol=symbol, interval=interval, limit=2)
+            open_price = float(klines[0][1])
+            close_price = float(klines[1][4])
+            return ((close_price - open_price) / open_price) * 100
+        except Exception as e:
+            print(f"Fehler bei {symbol} ({interval}): {e}")
+            return 0
+
+    bullish = 0
+    bearish = 0
+
+    top_symbols = symbols[:30]  # nur die ersten 30 (sortiert nach Volumen vorher)
+
+    for symbol in top_symbols:
+        c5 = get_change(symbol, "5m")
+        c15 = get_change(symbol, "15m")
+        c1h = get_change(symbol, "1h")
+        c24h = get_change(symbol, "1d")  # daily
+
+        bullish_criteria = sum([
+            c5 > 0.3,
+            c15 > 0.5,
+            c1h > 0.7,
+            c24h > 1.0
+        ])
+        bearish_criteria = sum([
+            c5 < -0.3,
+            c15 < -0.5,
+            c1h < -0.7,
+            c24h < -1.0
+        ])
+
+        if bullish_criteria >= 2:
+            bullish += 1
+        elif bearish_criteria >= 2:
+            bearish += 1
+
+        time.sleep(0.1)  # API-Schutz
+
+    if bullish >= 20:
+        return "bullish"
+    elif bearish >= 20:
+        return "bearish"
+    else:
+        return "neutral"
+
+
 
 # Initialisiere den Binance-Client mit nur einem API-Zugang
 client = UMFutures(key=os.getenv("BINANCE_API_KEY"), secret=os.getenv("BINANCE_API_SECRET"))
@@ -223,14 +275,20 @@ def place_order(symbol, direction, quantity, tp, sl):
 
 
 def run_bot():
-    log_print("🚀 run_bot gestartet")
-    log_print("📊 Starte neue Analyse...")  # <== NEU
+    log_print("\U0001F680 run_bot gestartet")
+    log_print("\U0001F4CA Starte neue Analyse...")
     try:
         info = client.exchange_info()
         symbols = [s['symbol'] for s in info['symbols']
                    if s['contractType'] == "PERPETUAL" and s['quoteAsset'] == "USDT" and s['status'] == "TRADING"]
         log_print(f"✅ {len(symbols)} Symbole geladen")
+
+        # ⭐ NEU: Markttrend bestimmen
+        market_trend = get_market_trend(client, symbols)
+        log_print(f"⬆️ Markttrend erkannt: {market_trend.upper()}")
+
         analyzed = signals = orders = 0
+
         for sym in symbols:
             try:
                 log_print(f"{sym}: Analyse")
@@ -239,6 +297,14 @@ def run_bot():
 
                 if res is None:
                     log_print(f"{sym}: ❌ Kein gültiges Signal – Gründe: {', '.join(reasons)}")
+                    continue
+
+                # ⭐ NEU: Signal filtern nach Markttrend
+                if res["direction"] == "LONG" and market_trend != "bullish":
+                    log_print(f"{sym}: ⚠️ Long-Signal blockiert durch Markttrend: {market_trend}")
+                    continue
+                if res["direction"] == "SHORT" and market_trend != "bearish":
+                    log_print(f"{sym}: ⚠️ Short-Signal blockiert durch Markttrend: {market_trend}")
                     continue
 
                 send_telegram(res["msg"])
@@ -252,9 +318,12 @@ def run_bot():
                     log_print(f"{sym}: 🔒 Bot nicht aktiv – keine Order trotz gültigem Signal.")
             except Exception as e:
                 log_print(f"{sym}: Analyse-Fehler {e}")
+
         log_print(f"✅ Analyse abgeschlossen: {analyzed} geprüft, {signals} Signale, {orders} Orders")
+
     except Exception as e:
         log_print(f"❌ Lauf-Fehler: {e}")
+
 
 def scheduler_loop():
     while True:
