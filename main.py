@@ -16,6 +16,7 @@ from ta.trend import EMAIndicator, MACD
 from ta.trend import ADXIndicator
 from binance.um_futures import UMFutures
 from decimal import Decimal, ROUND_DOWN
+from ta.volatility import AverageTrueRange
 
 
 def get_market_trend(client, symbols):
@@ -249,7 +250,10 @@ def place_order(symbol, direction, quantity, tp, sl):
 
     # ATR für dynamische Trailing-Logik berechnen
     df = get_klines(symbol, '5m', 100)
-    df['ATR'] = talib.ATR(df['High'], df['Low'], df['Close'], timeperiod=14)
+    from ta.volatility import AverageTrueRange
+    atr_calc = AverageTrueRange(df['high'], df['low'], df['close'], window=14)
+    df['ATR'] = atr_calc.average_true_range()
+
     last_atr = df['ATR'].iloc[-1] if 'ATR' in df and not df['ATR'].isna().all() else 0.0
 
     # Dynamische Trailing-Werte setzen
