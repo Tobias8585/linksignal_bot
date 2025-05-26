@@ -162,7 +162,7 @@ def analyze_symbol(symbol):
     reasons = []
 
     # Volumen-Check
-    if volume < 0.5 * avg_volume:
+    if volume < 0.6 * avg_volume:
         reasons.append(f"Volumen zu gering ({volume:.2f} < {avg_volume:.2f})")
         return None, reasons
 
