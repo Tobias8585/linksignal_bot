@@ -365,7 +365,6 @@ def run_bot():
 
         # ✅ Initialisiere Zähler
         analyzed = signals = orders = 0
-
         for sym in symbols:
             try:
                 for direction in ["long", "short"]:
@@ -394,11 +393,15 @@ def run_bot():
                         orders += 1
                     else:
                         log_print(f"{sym}: 🔒 Bot nicht aktiv – keine Order trotz gültigem Signal.")
+
             except Exception as e:
                 log_print(f"{sym}: ❌ Analyse-Fehler: {e}")
 
+        # ✅ Diese Zeile muss auf gleicher Ebene wie das `for sym in symbols:` stehen
         log_print(f"✅ Analyse abgeschlossen: {analyzed} geprüft, {signals} Signale, {orders} Orders")
 
+    except Exception as e:
+        log_print(f"❌ Lauf-Fehler: {e}")
 
 def scheduler_loop():
     while True:
