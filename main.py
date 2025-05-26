@@ -142,8 +142,9 @@ def get_klines(symbol, interval="5m", limit=100):
     except Exception as e:
         log_print(f"{symbol}: Fehler beim Laden: {e}")
         return None
+        
 
-def analyze_symbol(symbol):
+def analyze_symbol(symbol, direction):
     df = get_klines(symbol, limit=50)
     if df is None or len(df) < 20:
         return None, ["Unzureichende Daten"]
@@ -166,43 +167,50 @@ def analyze_symbol(symbol):
         reasons.append(f"Volumen zu gering ({volume:.2f} < {avg_volume:.2f})")
         return None, reasons
 
-
-    if rsi < 33 or rsi > 67:
-        reasons.append(f"RSI außerhalb der Long-/Short-Bereiche ({rsi:.2f})")
-        return None, reasons
-
-    if 33 <= rsi <= 46:
-        if ema20 <= ema50 * 0.995:
-            reasons.append("EMA20 deutlich nicht über EMA50 (kein Aufwärtstrend)")
+    if direction == "long":
+        if rsi < 37:
+            reasons.append(f"RSI zu niedrig für LONG ({rsi:.2f})")
+            return None, reasons
+        if ema20 <= ema50:
+            reasons.append("EMA20 nicht über EMA50 für LONG")
             return None, reasons
         if macd_line <= macd_signal:
             reasons.append("MACD gegen LONG")
             return None, reasons
-        direction = "LONG"
+        trade_direction = "open_long"
 
-    elif 54 <= rsi <= 67:
-        if ema20 >= ema50 * 1.005:
-            reasons.append("EMA20 deutlich nicht unter EMA50 (kein Abwärtstrend)")
+    elif direction == "short":
+        if rsi > 63:
+            reasons.append(f"RSI zu hoch für SHORT ({rsi:.2f})")
+            return None, reasons
+        if ema20 >= ema50:
+            reasons.append("EMA20 nicht unter EMA50 für SHORT")
             return None, reasons
         if macd_line >= macd_signal:
             reasons.append("MACD gegen SHORT")
             return None, reasons
-        direction = "SHORT"
-
+        trade_direction = "open_short"
 
     else:
-        reasons.append(f"RSI zu neutral für Long/Short ({rsi:.2f})")
+        reasons.append(f"Ungültige Trade-Richtung oder RSI zu neutral ({rsi:.2f})")
         return None, reasons
 
-    tp = price + 1.5 * atr if direction == "LONG" else price - 1.5 * atr
-    sl = price - 0.9 * atr if direction == "LONG" else price + 0.9 * atr
+    # TP und SL festlegen (korrigiert)
+    if trade_direction == "open_long":
+        tp = price + 1.5 * atr
+        sl = price - 0.9 * atr
+    else:  # open_short
+        tp = price - 1.5 * atr
+        sl = price + 0.9 * atr
+
     qty = round(START_CAPITAL / price, 3)
 
-    msg = (f"📢 *Signal {direction} für {symbol}*\n"
-            f"RSI: {rsi:.2f}, EMA: {ema20:.2f}/{ema50:.2f}\n"
-            f"TP: {tp:.4f} | SL: {sl:.4f}")
+    msg = (f"📢 *Signal {trade_direction} für {symbol}*\n"
+           f"RSI: {rsi:.2f}, EMA20/EMA50: {ema20:.2f}/{ema50:.2f}\n"
+           f"TP: {tp:.4f} | SL: {sl:.4f}")
+
     return {
-        "direction": direction,
+        "direction": trade_direction,
         "qty": qty,
         "tp": tp,
         "sl": sl,
