@@ -135,13 +135,18 @@ def get_klines(symbol, interval="5m", limit=100):
     url = f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}"
     try:
         res = requests.get(url, timeout=5)
-        df = pd.DataFrame(res.json(), columns=['time','open','high','low','close','volume','x','y','z','a','b','c'])
-        for c in ['open','high','low','close','volume']:
+        df = pd.DataFrame(res.json(), columns=[
+            'timestamp', 'open', 'high', 'low', 'close', 'volume',
+            'close_time', 'quote_asset_volume', 'number_of_trades',
+            'taker_buy_base_volume', 'taker_buy_quote_volume', 'ignore'
+        ])
+        for c in ['open', 'high', 'low', 'close', 'volume']:
             df[c] = df[c].astype(float)
         return df
     except Exception as e:
         log_print(f"{symbol}: Fehler beim Laden: {e}")
         return None
+
         
 
 def analyze_symbol(symbol, direction):
@@ -162,14 +167,13 @@ def analyze_symbol(symbol, direction):
 
     reasons = []
 
-    # Volumen-Check
     if volume < 0.6 * avg_volume:
         reasons.append(f"Volumen zu gering ({volume:.2f} < {avg_volume:.2f})")
         return None, reasons
 
     if direction == "long":
-        if rsi < 37:
-            reasons.append(f"RSI zu niedrig für LONG ({rsi:.2f})")
+        if rsi > 30:
+            reasons.append(f"RSI zu hoch für LONG ({rsi:.2f})")
             return None, reasons
         if ema20 <= ema50:
             reasons.append("EMA20 nicht über EMA50 für LONG")
@@ -180,8 +184,8 @@ def analyze_symbol(symbol, direction):
         trade_direction = "open_long"
 
     elif direction == "short":
-        if rsi > 63:
-            reasons.append(f"RSI zu hoch für SHORT ({rsi:.2f})")
+        if rsi < 70:
+            reasons.append(f"RSI zu niedrig für SHORT ({rsi:.2f})")
             return None, reasons
         if ema20 >= ema50:
             reasons.append("EMA20 nicht unter EMA50 für SHORT")
@@ -192,14 +196,13 @@ def analyze_symbol(symbol, direction):
         trade_direction = "open_short"
 
     else:
-        reasons.append(f"Ungültige Trade-Richtung oder RSI zu neutral ({rsi:.2f})")
+        reasons.append(f"Ungültige Richtung oder RSI zu neutral ({rsi:.2f})")
         return None, reasons
 
-    # TP und SL festlegen (korrigiert)
     if trade_direction == "open_long":
         tp = price + 1.5 * atr
         sl = price - 0.9 * atr
-    else:  # open_short
+    else:
         tp = price - 1.5 * atr
         sl = price + 0.9 * atr
 
@@ -345,46 +348,51 @@ def place_order(symbol, direction, quantity, tp, sl):
 def run_bot():
     log_print("\U0001F680 run_bot gestartet")
     log_print("\U0001F4CA Starte neue Analyse...")
+
     try:
         info = client.exchange_info()
+    except Exception as e:
+        log_print(f"❌ exchange_info-Fehler: {e}")
+        return
+
+    try:
         symbols = [s['symbol'] for s in info['symbols']
                    if s['contractType'] == "PERPETUAL" and s['quoteAsset'] == "USDT" and s['status'] == "TRADING"]
         log_print(f"✅ {len(symbols)} Symbole geladen")
 
-        # ⭐ NEU: Markttrend bestimmen
         market_trend = get_market_trend(client, symbols)
         log_print(f"⬆️ Markttrend erkannt: {market_trend.upper()}")
 
+        # ✅ Initialisiere Zähler
         analyzed = signals = orders = 0
 
         for sym in symbols:
             try:
-                log_print(f"{sym}: Analyse")
-                res, reasons = analyze_symbol(sym)
-                analyzed += 1
+                for direction in ["long", "short"]:
+                    log_print(f"{sym}: Analyse für {direction.upper()}")
+                    res, reasons = analyze_symbol(sym, direction)
+                    analyzed += 1
 
-                if res is None:
-                    log_print(f"{sym}: ❌ Kein gültiges Signal – Gründe: {', '.join(reasons)}")
-                    continue
+                    if res is None:
+                        log_print(f"{sym}: ❌ Kein gültiges {direction.upper()}-Signal – Gründe: {', '.join(reasons)}")
+                        continue
 
-                # ❗ Nur bei extremem Gegentrend blockieren
-                if res["direction"] == "LONG" and market_trend == "strong_bearish":
-                    log_print(f"{sym}: ❌ Long blockiert durch starken Bärenmarkt")
-                    continue
-                if res["direction"] == "SHORT" and market_trend == "strong_bullish":
-                    log_print(f"{sym}: ❌ Short blockiert durch starken Bullenmarkt")
-                    continue
+                    if res["direction"] == "open_long" and market_trend == "strong_bearish":
+                        log_print(f"{sym}: ❌ Long blockiert durch starken Bärenmarkt")
+                        continue
+                    if res["direction"] == "open_short" and market_trend == "strong_bullish":
+                        log_print(f"{sym}: ❌ Short blockiert durch starken Bullenmarkt")
+                        continue
 
+                    send_telegram(res["msg"])
+                    signals += 1
 
-                send_telegram(res["msg"])
-                signals += 1
-
-                if bot_active:
-                    log_print(f"{sym}: ✅ Signal gültig – starte Order...")
-                    place_order(sym, res["direction"], res["qty"], res["tp"], res["sl"])
-                    orders += 1
-                else:
-                    log_print(f"{sym}: 🔒 Bot nicht aktiv – keine Order trotz gültigem Signal.")
+                    if bot_active:
+                        log_print(f"{sym}: ✅ Signal gültig – starte Order...")
+                        place_order(sym, res["direction"], res["qty"], res["tp"], res["sl"])
+                        orders += 1
+                    else:
+                        log_print(f"{sym}: 🔒 Bot nicht aktiv – keine Order trotz gültigem Signal.")
             except Exception as e:
                 log_print(f"{sym}: Analyse-Fehler {e}")
 
