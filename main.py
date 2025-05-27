@@ -417,29 +417,19 @@ import socket
 def is_port_free(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("0.0.0.0", port)) != 0
-        
 if __name__ == "__main__":
-    send_telegram("🚀 Bot gestartet")
+    send_telegram("🚀 Bot manuell gestartet (Live-Modus)")
 
-    # 1. Starte Bot direkt einmal
+    # Starte Bot direkt
     run_bot()
 
-    # 2. Starte Scheduler
+    # Wiederhole alle 1 Minuten
     schedule.every(1).minutes.do(run_bot)
-    threading.Thread(target=scheduler_loop, daemon=True).start()
 
-    # 3. Starte Flask nur, wenn Port 8080 frei ist
-    if is_port_free(8080):
-        threading.Thread(target=lambda: app.run(host="0.0.0.0", port=8080), daemon=True).start()
-    else:
-        print("⚠️ Flask-Start übersprungen: Port 8080 ist belegt.")
-
-    # 4. Endlosschleife
+    # Starte Schleife sichtbar im Terminal
     while True:
-        time.sleep(60)
-
-
-
+        schedule.run_pending()
+        time.sleep(1)
 
 
 
