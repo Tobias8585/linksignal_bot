@@ -159,7 +159,6 @@ def analyze_symbol(symbol, direction):
     macd_signal = MACD(df['close']).macd_signal().iloc[-1]
     ema20 = EMAIndicator(df['close'], window=20).ema_indicator().iloc[-1]
     ema50 = EMAIndicator(df['close'], window=50).ema_indicator().iloc[-1]
-    adx = ADXIndicator(df['high'], df['low'], df['close'], window=14).adx().iloc[-1]
     volume = df['volume'].iloc[-1]
     avg_volume = df['volume'].rolling(20).mean().iloc[-1]
     price = df['close'].iloc[-1]
@@ -167,38 +166,40 @@ def analyze_symbol(symbol, direction):
 
     reasons = []
 
+    # Volumen-Filter
     if volume < 0.6 * avg_volume:
         reasons.append(f"Volumen zu gering ({volume:.2f} < {avg_volume:.2f})")
         return None, reasons
 
+    # Long-Kriterien
     if direction == "long":
         if rsi > 30:
             reasons.append(f"RSI zu hoch für LONG ({rsi:.2f})")
-            return None, reasons
         if ema20 <= ema50:
             reasons.append("EMA20 nicht über EMA50 für LONG")
-            return None, reasons
         if macd_line <= macd_signal:
             reasons.append("MACD gegen LONG")
+        if reasons:
             return None, reasons
         trade_direction = "open_long"
 
+    # Short-Kriterien
     elif direction == "short":
         if rsi < 70:
             reasons.append(f"RSI zu niedrig für SHORT ({rsi:.2f})")
-            return None, reasons
         if ema20 >= ema50:
             reasons.append("EMA20 nicht unter EMA50 für SHORT")
-            return None, reasons
         if macd_line >= macd_signal:
             reasons.append("MACD gegen SHORT")
+        if reasons:
             return None, reasons
         trade_direction = "open_short"
 
     else:
-        reasons.append(f"Ungültige Richtung oder RSI zu neutral ({rsi:.2f})")
+        reasons.append("Ungültige Richtung")
         return None, reasons
 
+    # Berechne TP und SL
     if trade_direction == "open_long":
         tp = price + 1.5 * atr
         sl = price - 0.9 * atr
@@ -219,7 +220,6 @@ def analyze_symbol(symbol, direction):
         "sl": sl,
         "msg": msg
     }, []
-
 
 
 def round_to_step(value, step):
