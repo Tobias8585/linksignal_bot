@@ -99,13 +99,23 @@ def log_print(msg):
 import csv
 from datetime import datetime
 
-def log_trade(symbol, direction, entry_price, qty, tp, sl, callback_rate):
+def log_trade(symbol, direction, entry_price, qty, tp, sl, callback_rate,
+              rsi, ema20, ema50, macd_line, macd_signal,
+              current_volume, avg_volume, market_trend, atr, btc_strength):
+
     filename = "trades.csv"
     file_exists = os.path.isfile(filename)
+
     with open(filename, mode="a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
+
         if not file_exists:
-            writer.writerow(["timestamp", "symbol", "direction", "entry_price", "qty", "tp", "sl", "callback_rate"])
+            writer.writerow([
+                "timestamp", "symbol", "direction", "entry_price", "qty", "tp", "sl", "callback_rate",
+                "rsi", "ema_diff", "macd_diff", "volume_ratio", "market_trend",
+                "atr", "btc_strength", "weekday", "hour"
+            ])
+
         writer.writerow([
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             symbol,
@@ -114,8 +124,18 @@ def log_trade(symbol, direction, entry_price, qty, tp, sl, callback_rate):
             qty,
             tp,
             sl,
-            callback_rate
+            callback_rate,
+            round(rsi, 2),
+            round(ema20 - ema50, 5),
+            round(macd_line - macd_signal, 5),
+            round(current_volume / avg_volume, 3),
+            market_trend,
+            round(atr, 5),
+            round(btc_strength, 3),
+            datetime.now().weekday(),
+            datetime.now().hour
         ])
+
 
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
