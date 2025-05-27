@@ -175,8 +175,8 @@ def analyze_symbol(symbol, direction):
     if direction == "long":
         if rsi > 30:
             reasons.append(f"RSI zu hoch für LONG ({rsi:.2f})")
-        if ema20 <= ema50:
-            reasons.append("EMA20 nicht über EMA50 für LONG")
+        if ema20 <= ema50* 0.998:
+            reasons.append("EMA20 nicht über EMA50 (mit Spielraum) für LONG")
         if macd_line <= macd_signal:
             reasons.append("MACD gegen LONG")
         if reasons:
@@ -187,8 +187,8 @@ def analyze_symbol(symbol, direction):
     elif direction == "short":
         if rsi < 70:
             reasons.append(f"RSI zu niedrig für SHORT ({rsi:.2f})")
-        if ema20 >= ema50:
-            reasons.append("EMA20 nicht unter EMA50 für SHORT")
+        if ema20 >= ema50* 1.002:
+            reasons.append("EMA20 nicht unter EMA50 (mit Spielraum) für SHORT")
         if macd_line >= macd_signal:
             reasons.append("MACD gegen SHORT")
         if reasons:
