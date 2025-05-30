@@ -411,7 +411,7 @@ def analyze_symbol(symbol, direction):
         "volume": volume,
         "avg_volume": avg_volume,
         "atr": atr,
-        "btc_strength": 0.5
+        "btc_strength": btc_strength
     }, []
 
 
