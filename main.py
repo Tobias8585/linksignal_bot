@@ -1,3 +1,4 @@
+from ml_predict import predict_signal
 from dotenv import load_dotenv
 import os
 
@@ -17,6 +18,39 @@ from ta.trend import ADXIndicator
 from binance.um_futures import UMFutures
 from decimal import Decimal, ROUND_DOWN
 from ta.volatility import AverageTrueRange
+
+import csv
+from datetime import datetime
+
+def log_ml_data(symbol, direction, rsi, ema20, ema50, macd, volume_ratio, atr, market_trend, btc_strength, price_now):
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    weekday = datetime.now().weekday()
+    hour = datetime.now().hour
+
+    try:
+        with open("ml_log.csv", "a", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                now,
+                symbol,
+                direction,
+                round(rsi, 2),
+                round(ema20, 5),
+                round(ema50, 5),
+                round(macd, 5),
+                round(volume_ratio, 3),
+                round(atr, 5),
+                market_trend,
+                btc_strength,
+                weekday,
+                hour,
+                price_now,
+                "",  # Platzhalter für Preis in 5 Minuten
+                "",  # Label (1/0) später berechnet
+            ])
+    except Exception as e:
+        print(f"[ML_LOG] Fehler beim Schreiben in ml_log.csv: {e}", flush=True)
+
 
 
 def get_market_trend(client, symbols):
@@ -136,6 +170,27 @@ def log_trade(symbol, direction, entry_price, qty, tp, sl, callback_rate,
             datetime.now().hour
         ])
 
+import csv
+from datetime import datetime
+import os
+
+def log_trade_result(symbol, direction, entry_price, result):
+    file = "trade_log.csv"
+    exists = os.path.exists(file)
+
+    with open(file, mode="a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not exists:
+            writer.writerow(["Zeit", "Symbol", "Richtung", "Einstiegspreis", "Ergebnis"])
+        writer.writerow([
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            symbol,
+            direction,
+            round(entry_price, 4),
+            result
+        ])
+
+
 
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -184,42 +239,129 @@ def analyze_symbol(symbol, direction):
     price = df['close'].iloc[-1]
     atr = (df['high'] - df['low']).rolling(14).mean().iloc[-1]
 
+    # 🕯️ Candlestick-Analyse
+    candle_size = df['close'].iloc[-1] - df['open'].iloc[-1]
+    candle_direction = int(candle_size > 0)
+    total_range = df['high'].iloc[-1] - df['low'].iloc[-1]
+    candle_body_ratio = abs(df['close'].iloc[-1] - df['open'].iloc[-1]) / (total_range + 1e-6)
+
+    # 🌎 Handels-Session basierend auf Uhrzeit
+    current_hour = datetime.now().hour
+    if 0 <= current_hour < 8:
+        session = "Asia"
+    elif 8 <= current_hour < 16:
+        session = "Europe"
+    elif 16 <= current_hour <= 23:
+        session = "US"
+    else:
+        session = "Other"
+
+
     reasons = []
 
+    # ML-Logging hier
+    log_ml_data(
+        symbol=symbol,
+        direction=direction.upper(),
+        rsi=rsi,
+        ema20=ema20,
+        ema50=ema50,
+        macd=macd_line - macd_signal,
+        volume_ratio=volume / avg_volume,
+        atr=atr,
+        market_trend="neutral",     # Oder echten Wert, wenn vorhanden
+        btc_strength=0.5,           # Oder echten Wert, wenn vorhanden
+        price_now=price
+    )
+
     # Volumen-Filter
-    if volume < 0.6 * avg_volume:
+    if volume < 0.5 * avg_volume:
         reasons.append(f"Volumen zu gering ({volume:.2f} < {avg_volume:.2f})")
         return None, reasons
 
     # Long-Kriterien
     if direction == "long":
-        if rsi > 30:
+        if rsi > 33:
             reasons.append(f"RSI zu hoch für LONG ({rsi:.2f})")
-        if ema20 <= ema50* 0.998:
+        if ema20 <= ema50 * 0.998:
             reasons.append("EMA20 nicht über EMA50 (mit Spielraum) für LONG")
         if macd_line <= macd_signal:
             reasons.append("MACD gegen LONG")
-        if reasons:
-            return None, reasons
-        trade_direction = "open_long"
+
+        if len(reasons) == 1:
+            log_missed_trade(
+                symbol=symbol,
+                direction="LONG",
+                reasons=reasons,
+                current_price=price,
+                timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            )
+
+    if len(reasons) == 2:
+        passed = []
+        if rsi <= 33:
+            passed.append("RSI ok")
+        if ema20 > ema50 * 0.998:
+            passed.append("EMA-Trend ok")
+        if macd_line > macd_signal:
+            passed.append("MACD ok")
+
+        log_fast_signal(
+            symbol=symbol,
+            direction="LONG",
+            passed=passed,
+            failed=reasons,
+            current_price=price,
+            timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        )
+
+    if reasons:
+        return None, reasons
+
+    trade_direction = "open_long"
 
     # Short-Kriterien
-    elif direction == "short":
-        if rsi < 70:
+    if direction == "short":
+        if rsi < 67:
             reasons.append(f"RSI zu niedrig für SHORT ({rsi:.2f})")
-        if ema20 >= ema50* 1.002:
+        if ema20 >= ema50 * 1.002:
             reasons.append("EMA20 nicht unter EMA50 (mit Spielraum) für SHORT")
         if macd_line >= macd_signal:
             reasons.append("MACD gegen SHORT")
-        if reasons:
-            return None, reasons
-        trade_direction = "open_short"
 
-    else:
-        reasons.append("Ungültige Richtung")
+    if len(reasons) == 1:
+        log_missed_trade(
+            symbol=symbol,
+            direction="SHORT",
+            reasons=reasons,
+            current_price=price,
+            timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        )
+
+    if len(reasons) == 2:
+        passed = []
+        if rsi >= 67:
+            passed.append("RSI ok")
+        if ema20 < ema50 * 1.002:
+            passed.append("EMA-Trend ok")
+        if macd_line < macd_signal:
+            passed.append("MACD ok")
+
+        log_fast_signal(
+            symbol=symbol,
+            direction="SHORT",
+            passed=passed,
+            failed=reasons,
+            current_price=price,
+            timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        )
+
+    if reasons:
         return None, reasons
 
-    # Berechne TP und SL
+    trade_direction = "open_short"
+
+    # 📌 TP/SL berechnen
     if trade_direction == "open_long":
         tp = price + 1.5 * atr
         sl = price - 0.9 * atr
@@ -229,17 +371,50 @@ def analyze_symbol(symbol, direction):
 
     qty = round(START_CAPITAL / price, 3)
 
+    features = {
+        "rsi": rsi,
+        "ema_diff": ema20 - ema50,
+        "macd_abs": abs(macd_line - macd_signal),
+        "volume_ratio": volume / avg_volume if avg_volume > 0 else 1,
+        "atr": atr,
+        "btc_strength": 0.0,
+        "weekday": datetime.now().weekday(),
+        "hour": datetime.now().hour,
+        "candle_direction": candle_direction,
+        "candle_body_ratio": candle_body_ratio,
+        "session_asia": 1 if session == "Asia" else 0,
+        "session_europe": 1 if session == "Europe" else 0,
+        "session_us": 1 if session == "US" else 0
+    }
+
+
+    ml_prediction, ml_prob = predict_signal(features)
+
+    # ✏️ Nachricht bauen
     msg = (f"📢 *Signal {trade_direction} für {symbol}*\n"
            f"RSI: {rsi:.2f}, EMA20/EMA50: {ema20:.2f}/{ema50:.2f}\n"
-           f"TP: {tp:.4f} | SL: {sl:.4f}")
+           f"TP: {tp:.4f} | SL: {sl:.4f}\n"
+           f"🤖 ML: {'JA' if ml_prediction else 'NEIN'} ({ml_prob:.2f})")
 
+    # 🔁 Rückgabe
     return {
         "direction": trade_direction,
         "qty": qty,
         "tp": tp,
         "sl": sl,
-        "msg": msg
+        "msg": msg,
+        "rsi": rsi,
+        "ema20": ema20,
+        "ema50": ema50,
+        "macd_line": macd_line,
+        "macd_signal": macd_signal,
+        "volume": volume,
+        "avg_volume": avg_volume,
+        "atr": atr,
+        "btc_strength": 0.5
     }, []
+
+
 
 
 def round_to_step(value, step):
@@ -253,7 +428,9 @@ def round_to_step(value, step):
 
     
 
-def place_order(symbol, direction, quantity, tp, sl):
+def place_order(symbol, direction, quantity, tp, sl,
+                rsi, ema20, ema50, macd_line, macd_signal,
+                current_volume, avg_volume, market_trend, atr, btc_strength):
     log_print(f"{symbol}: Starte Orderversuch mit qty={quantity}, TP={tp}, SL={sl}")
 
     exchange_info = client.exchange_info()
@@ -279,24 +456,7 @@ def place_order(symbol, direction, quantity, tp, sl):
         send_telegram("⚠️ Maximaler Verlust erreicht – Bot gestoppt")
         return
 
-    # ATR für dynamische Trailing-Logik berechnen
-    df = get_klines(symbol, '5m', 100)
-    from ta.volatility import AverageTrueRange
-    atr_calc = AverageTrueRange(df['high'], df['low'], df['close'], window=14)
-    df['ATR'] = atr_calc.average_true_range()
 
-    last_atr = df['ATR'].iloc[-1] if 'ATR' in df and not df['ATR'].isna().all() else 0.0
-
-    # Dynamische Trailing-Werte setzen
-    if last_atr < 0.005:
-        callback_rate = 0.35
-        activation_multiplier = 1.007
-    elif last_atr < 0.015:
-        callback_rate = 0.75
-        activation_multiplier = 1.01
-    else:
-        callback_rate = 1.2
-        activation_multiplier = 1.015
 
     for attempt in range(3):
         try:
@@ -320,28 +480,34 @@ def place_order(symbol, direction, quantity, tp, sl):
             log_print(f"{symbol}: ✅ Order {side} {quantity} erfolgreich")
             log_print(f"{symbol}: 📉 Kumulierter Verlust: {capital_lost:.2f} USDT")
 
-            log_trade(symbol, direction, price, quantity, tp, sl, callback_rate)
+            log_trade(
+                symbol, direction, price, quantity, tp, sl, 0.0,
+                rsi, ema20, ema50, macd_line, macd_signal,
+                current_volume, avg_volume, market_trend, atr, btc_strength
+            )
+
 
 
             sl_order_type = "STOP_MARKET"
             sl_side = "SELL" if direction == "LONG" else "BUY"
             position_side = "LONG" if direction == "LONG" else "SHORT"
 
-            # ✅ Dynamischer Trailing TP
+            # ✅ Fester TP (Limit-Order)
             try:
-                activation_price = round(price * activation_multiplier, 4) if direction == "LONG" else round(price / activation_multiplier, 4)
                 client.new_order(
                     symbol=symbol,
-                    side=sl_side,
+                    side=sl_side,  # SELL bei LONG, BUY bei SHORT
                     positionSide=position_side,
-                    type="TRAILING_STOP_MARKET",
-                    activationPrice=activation_price,
-                    callbackRate=callback_rate,
+                    type="LIMIT",
+                    price=round(tp, 4),
+                    quantity=quantity,
+                    timeInForce="GTC",
                     reduceOnly=True
                 )
-                log_print(f"{symbol}: ✅ Trailing TP gesetzt – Aktivierung bei {activation_price}, callback {callback_rate}%")
+                log_print(f"{symbol}: ✅ TP gesetzt bei {tp:.4f}")
             except Exception as e:
-                log_print(f"{symbol}: ❌ Fehler beim Setzen des Trailing TP: {e}")
+                log_print(f"{symbol}: ❌ Fehler beim Setzen des TP: {e}")
+
 
             # Fester SL
             try:
@@ -364,9 +530,85 @@ def place_order(symbol, direction, quantity, tp, sl):
             log_print(f"{symbol}: ❌ Order-Versuch {attempt + 1} fehlgeschlagen: {e}")
             time.sleep(2)
 
+def update_future_prices():
+    import pandas as pd
+    from datetime import datetime, timedelta
+
+    file = "ml_log.csv"
+
+    try:
+        columns = [
+            "timestamp", "symbol", "direction", "rsi", "ema20", "ema50", "macd",
+            "volume_ratio", "atr", "market_trend", "btc_strength",
+            "weekday", "hour", "price_now", "future_price", "label"
+        ]
+        df = pd.read_csv(file, names=columns, header=None)
+
+    except Exception as e:
+        log_print(f"❌ Fehler beim Laden von ml_log.csv: {e}")
+        return
+
+    updated = 0
+
+    for i, row in df.iterrows():
+        try:
+            if pd.isna(row["future_price"]) and not pd.isna(row["timestamp"]):
+                timestamp_str = row["timestamp"]
+                symbol = row["symbol"]
+                ts = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
+                if datetime.now() >= ts + timedelta(minutes=5):
+                    df_klines = get_klines(symbol, interval="1m", limit=2)
+                    if df_klines is not None and not df_klines.empty:
+                        future_price = df_klines['close'].iloc[-1]
+                        df.at[i, "future_price"] = round(future_price, 5)
+                        updated += 1
+                        log_print(f"🔁 Nachgetragen: {symbol} → future_price = {future_price}")
+        except Exception as e:
+            log_print(f"⚠️ Fehler bei Zeile {i}: {e}")
+            continue
+
+    if updated > 0:
+        try:
+            df.to_csv(file, index=False)
+            log_print(f"✅ {updated} future_price-Werte gespeichert.")
+        except Exception as e:
+            log_print(f"❌ Fehler beim Speichern von ml_log.csv: {e}")
+    else:
+        log_print("ℹ️ Keine neuen future_price-Einträge nötig.")
+
+def monitor_trades():
+    try:
+        positions = client.get_position_risk()
+    except Exception as e:
+        log_print(f"❌ Fehler beim Abrufen der offenen Positionen: {e}")
+        return
+
+    for pos in positions:
+        symbol = pos['symbol']
+        amt = float(pos['positionAmt'])
+        entry_price = float(pos['entryPrice'])
+
+        # Keine Position → wurde also geschlossen
+        if amt == 0.0 and entry_price > 0:
+            # Richtung bestimmen (Binance speichert Einträge trotzdem mit entry_price)
+            side = "LONG" if float(pos['positionSide']) == 1 else "SHORT"
+
+            # Ergebnis schätzen – TP oder SL
+            mark_price = float(pos['markPrice'])
+            result = "TP" if (
+                (side == "LONG" and mark_price > entry_price)
+                or (side == "SHORT" and mark_price < entry_price)
+            ) else "SL"
+
+            log_trade_result(symbol, side, entry_price, result)
+            log_print(f"{symbol}: 📋 Trade abgeschlossen ({side}) – {result}")
+
+
+
+
 
 def run_bot():
-    log_print("🚀 run_bot gestartet")  # funktioniert nur, wenn dein Terminal UTF-8-kompatibel ist
+    log_print("🚀 run_bot gestartet")
     log_print("📊 Starte neue Analyse...")
 
     try:
@@ -376,14 +618,18 @@ def run_bot():
         return
 
     try:
+        excluded_symbols = ["USDCUSDT", "TUSDUSDT", "DAIUSDT", "FDUSDUSDT", "BUSDUSDT", "USDPUSDT"]
         symbols = [s['symbol'] for s in info['symbols']
-                   if s['contractType'] == "PERPETUAL" and s['quoteAsset'] == "USDT" and s['status'] == "TRADING"]
+                   if s['contractType'] == "PERPETUAL"
+                   and s['quoteAsset'] == "USDT"
+                   and s['status'] == "TRADING"
+                   and s['symbol'] not in excluded_symbols]
+
         log_print(f"✅ {len(symbols)} Symbole geladen")
 
         market_trend = get_market_trend(client, symbols)
         log_print(f"⬆️ Markttrend erkannt: {market_trend.upper()}")
 
-        # ✅ Initialisiere Zähler
         analyzed = signals = orders = 0
         for sym in symbols:
             try:
@@ -391,6 +637,26 @@ def run_bot():
                     log_print(f"{sym}: 🔍 Analyse für {direction.upper()}")
                     res, reasons = analyze_symbol(sym, direction)
                     analyzed += 1
+
+                    if res is None and "Unzureichende Daten" in reasons:
+                        log_ml_data(
+                            symbol=symbol,
+                            direction=direction.upper(),
+                            rsi=rsi,
+                            ema20=ema20,
+                            ema50=ema50,
+                            macd=macd_line - macd_signal,
+                            volume_ratio=volume / avg_volume,
+                            atr=atr,
+                            market_trend="neutral",     # Optional: später mit echten Werten
+                            btc_strength=0.5,           # Optional: später dynamisch
+                            price_now=price,
+                            candle_size=candle_size,
+                            candle_direction=candle_direction,
+                            candle_body_ratio=candle_body_ratio,
+                            session=session
+                        )
+
 
                     if res is None:
                         grund = ', '.join(reasons)
@@ -408,8 +674,23 @@ def run_bot():
                     signals += 1
 
                     if bot_active:
-                        log_print(f"{sym}: ✅ {direction.upper()}-Signal gültig – starte Order...")
-                        place_order(sym, res["direction"], res["qty"], res["tp"], res["sl"])
+                        place_order(
+                            sym,
+                            res["direction"],
+                            res["qty"],
+                            res["tp"],
+                            res["sl"],
+                            res["rsi"],
+                            res["ema20"],
+                            res["ema50"],
+                            res["macd_line"],
+                            res["macd_signal"],
+                            res["volume"],
+                            res["avg_volume"],
+                            market_trend,
+                            res["atr"],
+                            res["btc_strength"]
+                        )
                         orders += 1
                     else:
                         log_print(f"{sym}: 🔒 Bot nicht aktiv – keine Order trotz gültigem Signal.")
@@ -417,11 +698,11 @@ def run_bot():
             except Exception as e:
                 log_print(f"{sym}: ❌ Analyse-Fehler: {e}")
 
-        # ✅ Diese Zeile muss auf gleicher Ebene wie das `for sym in symbols:` stehen
         log_print(f"✅ Analyse abgeschlossen: {analyzed} geprüft, {signals} Signale, {orders} Orders")
 
     except Exception as e:
         log_print(f"❌ Lauf-Fehler: {e}")
+
 
 def scheduler_loop():
     while True:
@@ -437,14 +718,66 @@ import socket
 def is_port_free(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("0.0.0.0", port)) != 0
+
+def log_fast_signal(symbol, direction, passed, failed, current_price, timestamp):
+    import os
+    import csv
+
+    filename = 'fast_signals.csv'
+    headers = ['timestamp', 'symbol', 'direction', 'current_price', 'passed_criteria', 'failed_criteria']
+
+    row = {
+        'timestamp': timestamp,
+        'symbol': symbol,
+        'direction': direction,
+        'current_price': current_price,
+        'passed_criteria': '; '.join(passed),
+        'failed_criteria': '; '.join(failed)
+    }
+
+    file_exists = os.path.isfile(filename)
+    with open(filename, 'a', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=headers)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(row)
+
+def log_missed_trade(symbol, direction, reasons, current_price, timestamp):
+    import os
+    import csv
+
+    filename = 'missed_signals.csv'
+    headers = ['timestamp', 'symbol', 'direction', 'current_price', 'reasons']
+
+    row = {
+        'timestamp': timestamp,
+        'symbol': symbol,
+        'direction': direction,
+        'current_price': current_price,
+        'reasons': '; '.join(reasons)
+    }
+
+    file_exists = os.path.isfile(filename)
+    with open(filename, 'a', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=headers)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(row)
+
+
 if __name__ == "__main__":
     send_telegram("🚀 Bot manuell gestartet (Live-Modus)")
+
+    # 🧪 Test-Trade (nur einmal starten, danach wieder auskommentieren oder löschen)
+    #place_order("BTCUSDT", "LONG", 0.001, 70000, 68000)
 
     # Starte Bot direkt
     run_bot()
 
     # Wiederhole alle 1 Minuten
     schedule.every(1).minutes.do(run_bot)
+    schedule.every(5).minutes.do(update_future_prices)
+    schedule.every(1).minutes.do(monitor_trades)
 
     # Starte Schleife sichtbar im Terminal
     while True:
