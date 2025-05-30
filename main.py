@@ -222,12 +222,18 @@ def get_klines(symbol, interval="5m", limit=100):
         log_print(f"{symbol}: Fehler beim Laden: {e}")
         return None
 
-        
 
 def analyze_symbol(symbol, direction):
     df = get_klines(symbol, limit=50)
     if df is None or len(df) < 20:
         return None, ["Unzureichende Daten"]
+
+    # 📊 BTC-Stärke analysieren
+    btc_df = get_klines("BTCUSDT", "5m", 100)
+    if btc_df is not None and len(btc_df) >= 2:
+        btc_strength = (btc_df["close"].iloc[-1] - btc_df["close"].iloc[0]) / btc_df["close"].iloc[0]
+    else:
+        btc_strength = 0  # Fallback bei Fehlern
 
     rsi = RSIIndicator(df['close'], window=14).rsi().iloc[-1]
     macd_line = MACD(df['close']).macd().iloc[-1]
@@ -399,9 +405,9 @@ def analyze_symbol(symbol, direction):
     # 🔁 Rückgabe
     return {
         "direction": trade_direction,
-        "qty": qty,
-        "tp": tp,
-        "sl": sl,
+        "qty": 0,  # Wird später dynamisch berechnet
+        "tp": 0,   # Wird später dynamisch berechnet
+        "sl": 0,   # Wird später dynamisch berechnet
         "msg": msg,
         "rsi": rsi,
         "ema20": ema20,
