@@ -5,6 +5,9 @@ import os
 # Direkt nach dem Import:
 load_dotenv()
 
+# Schalter: Machine Learning aktivieren/deaktivieren
+USE_ML = False
+
 # Dann kommen alle anderen Importe:
 import requests
 import time
@@ -393,21 +396,24 @@ def analyze_symbol(symbol, direction):
         "session_us": 1 if session == "US" else 0
     }
 
+    if USE_ML:
+        ml_prediction, ml_prob = predict_signal(features)
+        ml_note = f"🤖 ML: {'JA' if ml_prediction else 'NEIN'} ({ml_prob:.2f})"
+    else:
+        ml_note = "🤖 ML: deaktiviert"
 
-    ml_prediction, ml_prob = predict_signal(features)
-
-    # ✏️ Nachricht bauen
+# ✏️ Nachricht bauen
     msg = (f"📢 *Signal {trade_direction} für {symbol}*\n"
            f"RSI: {rsi:.2f}, EMA20/EMA50: {ema20:.2f}/{ema50:.2f}\n"
            f"TP: {tp:.4f} | SL: {sl:.4f}\n"
-           f"🤖 ML: {'JA' if ml_prediction else 'NEIN'} ({ml_prob:.2f})")
+           f"{ml_note}")
 
     # 🔁 Rückgabe
     return {
         "direction": trade_direction,
-        "qty": 0,  # Wird später dynamisch berechnet
-        "tp": 0,   # Wird später dynamisch berechnet
-        "sl": 0,   # Wird später dynamisch berechnet
+        "qty": qty,
+        "tp": tp,
+        "sl": sl,
         "msg": msg,
         "rsi": rsi,
         "ema20": ema20,
