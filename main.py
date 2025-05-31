@@ -28,7 +28,7 @@ def log_ml_data(symbol, direction, rsi, ema20, ema50, macd, volume_ratio, atr, m
     hour = datetime.now().hour
 
     try:
-        with open("ml_log.csv", "a", newline="") as f:
+        with open("/mydata/ml_log.csv", "a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([
                 now,
